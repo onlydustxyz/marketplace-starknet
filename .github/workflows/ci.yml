@@ -1,0 +1,33 @@
+name: CI
+
+on: [push, pull_request, pull_request_target]
+
+jobs:
+  protostar-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install protostar
+        run: |
+          curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash
+      - name: Update env variables
+        run: |
+          source /home/runner/.bashrc | bash
+      - name: Install protostar dependencies
+        run: /home/runner/.protostar/dist/protostar/protostar install
+      - name: Compile smart contracts
+        run: /home/runner/.protostar/dist/protostar/protostar build
+      - name: Run protostar tests
+        run: /home/runner/.protostar/dist/protostar/protostar test
+  formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.9"
+      - name: Install dependencies
+        run: pip install cairo-lang==0.8.2.1
+      - name: Check files formatting
+        run: find contracts/ -name "*.cairo" -print0 | xargs -0 echo cairo-format -c
+        
