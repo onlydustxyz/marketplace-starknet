@@ -1,0 +1,2 @@
+https://files.pythonhosted.org/packages/5a/db/6705f2bd9f6a86fb71f18078c8cc46f506fb5b8df1cf7645c3c1a21f89a4/cairo-lang-0.8.2.1.zip#sha256=77e9a6add0c7fdf3a5eee8c146c6e498ad1a60c366de86c03768edef967c8b7a
+

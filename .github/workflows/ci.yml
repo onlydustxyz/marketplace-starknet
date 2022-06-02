@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  pull_request_target:
+    branches: [ main ]
+
+jobs:
+  protostar-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install protostar
+        run: |
+          curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash
+      - name: Update env variables
+        run: |
+          source /home/runner/.bashrc | bash
+      - name: Install protostar dependencies
+        run: /home/runner/.protostar/dist/protostar/protostar install
+      - name: Compile smart contracts
+        run: /home/runner/.protostar/dist/protostar/protostar build
+      - name: Run protostar tests
+        run: /home/runner/.protostar/dist/protostar/protostar test
+  formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.9"
+          cache: "pip"
+      - name: Install dependencies
+        run: | # Install latest version from https://pypi.org/simple/cairo-lang/ (as done in nile)
+          pip install https://files.pythonhosted.org/packages/5a/db/6705f2bd9f6a86fb71f18078c8cc46f506fb5b8df1cf7645c3c1a21f89a4/cairo-lang-0.8.2.1.zip#sha256=77e9a6add0c7fdf3a5eee8c146c6e498ad1a60c366de86c03768edef967c8b7a
+      - name: Check files formatting
+        run: find contracts/ -name "*.cairo" -print0 | xargs -0 echo cairo-format -c
+        
