@@ -8,7 +8,7 @@ libs_path = "lib"
 no_color=true
 
 ["protostar.shared_command_configs"]
-cairo_path = ["contracts"]
+cairo_path = ["contracts", "lib/cairo_contracts/src"]
 target="contracts"
 
 ["protostar.contracts"]
