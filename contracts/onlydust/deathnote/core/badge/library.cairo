@@ -19,7 +19,7 @@ from openzeppelin.security.safemath import SafeUint256
 # STORAGE
 #
 @storage_var
-func totalSupply() -> (totalSupply : Uint256):
+func total_supply_() -> (total_supply : Uint256):
 end
 
 namespace badge:
@@ -52,11 +52,11 @@ namespace badge:
 
         Ownable.assert_only_owner()
 
-        let (local tokenId : Uint256) = totalSupply.read()
+        let (local tokenId : Uint256) = total_supply_.read()
         ERC721_mint(to, tokenId)
 
         let (new_supply) = SafeUint256.add(tokenId, Uint256(1, 0))
-        totalSupply.write(new_supply)
+        total_supply_.write(new_supply)
 
         return (tokenId)
     end
