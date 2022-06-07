@@ -44,3 +44,31 @@ func mint{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(to 
 ):
     return badge.mint(to)
 end
+
+@external
+func grant_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    address : felt
+):
+    return badge.grant_admin_role(address)
+end
+
+@external
+func revoke_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    address : felt
+):
+    return badge.revoke_admin_role(address)
+end
+
+@external
+func grant_minter_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    address : felt
+):
+    return badge.grant_minter_role(address)
+end
+
+@external
+func revoke_minter_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    address : felt
+):
+    return badge.revoke_minter_role(address)
+end
