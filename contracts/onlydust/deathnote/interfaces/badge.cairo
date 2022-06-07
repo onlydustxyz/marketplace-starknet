@@ -15,4 +15,16 @@ namespace Badge:
 
     func ownerOf(tokenId : Uint256) -> (owner : felt):
     end
+
+    func grant_admin_role(address : felt):
+    end
+
+    func revoke_admin_role(address : felt):
+    end
+
+    func grant_minter_role(address : felt):
+    end
+
+    func revoke_minter_role(address : felt):
+    end
 end

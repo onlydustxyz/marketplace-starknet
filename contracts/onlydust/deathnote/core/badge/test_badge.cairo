@@ -5,14 +5,20 @@ from starkware.cairo.common.uint256 import Uint256
 
 from onlydust.deathnote.core.badge.library import badge
 
-const OWNER = 42
+const ADMIN = 'onlydust_admin'
+const REGISTRY = 'registry'
+const CONTRIBUTOR = 'Antho'
 
 #
 # Fixtures
 #
 namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-        badge.initialize(OWNER)
+        %{ stop_prank = start_prank(ids.ADMIN) %}
+        badge.initialize(ADMIN)
+        badge.grant_minter_role(REGISTRY)
+        %{ stop_prank() %}
+
         return ()
     end
 end
@@ -26,26 +32,23 @@ func test_badge_has_a_name_and_symbol{
 }():
     fixture.initialize()
 
-    assert_that.name_is('Death Note Badge')
-    assert_that.symbol_is('DNB')
+    assert_that.badge_name_is('Death Note Badge')
+    assert_that.badge_symbol_is('DNB')
 
     return ()
 end
 
 @view
-func test_badge_can_be_minted_by_owner{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
+func test_badge_can_be_minted{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
     fixture.initialize()
 
-    const CONTRIBUTOR = 23
-    %{ stop_prank = start_prank(ids.OWNER) %}
+    %{ stop_prank = start_prank(ids.REGISTRY) %}
     let (tokenId) = badge.mint(CONTRIBUTOR)
     %{ stop_prank() %}
 
     let (owner) = badge.ownerOf(tokenId)
 
-    assert_that.owner_is(tokenId, CONTRIBUTOR)
+    assert_that.badge_owner_is(tokenId, CONTRIBUTOR)
 
     return ()
 end
@@ -56,10 +59,98 @@ func test_badge_cannot_be_minted_by_anyone{
 }():
     fixture.initialize()
 
-    const CONTRIBUTOR = 23
-
-    %{ expect_revert(error_message="Ownable: caller is not the owner") %}
+    %{ expect_revert(error_message="Badge: MINTER role required") %}
     badge.mint(CONTRIBUTOR)
+
+    return ()
+end
+
+@view
+func test_admin_cannot_revoke_himself{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    %{
+        stop_prank = start_prank(ids.ADMIN)
+        expect_revert(error_message="Badge: Cannot self renounce to ADMIN role")
+    %}
+    badge.revoke_admin_role(ADMIN)
+
+    %{ stop_prank() %}
+
+    return ()
+end
+
+@view
+func test_admin_can_transfer_ownership{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const NEW_ADMIN = 'new_admin'
+
+    %{ stop_prank = start_prank(ids.ADMIN) %}
+    badge.grant_admin_role(NEW_ADMIN)
+    %{ stop_prank() %}
+
+    %{ stop_prank = start_prank(ids.NEW_ADMIN) %}
+    badge.revoke_admin_role(ADMIN)
+    %{ stop_prank() %}
+
+    return ()
+end
+
+@view
+func test_anyone_cannot_grant_role{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    %{ expect_revert(error_message="AccessControl: caller is missing role 0") %}
+    badge.grant_admin_role(CONTRIBUTOR)
+
+    return ()
+end
+
+@view
+func test_anyone_cannot_revoke_role{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    %{ expect_revert(error_message="AccessControl: caller is missing role 0") %}
+    badge.revoke_admin_role(ADMIN)
+
+    return ()
+end
+
+@view
+func test_admin_can_grant_and_revoke_roles{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const RANDOM_ADDRESS = 'rand'
+
+    %{ stop_prank = start_prank(ids.ADMIN) %}
+    badge.grant_minter_role(RANDOM_ADDRESS)
+    %{ stop_prank() %}
+
+    %{ stop_prank = start_prank(ids.RANDOM_ADDRESS) %}
+    badge.mint(RANDOM_ADDRESS)
+    %{ stop_prank() %}
+
+    %{ stop_prank = start_prank(ids.ADMIN) %}
+    badge.revoke_minter_role(RANDOM_ADDRESS)
+    %{ stop_prank() %}
+
+    %{
+        stop_prank = start_prank(ids.RANDOM_ADDRESS) 
+        expect_revert(error_message='Badge: MINTER role required')
+    %}
+    badge.mint(RANDOM_ADDRESS)
+    %{ stop_prank() %}
 
     return ()
 end
@@ -68,7 +159,7 @@ end
 # Helpers
 #
 namespace assert_that:
-    func name_is{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    func badge_name_is{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         expected : felt
     ):
         alloc_locals
@@ -80,7 +171,7 @@ namespace assert_that:
         return ()
     end
 
-    func symbol_is{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    func badge_symbol_is{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         expected : felt
     ):
         alloc_locals
@@ -92,7 +183,7 @@ namespace assert_that:
         return ()
     end
 
-    func owner_is{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    func badge_owner_is{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         tokenId : Uint256, expected : felt
     ):
         alloc_locals

@@ -5,33 +5,84 @@ from starkware.cairo.common.uint256 import Uint256
 
 from onlydust.deathnote.interfaces.badge import Badge
 
+const ADMIN = 'admin'
+const REGISTRY = 'registry'
+const CONTRIBUTOR = 'contributor'
+
 #
 # Tests
 #
 @view
 func test_badge_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-    alloc_locals
+    let (badge) = badge_access.deploy()
 
-    const OWNER = 42
-    local contract_address : felt
-    %{
-        ids.contract_address = deploy_contract("./contracts/onlydust/deathnote/core/badge/badge.cairo", [ids.OWNER]).contract_address 
-        stop_prank = start_prank(ids.OWNER, target_contract_address=ids.contract_address)
-    %}
+    with badge:
+        assert_that.name_is('Death Note Badge')
+        assert_that.symbol_is('DNB')
 
-    const CONTRIBUTOR = 23
-    let (tokenId) = Badge.mint(contract_address, CONTRIBUTOR)
-
-    %{ stop_prank() %}
-
-    let (name) = Badge.name(contract_address)
-    assert 'Death Note Badge' = name
-
-    let (symbol) = Badge.symbol(contract_address)
-    assert 'DNB' = symbol
-
-    let (owner) = Badge.ownerOf(contract_address, tokenId)
-    assert CONTRIBUTOR = owner
+        let (token_id) = badge_access.mint(CONTRIBUTOR)
+        assert_that.owner_is(token_id, CONTRIBUTOR)
+    end
 
     return ()
+end
+
+#
+# Libraries
+#
+namespace badge_access:
+    func deploy{syscall_ptr : felt*, range_check_ptr}() -> (badge : felt):
+        alloc_locals
+        local badge : felt
+        %{ ids.badge = deploy_contract("./contracts/onlydust/deathnote/core/badge/badge.cairo", [ids.ADMIN]).contract_address %}
+
+        %{ stop_prank = start_prank(ids.ADMIN, ids.badge) %}
+        Badge.grant_minter_role(badge, REGISTRY)
+        %{ stop_prank() %}
+
+        return (badge)
+    end
+
+    func mint{syscall_ptr : felt*, range_check_ptr, badge : felt}(contributor : felt) -> (
+        token_id : Uint256
+    ):
+        %{ stop_prank = start_prank(ids.REGISTRY,  ids.badge) %}
+        let (token_id) = Badge.mint(badge, contributor)
+        %{ stop_prank() %}
+        return (token_id)
+    end
+end
+
+namespace assert_that:
+    func name_is{syscall_ptr : felt*, range_check_ptr, badge : felt}(expected : felt):
+        alloc_locals
+        let (local actual) = Badge.name(badge)
+
+        with_attr error_message("Invalid name: expected {expected}, actual {actual}"):
+            assert expected = actual
+        end
+        return ()
+    end
+
+    func symbol_is{syscall_ptr : felt*, range_check_ptr, badge : felt}(expected : felt):
+        alloc_locals
+        let (local actual) = Badge.symbol(badge)
+
+        with_attr error_message("Invalid symbol: expected {expected}, actual {actual}"):
+            assert expected = actual
+        end
+        return ()
+    end
+
+    func owner_is{syscall_ptr : felt*, range_check_ptr, badge : felt}(
+        token_id : Uint256, expected : felt
+    ):
+        alloc_locals
+        let (local actual) = Badge.ownerOf(badge, token_id)
+
+        with_attr error_message("Invalid owner: expected {expected}, actual {actual}"):
+            assert expected = actual
+        end
+        return ()
+    end
 end
