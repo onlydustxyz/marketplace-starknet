@@ -3,7 +3,7 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from onlydust.deathnote.interfaces.badge import Badge
+from onlydust.deathnote.interfaces.badge import IBadge
 
 const ADMIN = 'admin'
 const REGISTRY = 'registry'
@@ -37,7 +37,7 @@ namespace badge_access:
         %{ ids.badge = deploy_contract("./contracts/onlydust/deathnote/core/badge/badge.cairo", [ids.ADMIN]).contract_address %}
 
         %{ stop_prank = start_prank(ids.ADMIN, ids.badge) %}
-        Badge.grant_minter_role(badge, REGISTRY)
+        IBadge.grant_minter_role(badge, REGISTRY)
         %{ stop_prank() %}
 
         return (badge)
@@ -47,7 +47,7 @@ namespace badge_access:
         token_id : Uint256
     ):
         %{ stop_prank = start_prank(ids.REGISTRY,  ids.badge) %}
-        let (token_id) = Badge.mint(badge, contributor)
+        let (token_id) = IBadge.mint(badge, contributor)
         %{ stop_prank() %}
         return (token_id)
     end
@@ -56,7 +56,7 @@ end
 namespace assert_that:
     func name_is{syscall_ptr : felt*, range_check_ptr, badge : felt}(expected : felt):
         alloc_locals
-        let (local actual) = Badge.name(badge)
+        let (local actual) = IBadge.name(badge)
 
         with_attr error_message("Invalid name: expected {expected}, actual {actual}"):
             assert expected = actual
@@ -66,7 +66,7 @@ namespace assert_that:
 
     func symbol_is{syscall_ptr : felt*, range_check_ptr, badge : felt}(expected : felt):
         alloc_locals
-        let (local actual) = Badge.symbol(badge)
+        let (local actual) = IBadge.symbol(badge)
 
         with_attr error_message("Invalid symbol: expected {expected}, actual {actual}"):
             assert expected = actual
@@ -78,7 +78,7 @@ namespace assert_that:
         token_id : Uint256, expected : felt
     ):
         alloc_locals
-        let (local actual) = Badge.ownerOf(badge, token_id)
+        let (local actual) = IBadge.ownerOf(badge, token_id)
 
         with_attr error_message("Invalid owner: expected {expected}, actual {actual}"):
             assert expected = actual
