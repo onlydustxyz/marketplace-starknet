@@ -28,6 +28,7 @@
 This repository contains the code for starknet smart contracts:
 * **badge registry**: To register the created badge for each user based on authentication data (github, ...)
 * **badge**: The non-transferrable NFT that will be used to identify contributions of a given user
+* **contributions**: The contracts that will track contributions
 
 ## 🎗️ Prerequisites
 
