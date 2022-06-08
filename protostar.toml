@@ -1,5 +1,5 @@
 ["protostar.config"]
-protostar_version = "0.2.1"
+protostar_version = "0.2.3"
 
 ["protostar.project"]
 libs_path = "lib"
@@ -9,7 +9,9 @@ no_color=true
 
 ["protostar.shared_command_configs"]
 cairo_path = ["contracts", "lib/cairo_contracts/src"]
-target="contracts"
+
+["protostar.test"]
+target = ["contracts"]
 
 ["protostar.contracts"]
 badge_registry = [ "./contracts/onlydust/deathnote/core/badge_registry/badge_registry.cairo" ]
