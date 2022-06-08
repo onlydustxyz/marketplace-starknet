@@ -13,8 +13,22 @@ const CONTRIBUTOR = 'contributor'
 # Tests
 #
 @view
-func test_badge_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-    let (badge) = badge_access.deploy()
+func __setup__{syscall_ptr : felt*, range_check_ptr}():
+    tempvar badge_contract
+    %{
+        context.badge_contract = deploy_contract("./contracts/onlydust/deathnote/core/badge/badge.cairo", [ids.ADMIN]).contract_address
+        ids.badge_contract = context.badge_contract
+        stop_prank = start_prank(ids.ADMIN, ids.badge_contract)
+    %}
+    IBadge.grant_minter_role(badge_contract, REGISTRY)
+    %{ stop_prank() %}
+
+    return ()
+end
+
+@view
+func test_badge_e2e{syscall_ptr : felt*, range_check_ptr}():
+    let (badge) = badge_access.deployed()
 
     with badge:
         assert_that.name_is('Death Note Badge')
@@ -31,16 +45,10 @@ end
 # Libraries
 #
 namespace badge_access:
-    func deploy{syscall_ptr : felt*, range_check_ptr}() -> (badge : felt):
-        alloc_locals
-        local badge : felt
-        %{ ids.badge = deploy_contract("./contracts/onlydust/deathnote/core/badge/badge.cairo", [ids.ADMIN]).contract_address %}
-
-        %{ stop_prank = start_prank(ids.ADMIN, ids.badge) %}
-        IBadge.grant_minter_role(badge, REGISTRY)
-        %{ stop_prank() %}
-
-        return (badge)
+    func deployed() -> (badge_contract : felt):
+        tempvar badge_contract
+        %{ ids.badge_contract = context.badge_contract %}
+        return (badge_contract)
     end
 
     func mint{syscall_ptr : felt*, range_check_ptr, badge : felt}(contributor : felt) -> (

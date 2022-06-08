@@ -15,8 +15,22 @@ const GITHUB_HANDLE = 'github_user'
 # Tests
 #
 @view
+func __setup__{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
+    tempvar badge_registry
+    %{
+        context.badge_registry = deploy_contract("./contracts/onlydust/deathnote/core/badge_registry/badge_registry.cairo", [ids.ADMIN]).contract_address 
+        ids.badge_registry = context.badge_registry
+        stop_prank = start_prank(ids.ADMIN, ids.badge_registry)
+    %}
+    IBadgeRegistry.set_badge_contract(badge_registry, BADGE)
+    %{ stop_prank() %}
+
+    return ()
+end
+
+@view
 func test_badge_registry_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-    let (badge_registry) = badge_registry_access.deploy()
+    let (badge_registry) = badge_registry_access.deployed()
 
     with badge_registry:
         %{ mock_call(ids.BADGE, 'mint', [0, 0]) %}
@@ -36,17 +50,9 @@ end
 # Libraries
 #
 namespace badge_registry_access:
-    func deploy{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
-        badge : felt
-    ):
-        alloc_locals
-        local badge_registry : felt
-        %{ ids.badge_registry = deploy_contract("./contracts/onlydust/deathnote/core/badge_registry/badge_registry.cairo", [ids.ADMIN]).contract_address %}
-
-        %{ stop_prank = start_prank(ids.ADMIN, ids.badge_registry) %}
-        IBadgeRegistry.set_badge_contract(badge_registry, BADGE)
-        %{ stop_prank() %}
-
+    func deployed() -> (badge_registry : felt):
+        tempvar badge_registry
+        %{ ids.badge_registry = context.badge_registry %}
         return (badge_registry)
     end
 
