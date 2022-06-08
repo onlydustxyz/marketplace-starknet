@@ -54,6 +54,24 @@ func test_badge_can_be_minted{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, 
 end
 
 @view
+func test_minting_twice_always_returns_the_same_token_id{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    alloc_locals
+
+    fixture.initialize()
+
+    %{ stop_prank = start_prank(ids.REGISTRY) %}
+    let (local tokenId1) = badge.mint(CONTRIBUTOR)
+    let (tokenId2) = badge.mint(CONTRIBUTOR)
+    %{ stop_prank() %}
+
+    assert tokenId1 = tokenId2
+
+    return ()
+end
+
+@view
 func test_badge_cannot_be_minted_by_anyone{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():

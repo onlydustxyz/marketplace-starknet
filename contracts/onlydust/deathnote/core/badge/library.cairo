@@ -27,10 +27,22 @@ struct Role:
 end
 
 #
+# Structs
+#
+struct Token:
+    member exists : felt
+    member tokenId : Uint256
+end
+
+#
 # STORAGE
 #
 @storage_var
 func total_supply_() -> (total_supply : Uint256):
+end
+
+@storage_var
+func tokens_(owner : felt) -> (token : Token):
 end
 
 namespace badge:
@@ -99,11 +111,13 @@ namespace badge:
 
         internal.assert_only_minter()
 
-        let (local tokenId : Uint256) = total_supply_.read()
-        ERC721_mint(to, tokenId)
+        let (token) = tokens_.read(to)
+        if token.exists != 0:
+            return (token.tokenId)
+        end
 
-        let (new_supply) = SafeUint256.add(tokenId, Uint256(1, 0))
-        total_supply_.write(new_supply)
+        let (tokenId) = internal.mint(to)
+        tokens_.write(to, Token(1, tokenId))
 
         return (tokenId)
     end
@@ -129,5 +143,19 @@ namespace internal:
         end
 
         return ()
+    end
+
+    func mint{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(to : felt) -> (
+        tokenId : Uint256
+    ):
+        alloc_locals
+
+        let (local tokenId : Uint256) = total_supply_.read()
+        ERC721_mint(to, tokenId)
+
+        let (new_supply) = SafeUint256.add(tokenId, Uint256(1, 0))
+        total_supply_.write(new_supply)
+
+        return (tokenId)
     end
 end
