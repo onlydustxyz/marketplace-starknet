@@ -45,6 +45,10 @@ end
 func tokens_(owner : felt) -> (token : Token):
 end
 
+@storage_var
+func metadata_contracts_(label : felt) -> (metadata_contract : felt):
+end
+
 namespace badge:
     # Initialize the badge name and symbol
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
@@ -128,12 +132,37 @@ namespace badge:
     ) -> (owner : felt):
         return ERC721_ownerOf(tokenId)
     end
+
+    # Register a metadata contract
+    func register_metadata_contract{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(label : felt, metadata_contract : felt):
+        internal.assert_only_admin()
+        metadata_contracts_.write(label, metadata_contract)
+        return ()
+    end
+
+    # Get a registered metadata contract
+    func metadata_contract{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        label : felt
+    ) -> (metadata_contract : felt):
+        let (metadata_contract) = metadata_contracts_.read(label)
+        return (metadata_contract)
+    end
 end
 
 namespace internal:
     func assert_not_caller{syscall_ptr : felt*}(address : felt):
         let (caller_address) = get_caller_address()
         assert_not_zero(caller_address - address)
+        return ()
+    end
+
+    func assert_only_admin{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
+        with_attr error_message("Badge: ADMIN role required"):
+            AccessControl._only_role(Role.ADMIN)
+        end
+
         return ()
     end
 

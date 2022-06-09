@@ -34,6 +34,13 @@ func ownerOf{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     return badge.ownerOf(tokenId)
 end
 
+@view
+func metadata_contract{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    label : felt
+) -> (metadata_contract : felt):
+    return badge.metadata_contract(label)
+end
+
 #
 # Externals
 #
@@ -71,4 +78,11 @@ func revoke_minter_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_
     address : felt
 ):
     return badge.revoke_minter_role(address)
+end
+
+@external
+func register_metadata_contract{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    label : felt, metadata_contract : felt
+):
+    return badge.register_metadata_contract(label, metadata_contract)
 end
