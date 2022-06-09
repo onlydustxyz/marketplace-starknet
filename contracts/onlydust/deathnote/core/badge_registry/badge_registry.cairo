@@ -45,10 +45,10 @@ func owner{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() 
 end
 
 @view
-func get_badge_contract{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
+func badge_contract{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
     badge_contract : felt
 ):
-    return badge_registry.get_badge_contract()
+    return badge_registry.badge_contract()
 end
 
 @view

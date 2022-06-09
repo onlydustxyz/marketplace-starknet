@@ -68,8 +68,9 @@ namespace badge_registry:
         return ()
     end
 
-    func get_badge_contract{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        ) -> (badge_contract : felt):
+    func badge_contract{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
+        badge_contract : felt
+    ):
         let (badge_contract) = badge_contract_.read()
         return (badge_contract)
     end
