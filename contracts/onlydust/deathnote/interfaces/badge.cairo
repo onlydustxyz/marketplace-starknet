@@ -27,4 +27,10 @@ namespace IBadge:
 
     func revoke_minter_role(address : felt):
     end
+
+    func register_metadata_contract(label : felt, metadata_contract : felt):
+    end
+
+    func metadata_contract(label : felt) -> (metadata_contract : felt):
+    end
 end

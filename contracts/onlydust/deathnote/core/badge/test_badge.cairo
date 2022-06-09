@@ -8,6 +8,7 @@ from onlydust.deathnote.core.badge.library import badge, Role
 const ADMIN = 'onlydust_admin'
 const REGISTRY = 'registry'
 const CONTRIBUTOR = 'Antho'
+const GITHUB = 'github_metadata_contract'
 
 #
 # Fixtures
@@ -197,6 +198,33 @@ func test_admin_can_grant_and_revoke_roles{
     return ()
 end
 
+@view
+func test_anyone_cannot_register_metadata_contract{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    %{ expect_revert(error_message='Badge: ADMIN role required') %}
+    badge.register_metadata_contract('GITHUB', GITHUB)
+
+    return ()
+end
+
+@view
+func test_admin_can_register_metadata_contract{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    %{ stop_prank = start_prank(ids.ADMIN) %}
+    badge.register_metadata_contract('GITHUB', GITHUB)
+    %{ stop_prank() %}
+
+    assert_that.metadata_contract_is('GITHUB', GITHUB)
+
+    return ()
+end
+
 #
 # Helpers
 #
@@ -232,6 +260,18 @@ namespace assert_that:
         let (local actual) = badge.ownerOf(tokenId)
 
         with_attr error_message("Invalid owner: expected {expected}, actual {actual}"):
+            assert expected = actual
+        end
+        return ()
+    end
+
+    func metadata_contract_is{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        label : felt, expected : felt
+    ):
+        alloc_locals
+        let (local actual) = badge.metadata_contract(label)
+
+        with_attr error_message("Invalid metadata contract: expected {expected}, actual {actual}"):
             assert expected = actual
         end
         return ()
