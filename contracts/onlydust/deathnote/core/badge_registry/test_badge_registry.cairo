@@ -107,6 +107,8 @@ func test_owner_can_transfer_ownership{
     let (current_owner) = badge_registry.owner()
     assert NEW_OWNER = current_owner
 
+    %{ expect_events({"name": "OwnershipTransferred", "data": [ids.OWNER, ids.NEW_OWNER]}) %}
+
     return ()
 end
 
@@ -128,14 +130,17 @@ func test_owner_can_register_a_github_handle{
 
     fixture.initialize()
 
-    let TOKEN_ID = Uint256(0, 0)
+    tempvar TOKEN_ID = Uint256(0, 0)
 
     %{
         stop_prank = start_prank(ids.OWNER)
         mock_call(ids.BADGE, 'mint', [0, 0])
     %}
     badge_registry.register_github_handle(CONTRIBUTOR, GITHUB_USER)
-    %{ stop_prank() %}
+    %{
+        stop_prank() 
+        expect_events({"name": "GithubHandleRegistered", "data": [ids.BADGE, ids.TOKEN_ID.low, ids.TOKEN_ID.high, ids.GITHUB_USER]})
+    %}
 
     let (user) = badge_registry.get_user_information(CONTRIBUTOR)
 
