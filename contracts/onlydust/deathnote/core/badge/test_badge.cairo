@@ -3,7 +3,7 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from onlydust.deathnote.core.badge.library import badge
+from onlydust.deathnote.core.badge.library import badge, Role
 
 const ADMIN = 'onlydust_admin'
 const REGISTRY = 'registry'
@@ -17,7 +17,13 @@ namespace fixture:
         %{ stop_prank = start_prank(ids.ADMIN) %}
         badge.initialize(ADMIN)
         badge.grant_minter_role(REGISTRY)
-        %{ stop_prank() %}
+        %{
+            stop_prank() 
+            expect_events(
+                {"name": "RoleGranted", "data": [ids.Role.ADMIN, ids.ADMIN, ids.ADMIN]},
+                {"name": "RoleGranted", "data": [ids.Role.MINTER, ids.REGISTRY, ids.ADMIN]}
+            )
+        %}
 
         return ()
     end
@@ -40,15 +46,19 @@ end
 
 @view
 func test_badge_can_be_minted{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
+    alloc_locals
+
     fixture.initialize()
 
     %{ stop_prank = start_prank(ids.REGISTRY) %}
-    let (tokenId) = badge.mint(CONTRIBUTOR)
+    let (local tokenId) = badge.mint(CONTRIBUTOR)
     %{ stop_prank() %}
 
     let (owner) = badge.ownerOf(tokenId)
 
     assert_that.badge_owner_is(tokenId, CONTRIBUTOR)
+
+    %{ expect_events({"name": "Transfer", "data": [0, ids.CONTRIBUTOR, ids.tokenId.low, ids.tokenId.high]}) %}
 
     return ()
 end
@@ -67,6 +77,8 @@ func test_minting_twice_always_returns_the_same_token_id{
     %{ stop_prank() %}
 
     assert tokenId1 = tokenId2
+
+    %{ expect_events({"name": "Transfer", "data": [0, ids.CONTRIBUTOR, ids.tokenId1.low, ids.tokenId1.high]}) %}
 
     return ()
 end
@@ -114,7 +126,13 @@ func test_admin_can_transfer_ownership{
 
     %{ stop_prank = start_prank(ids.NEW_ADMIN) %}
     badge.revoke_admin_role(ADMIN)
-    %{ stop_prank() %}
+    %{
+        stop_prank() 
+        expect_events(
+            {"name": "RoleGranted", "data": [ids.Role.ADMIN, ids.NEW_ADMIN, ids.ADMIN]},
+            {"name": "RoleRevoked", "data": [ids.Role.ADMIN, ids.ADMIN, ids.NEW_ADMIN]}
+        )
+    %}
 
     return ()
 end
@@ -161,7 +179,13 @@ func test_admin_can_grant_and_revoke_roles{
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
     badge.revoke_minter_role(RANDOM_ADDRESS)
-    %{ stop_prank() %}
+    %{
+        stop_prank() 
+        expect_events(
+            {"name": "RoleGranted", "data": [ids.Role.MINTER, ids.RANDOM_ADDRESS, ids.ADMIN]},
+            {"name": "RoleRevoked", "data": [ids.Role.MINTER, ids.RANDOM_ADDRESS, ids.ADMIN]}
+        )
+    %}
 
     %{
         stop_prank = start_prank(ids.RANDOM_ADDRESS) 

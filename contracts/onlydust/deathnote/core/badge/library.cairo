@@ -35,7 +35,7 @@ struct Token:
 end
 
 #
-# STORAGE
+# Storage
 #
 @storage_var
 func total_supply_() -> (total_supply : Uint256):

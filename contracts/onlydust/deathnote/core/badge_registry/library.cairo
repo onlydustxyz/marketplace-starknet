@@ -22,6 +22,13 @@ struct UserInformation:
 end
 
 #
+# Events
+#
+@event
+func GithubHandleRegistered(badge_contract : felt, token_id : Uint256, handle : felt):
+end
+
+#
 # Storage
 #
 @storage_var
@@ -125,6 +132,9 @@ namespace internal:
             token_id=user.token_id,
             handles=Handles(github=handle),
         )
+
+        tempvar user = user
+        GithubHandleRegistered.emit(user.badge_contract, user.token_id, user.handles.github)
         return ()
     end
 end
