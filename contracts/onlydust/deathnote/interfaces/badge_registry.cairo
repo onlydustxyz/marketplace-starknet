@@ -16,7 +16,7 @@ namespace IBadgeRegistry:
     func owner() -> (owner : felt):
     end
 
-    func get_badge_contract() -> (badge_contract : felt):
+    func badge_contract() -> (badge_contract : felt):
     end
 
     func get_user_information(user_address : felt) -> (user : UserInformation):

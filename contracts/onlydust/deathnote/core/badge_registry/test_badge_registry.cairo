@@ -31,7 +31,7 @@ func test_owner_can_change_the_badge_contract{
 }():
     fixture.initialize()
 
-    let (badge_contract) = badge_registry.get_badge_contract()
+    let (badge_contract) = badge_registry.badge_contract()
     assert BADGE = badge_contract
 
     const NEW_BADGE = 'new_badge'
@@ -39,7 +39,7 @@ func test_owner_can_change_the_badge_contract{
     badge_registry.set_badge_contract(NEW_BADGE)
     %{ stop_prank() %}
 
-    let (badge_contract) = badge_registry.get_badge_contract()
+    let (badge_contract) = badge_registry.badge_contract()
     assert NEW_BADGE = badge_contract
 
     return ()
