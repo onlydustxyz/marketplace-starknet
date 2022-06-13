@@ -12,6 +12,7 @@ from onlydust.deathnote.test.libraries.contributions.github import assert_github
 
 const ADMIN = 'onlydust'
 const FEEDER = 'feeder'
+const REGISTER = 'register'
 const GITHUB = 'GITHUB'
 const CONTRIBUTOR = '0xdead'
 const GITHUB_HANDLE = 'user123'
@@ -34,6 +35,7 @@ func __setup__{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 
     %{ stop_pranks = [start_prank(ids.ADMIN, contract) for contract in [ids.badge_registry, ids.badge_contract, ids.github_contract] ] %}
     IBadgeRegistry.set_badge_contract(badge_registry, badge_contract)
+    IBadgeRegistry.grant_register_role(badge_registry, REGISTER)
     IBadge.grant_minter_role(badge_contract, badge_registry)
     IBadge.register_metadata_contract(badge_contract, GITHUB, github_contract)
     IGithub.grant_feeder_role(github_contract, FEEDER)
@@ -93,7 +95,7 @@ namespace badge_registry_access:
     func register_github_handle{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, badge_registry : felt
     }(contributor : felt, handle : felt) -> (user : UserInformation):
-        %{ stop_prank = start_prank(ids.ADMIN, ids.badge_registry) %}
+        %{ stop_prank = start_prank(ids.REGISTER, ids.badge_registry) %}
         IBadgeRegistry.register_github_handle(badge_registry, contributor, handle)
         %{ stop_prank() %}
 

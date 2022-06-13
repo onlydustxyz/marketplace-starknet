@@ -7,6 +7,7 @@ from onlydust.deathnote.interfaces.badge_registry import IBadgeRegistry, UserInf
 from onlydust.deathnote.test.libraries.user import assert_user_that
 
 const ADMIN = 'admin'
+const REGISTER = 'register'
 const BADGE = 'badge'
 const CONTRIBUTOR = 'contributor'
 const GITHUB_HANDLE = 'github_user'
@@ -23,6 +24,7 @@ func __setup__{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
         stop_prank = start_prank(ids.ADMIN, ids.badge_registry)
     %}
     IBadgeRegistry.set_badge_contract(badge_registry, BADGE)
+    IBadgeRegistry.grant_register_role(badge_registry, REGISTER)
     %{ stop_prank() %}
 
     return ()
@@ -69,7 +71,7 @@ namespace badge_registry_access:
     func register_github_handle{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, badge_registry : felt
     }(contributor : felt, handle : felt) -> (user : UserInformation):
-        %{ stop_prank = start_prank(ids.ADMIN, ids.badge_registry) %}
+        %{ stop_prank = start_prank(ids.REGISTER, ids.badge_registry) %}
         IBadgeRegistry.register_github_handle(badge_registry, contributor, handle)
         %{ stop_prank() %}
 
@@ -80,7 +82,7 @@ namespace badge_registry_access:
     func unregister_github_handle{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, badge_registry : felt
     }(contributor : felt, handle : felt) -> (user : UserInformation):
-        %{ stop_prank = start_prank(ids.ADMIN, ids.badge_registry) %}
+        %{ stop_prank = start_prank(ids.REGISTER, ids.badge_registry) %}
         IBadgeRegistry.unregister_github_handle(badge_registry, contributor, handle)
         %{ stop_prank() %}
 

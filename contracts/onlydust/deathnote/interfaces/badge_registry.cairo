@@ -7,16 +7,22 @@ namespace IBadgeRegistry:
     func set_badge_contract(badge_contract : felt):
     end
 
-    func transfer_ownership(new_owner : felt):
+    func grant_admin_role(address : felt):
+    end
+
+    func revoke_admin_role(address : felt):
+    end
+
+    func grant_register_role(address : felt):
+    end
+
+    func revoke_register_role(address : felt):
     end
 
     func register_github_handle(user_address : felt, handle : felt):
     end
 
     func unregister_github_handle(user_address : felt, handle : felt):
-    end
-
-    func owner() -> (owner : felt):
     end
 
     func badge_contract() -> (badge_contract : felt):

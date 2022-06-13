@@ -3,10 +3,20 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.math import assert_not_zero
+from starkware.starknet.common.syscalls import get_caller_address
 
 from onlydust.deathnote.interfaces.badge import IBadge
 
-from openzeppelin.access.ownable import Ownable
+from onlydust.deathnote.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
+
+#
+# Enums
+#
+struct Role:
+    # Keep ADMIN role first of this list as 0 is the default admin value to manage roles in AccessControl library
+    member ADMIN : felt  # ADMIN role, can assign/revoke roles
+    member REGISTER : felt  # REGISTER role, can register/unregister users
+end
 
 #
 # Structs
@@ -49,30 +59,53 @@ end
 
 namespace badge_registry:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        owner : felt
+        admin : felt
     ):
-        Ownable.initializer(owner)
+        AccessControl.constructor()
+        AccessControl._grant_role(Role.ADMIN, admin)
+        return ()
+    end
+
+    # Grant the ADMIN role to a given address
+    func grant_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        address : felt
+    ):
+        AccessControl.grant_role(Role.ADMIN, address)
+        return ()
+    end
+
+    # Revoke the ADMIN role from a given address
+    func revoke_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        address : felt
+    ):
+        with_attr error_message("Badge Registry: Cannot self renounce to ADMIN role"):
+            internal.assert_not_caller(address)
+        end
+        AccessControl.revoke_role(Role.ADMIN, address)
+        return ()
+    end
+
+    # Grant the REGISTER role to a given address
+    func grant_register_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        address : felt
+    ):
+        AccessControl.grant_role(Role.REGISTER, address)
+        return ()
+    end
+
+    # Revoke the REGISTER role from a given address
+    func revoke_register_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        address : felt
+    ):
+        AccessControl.revoke_role(Role.REGISTER, address)
         return ()
     end
 
     func set_badge_contract{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         badge_contract : felt
     ):
-        Ownable.assert_only_owner()
+        internal.assert_only_admin()
         badge_contract_.write(badge_contract)
-        return ()
-    end
-
-    func owner{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
-        owner : felt
-    ):
-        return Ownable.owner()
-    end
-
-    func transfer_ownership{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        new_owner : felt
-    ):
-        Ownable.transfer_ownership(new_owner)
         return ()
     end
 
@@ -106,7 +139,7 @@ namespace badge_registry:
     func register_github_handle{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         user_address : felt, handle : felt
     ):
-        Ownable.assert_only_owner()
+        internal.assert_only_register()
 
         with_attr error_message("Badge Registry: Github handle already registered"):
             let (address) = github_handles_to_user_address_.read(handle)
@@ -128,7 +161,8 @@ namespace badge_registry:
     func unregister_github_handle{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
     }(user_address : felt, handle : felt):
-        Ownable.assert_only_owner()
+        internal.assert_only_register()
+
         let (user) = users_.read(user_address)
         with_attr error_message(
                 "Badge Registry: The address does not match the github handle provided"):
@@ -146,6 +180,28 @@ namespace badge_registry:
 end
 
 namespace internal:
+    func assert_only_admin{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
+        with_attr error_message("Badge Registry: ADMIN role required"):
+            AccessControl._only_role(Role.ADMIN)
+        end
+
+        return ()
+    end
+
+    func assert_only_register{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
+        with_attr error_message("Badge Registry: REGISTER role required"):
+            AccessControl._only_role(Role.REGISTER)
+        end
+
+        return ()
+    end
+
+    func assert_not_caller{syscall_ptr : felt*}(address : felt):
+        let (caller_address) = get_caller_address()
+        assert_not_zero(caller_address - address)
+        return ()
+    end
+
     func mint_badge_if_needed{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, user : UserInformation
     }(address : felt):
