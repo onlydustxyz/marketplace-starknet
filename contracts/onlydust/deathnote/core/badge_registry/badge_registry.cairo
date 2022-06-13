@@ -36,6 +36,13 @@ func register_github_handle{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
     return badge_registry.register_github_handle(user_address, handle)
 end
 
+@external
+func unregister_github_handle{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    user_address : felt, handle : felt
+):
+    return badge_registry.unregister_github_handle(user_address, handle)
+end
+
 #
 # Views
 #
@@ -56,4 +63,11 @@ func get_user_information{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, rang
     user_address : felt
 ) -> (user : UserInformation):
     return badge_registry.get_user_information(user_address)
+end
+
+@view
+func get_user_information_from_github_handle{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}(handle : felt) -> (user : UserInformation):
+    return badge_registry.get_user_information_from_github_handle(handle)
 end

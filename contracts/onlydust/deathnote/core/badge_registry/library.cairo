@@ -28,6 +28,10 @@ end
 func GithubHandleRegistered(badge_contract : felt, token_id : Uint256, handle : felt):
 end
 
+@event
+func GithubHandleUnregistered(badge_contract : felt, token_id : Uint256, handle : felt):
+end
+
 #
 # Storage
 #
@@ -37,6 +41,10 @@ end
 
 @storage_var
 func users_(address : felt) -> (user : UserInformation):
+end
+
+@storage_var
+func github_handles_to_user_address_(handle : felt) -> (user_address : felt):
 end
 
 namespace badge_registry:
@@ -87,10 +95,24 @@ namespace badge_registry:
         return (user)
     end
 
+    func get_user_information_from_github_handle{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(handle : felt) -> (user : UserInformation):
+        let (user_address) = github_handles_to_user_address_.read(handle)
+        let (user) = get_user_information(user_address)
+        return (user)
+    end
+
     func register_github_handle{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         user_address : felt, handle : felt
     ):
         Ownable.assert_only_owner()
+
+        with_attr error_message("Badge Registry: Github handle already registered"):
+            let (address) = github_handles_to_user_address_.read(handle)
+            assert 0 = address
+        end
+
         let (user) = users_.read(user_address)
         with user:
             internal.mint_badge_if_needed(user_address)
@@ -98,6 +120,26 @@ namespace badge_registry:
         end
 
         users_.write(user_address, user)
+        github_handles_to_user_address_.write(handle, user_address)
+
+        return ()
+    end
+
+    func unregister_github_handle{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(user_address : felt, handle : felt):
+        Ownable.assert_only_owner()
+        let (user) = users_.read(user_address)
+        with_attr error_message(
+                "Badge Registry: The address does not match the github handle provided"):
+            assert handle = user.handles.github
+        end
+        with user:
+            internal.remove_github_handle()
+        end
+
+        users_.write(user_address, user)
+        github_handles_to_user_address_.write(handle, 0)
 
         return ()
     end
@@ -128,14 +170,24 @@ namespace internal:
     func set_github_handle{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, user : UserInformation
     }(handle : felt):
+        GithubHandleRegistered.emit(user.badge_contract, user.token_id, handle)
+
         let user = UserInformation(
             badge_contract=user.badge_contract,
             token_id=user.token_id,
             handles=Handles(github=handle),
         )
+        return ()
+    end
 
-        tempvar user = user
-        GithubHandleRegistered.emit(user.badge_contract, user.token_id, user.handles.github)
+    func remove_github_handle{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, user : UserInformation
+    }():
+        GithubHandleUnregistered.emit(user.badge_contract, user.token_id, user.handles.github)
+
+        let user = UserInformation(
+            badge_contract=user.badge_contract, token_id=user.token_id, handles=Handles(github=0)
+        )
         return ()
     end
 end

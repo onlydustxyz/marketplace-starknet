@@ -13,6 +13,9 @@ namespace IBadgeRegistry:
     func register_github_handle(user_address : felt, handle : felt):
     end
 
+    func unregister_github_handle(user_address : felt, handle : felt):
+    end
+
     func owner() -> (owner : felt):
     end
 
@@ -20,5 +23,8 @@ namespace IBadgeRegistry:
     end
 
     func get_user_information(user_address : felt) -> (user : UserInformation):
+    end
+
+    func get_user_information_from_github_handle(handle : felt) -> (user : UserInformation):
     end
 end
