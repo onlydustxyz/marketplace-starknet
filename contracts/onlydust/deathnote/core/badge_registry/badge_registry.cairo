@@ -8,25 +8,47 @@ from onlydust.deathnote.core.badge_registry.library import badge_registry, UserI
 # Constructor
 #
 @constructor
-func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(owner : felt):
-    return badge_registry.initialize(owner)
+func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(admin : felt):
+    return badge_registry.initialize(admin)
 end
 
 #
 # Externals
 #
+
+@external
+func grant_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    address : felt
+):
+    return badge_registry.grant_admin_role(address)
+end
+
+@external
+func revoke_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    address : felt
+):
+    return badge_registry.revoke_admin_role(address)
+end
+
+@external
+func grant_register_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    address : felt
+):
+    return badge_registry.grant_register_role(address)
+end
+
+@external
+func revoke_register_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    address : felt
+):
+    return badge_registry.revoke_register_role(address)
+end
+
 @external
 func set_badge_contract{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     badge_contract : felt
 ):
     return badge_registry.set_badge_contract(badge_contract)
-end
-
-@external
-func transfer_ownership{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    new_owner : felt
-):
-    return badge_registry.transfer_ownership(new_owner)
 end
 
 @external
@@ -46,11 +68,6 @@ end
 #
 # Views
 #
-@view
-func owner{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (owner : felt):
-    return badge_registry.owner()
-end
-
 @view
 func badge_contract{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
     badge_contract : felt
