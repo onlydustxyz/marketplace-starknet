@@ -8,13 +8,21 @@ from onlydust.deathnote.core.contributions.github.library import Contribution, S
 from onlydust.deathnote.test.libraries.contributions.github import assert_github_contribution_that
 
 const ADMIN = 'admin'
+const FEEDER = 'feeder'
 
 #
 # Tests
 #
 @view
-func __setup__():
-    %{ context.github_contract = deploy_contract("./contracts/onlydust/deathnote/core/contributions/github/github.cairo", [ids.ADMIN]).contract_address %}
+func __setup__{syscall_ptr : felt*, range_check_ptr}():
+    tempvar github_contract
+    %{
+        context.github_contract = deploy_contract("./contracts/onlydust/deathnote/core/contributions/github/github.cairo", [ids.ADMIN]).contract_address
+        ids.github_contract = context.github_contract
+        stop_prank = start_prank(ids.ADMIN, ids.github_contract)
+    %}
+    IGithub.grant_feeder_role(github_contract, FEEDER)
+    %{ stop_prank() %}
     return ()
 end
 
@@ -77,7 +85,7 @@ namespace github_access:
     func add_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, github : felt
     }(token_id : Uint256, contribution : Contribution):
-        %{ stop_prank = start_prank(ids.ADMIN, ids.github) %}
+        %{ stop_prank = start_prank(ids.FEEDER, ids.github) %}
         IGithub.add_contribution(github, token_id, contribution)
         %{ stop_prank() %}
         return ()

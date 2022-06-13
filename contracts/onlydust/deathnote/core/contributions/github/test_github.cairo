@@ -3,10 +3,11 @@
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 
-from onlydust.deathnote.core.contributions.github.library import github, Contribution, Status
+from onlydust.deathnote.core.contributions.github.library import github, Contribution, Status, Role
 from onlydust.deathnote.test.libraries.contributions.github import assert_github_contribution_that
 
-const OWNER = 'owner'
+const ADMIN = 'admin'
+const FEEDER = 'feeder'
 
 @view
 func test_github_contribution_can_be_created{
@@ -17,7 +18,7 @@ func test_github_contribution_can_be_created{
     let TOKEN_ID = Uint256(12, 0)
     let contribution = Contribution('onlydust', 'starkonquest', 23, Status.MERGED)
 
-    %{ stop_prank = start_prank(ids.OWNER) %}
+    %{ stop_prank = start_prank(ids.FEEDER) %}
     github.add_contribution(TOKEN_ID, contribution)
     %{ stop_prank() %}
 
@@ -88,7 +89,7 @@ func test_github_contribution_can_be_updated{
 
     let TOKEN_ID = Uint256(12, 0)
 
-    %{ stop_prank = start_prank(ids.OWNER) %}
+    %{ stop_prank = start_prank(ids.FEEDER) %}
     github.add_contribution(TOKEN_ID, Contribution('onlydust', 'starkonquest', 23, Status.REVIEW))
     github.add_contribution(TOKEN_ID, Contribution('onlydust', 'starkonquest', 23, Status.MERGED))
     %{ stop_prank() %}
@@ -113,7 +114,7 @@ func test_github_contribution_cannot_update_owner{
 }():
     fixture.initialize()
 
-    %{ stop_prank = start_prank(ids.OWNER) %}
+    %{ stop_prank = start_prank(ids.FEEDER) %}
     github.add_contribution(
         Uint256(12, 0), Contribution('onlydust', 'starkonquest', 23, Status.REVIEW)
     )
@@ -133,7 +134,7 @@ func test_anyone_cannot_add_contribution{
 }():
     fixture.initialize()
 
-    %{ expect_revert(error_message="Ownable: caller is not the owner") %}
+    %{ expect_revert(error_message="Github: FEEDER role required") %}
     github.add_contribution(
         Uint256(13, 0), Contribution('onlydust', 'starkonquest', 23, Status.REVIEW)
     )
@@ -141,9 +142,118 @@ func test_anyone_cannot_add_contribution{
     return ()
 end
 
+@view
+func test_admin_cannot_revoke_himself{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    %{
+        stop_prank = start_prank(ids.ADMIN)
+        expect_revert(error_message="Github: Cannot self renounce to ADMIN role")
+    %}
+    github.revoke_admin_role(ADMIN)
+
+    %{ stop_prank() %}
+
+    return ()
+end
+
+@view
+func test_admin_can_transfer_ownership{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const NEW_ADMIN = 'new_admin'
+
+    %{ stop_prank = start_prank(ids.ADMIN) %}
+    github.grant_admin_role(NEW_ADMIN)
+    %{ stop_prank() %}
+
+    %{ stop_prank = start_prank(ids.NEW_ADMIN) %}
+    github.revoke_admin_role(ADMIN)
+    %{
+        stop_prank() 
+        expect_events(
+            {"name": "RoleGranted", "data": [ids.Role.ADMIN, ids.NEW_ADMIN, ids.ADMIN]},
+            {"name": "RoleRevoked", "data": [ids.Role.ADMIN, ids.ADMIN, ids.NEW_ADMIN]}
+        )
+    %}
+
+    return ()
+end
+
+@view
+func test_anyone_cannot_grant_role{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    %{ expect_revert(error_message="AccessControl: caller is missing role 0") %}
+    github.grant_admin_role(FEEDER)
+
+    return ()
+end
+
+@view
+func test_anyone_cannot_revoke_role{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    %{ expect_revert(error_message="AccessControl: caller is missing role 0") %}
+    github.revoke_admin_role(ADMIN)
+
+    return ()
+end
+
+@view
+func test_admin_can_grant_and_revoke_roles{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const RANDOM_ADDRESS = 'rand'
+
+    %{ stop_prank = start_prank(ids.ADMIN) %}
+    github.grant_feeder_role(RANDOM_ADDRESS)
+    %{ stop_prank() %}
+
+    %{ stop_prank = start_prank(ids.RANDOM_ADDRESS) %}
+    github.add_contribution(
+        Uint256(13, 0), Contribution('onlydust', 'starkonquest', 23, Status.REVIEW)
+    )
+    %{ stop_prank() %}
+
+    %{ stop_prank = start_prank(ids.ADMIN) %}
+    github.revoke_feeder_role(RANDOM_ADDRESS)
+    %{
+        stop_prank() 
+        expect_events(
+            {"name": "RoleGranted", "data": [ids.Role.FEEDER, ids.RANDOM_ADDRESS, ids.ADMIN]},
+            {"name": "RoleRevoked", "data": [ids.Role.FEEDER, ids.RANDOM_ADDRESS, ids.ADMIN]}
+        )
+    %}
+
+    %{
+        stop_prank = start_prank(ids.RANDOM_ADDRESS) 
+        expect_revert(error_message='Github: FEEDER role required')
+    %}
+    github.add_contribution(
+        Uint256(13, 0), Contribution('onlydust', 'starkonquest', 23, Status.REVIEW)
+    )
+    %{ stop_prank() %}
+
+    return ()
+end
+
 namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-        github.initialize(OWNER)
+        github.initialize(ADMIN)
+        %{ stop_prank = start_prank(ids.ADMIN) %}
+        github.grant_feeder_role(FEEDER)
+        %{ stop_prank() %}
         return ()
     end
 end

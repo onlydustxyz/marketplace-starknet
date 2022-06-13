@@ -5,12 +5,19 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math import assert_nn, assert_lt, assert_not_zero
 from starkware.cairo.common.math_cmp import is_not_zero
 from starkware.cairo.common.hash import hash2
+from starkware.starknet.common.syscalls import get_caller_address
 
-from openzeppelin.access.ownable import Ownable
+from onlydust.deathnote.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
 
 #
 # Enums
 #
+struct Role:
+    # Keep ADMIN role first of this list as 0 is the default admin value to manage roles in AccessControl library
+    member ADMIN : felt  # ADMIN role, can assign/revoke roles
+    member FEEDER : felt  # FEEDER role, can add a contribution
+end
+
 struct Status:
     member NONE : felt
     member OPEN : felt
@@ -52,22 +59,45 @@ end
 #
 namespace github:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        owner : felt
+        admin : felt
     ):
-        Ownable.initializer(owner)
+        AccessControl.constructor()
+        AccessControl._grant_role(Role.ADMIN, admin)
         return ()
     end
 
-    func owner{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
-        owner : felt
+    # Grant the ADMIN role to a given address
+    func grant_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        address : felt
     ):
-        return Ownable.owner()
+        AccessControl.grant_role(Role.ADMIN, address)
+        return ()
     end
 
-    func transfer_ownership{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        new_owner : felt
+    # Revoke the ADMIN role from a given address
+    func revoke_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        address : felt
     ):
-        Ownable.transfer_ownership(new_owner)
+        with_attr error_message("Github: Cannot self renounce to ADMIN role"):
+            internal.assert_not_caller(address)
+        end
+        AccessControl.revoke_role(Role.ADMIN, address)
+        return ()
+    end
+
+    # Grant the FEEDER role to a given address
+    func grant_feeder_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        address : felt
+    ):
+        AccessControl.grant_role(Role.FEEDER, address)
+        return ()
+    end
+
+    # Revoke the FEEDER role from a given address
+    func revoke_feeder_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        address : felt
+    ):
+        AccessControl.revoke_role(Role.FEEDER, address)
         return ()
     end
 
@@ -78,7 +108,7 @@ namespace github:
         alloc_locals
 
         internal.assert_valid(contribution)
-        Ownable.assert_only_owner()  # Only check owner if input contribution is valid
+        internal.assert_only_feeder()  # Only check role if input contribution is valid
 
         let (local contribution_hash) = internal.hash(contribution)
         let (exists) = internal.exists(contribution_hash)
@@ -113,6 +143,20 @@ namespace github:
 end
 
 namespace internal:
+    func assert_only_feeder{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
+        with_attr error_message("Github: FEEDER role required"):
+            AccessControl._only_role(Role.FEEDER)
+        end
+
+        return ()
+    end
+
+    func assert_not_caller{syscall_ptr : felt*}(address : felt):
+        let (caller_address) = get_caller_address()
+        assert_not_zero(caller_address - address)
+        return ()
+    end
+
     func assert_valid_contribution_id{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
     }(token_id : Uint256, contribution_id : felt):

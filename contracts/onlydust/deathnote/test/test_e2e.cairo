@@ -11,6 +11,7 @@ from onlydust.deathnote.test.libraries.user import assert_user_that
 from onlydust.deathnote.test.libraries.contributions.github import assert_github_contribution_that
 
 const ADMIN = 'onlydust'
+const FEEDER = 'feeder'
 const GITHUB = 'GITHUB'
 const CONTRIBUTOR = '0xdead'
 const GITHUB_HANDLE = 'user123'
@@ -31,10 +32,11 @@ func __setup__{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
         context.badge_registry = ids.badge_registry
     %}
 
-    %{ stop_pranks = [start_prank(ids.ADMIN, contract) for contract in [ids.badge_registry, ids.badge_contract] ] %}
+    %{ stop_pranks = [start_prank(ids.ADMIN, contract) for contract in [ids.badge_registry, ids.badge_contract, ids.github_contract] ] %}
     IBadgeRegistry.set_badge_contract(badge_registry, badge_contract)
     IBadge.grant_minter_role(badge_contract, badge_registry)
     IBadge.register_metadata_contract(badge_contract, GITHUB, github_contract)
+    IGithub.grant_feeder_role(github_contract, FEEDER)
     %{ [stop_prank() for stop_prank in stop_pranks] %}
 
     return ()
@@ -110,7 +112,7 @@ namespace github_access:
     func add_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, github : felt
     }(token_id : Uint256, contribution : Contribution):
-        %{ stop_prank = start_prank(ids.ADMIN, ids.github) %}
+        %{ stop_prank = start_prank(ids.FEEDER, ids.github) %}
         IGithub.add_contribution(github, token_id, contribution)
         %{ stop_prank() %}
         return ()
