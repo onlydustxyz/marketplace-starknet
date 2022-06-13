@@ -142,7 +142,7 @@ func test_owner_can_register_a_github_handle{
         expect_events({"name": "GithubHandleRegistered", "data": [ids.BADGE, ids.TOKEN_ID.low, ids.TOKEN_ID.high, ids.GITHUB_USER]})
     %}
 
-    let (user) = badge_registry.get_user_information(CONTRIBUTOR)
+    let (user) = badge_registry.get_user_information_from_github_handle(GITHUB_USER)
 
     local syscall_ptr : felt* = syscall_ptr
 
@@ -151,6 +151,98 @@ func test_owner_can_register_a_github_handle{
         assert_user_that.token_id_is(TOKEN_ID)
         assert_user_that.github_handle_is(GITHUB_USER)
     end
+
+    return ()
+end
+
+@view
+func test_owner_can_unregister_a_github_handle{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    %{
+        stop_prank = start_prank(ids.OWNER)
+        mock_call(ids.BADGE, 'mint', [0, 0])
+    %}
+    badge_registry.register_github_handle(CONTRIBUTOR, GITHUB_USER)
+    badge_registry.unregister_github_handle(CONTRIBUTOR, GITHUB_USER)
+
+    tempvar TOKEN_ID = Uint256(0, 0)
+    %{
+        stop_prank() 
+        expect_events(
+            {"name": "GithubHandleRegistered", "data": [ids.BADGE, ids.TOKEN_ID.low, ids.TOKEN_ID.high, ids.GITHUB_USER]}, 
+            {"name": "GithubHandleUnregistered", "data": [ids.BADGE, ids.TOKEN_ID.low, ids.TOKEN_ID.high, ids.GITHUB_USER]}
+        )
+        expect_revert(error_message="Badge Registry: Unregistered user")
+    %}
+    badge_registry.get_user_information_from_github_handle(GITHUB_USER)
+
+    return ()
+end
+
+@view
+func test_owner_cannot_unregister_a_github_handle_from_wrong_user{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const ANYONE = 'anyone'
+
+    %{
+        stop_prank = start_prank(ids.OWNER)
+        mock_call(ids.BADGE, 'mint', [0, 0])
+        expect_revert(error_message='Badge Registry: The address does not match the github handle provided')
+    %}
+    badge_registry.register_github_handle(CONTRIBUTOR, GITHUB_USER)
+    badge_registry.unregister_github_handle(ANYONE, GITHUB_USER)
+    %{ stop_prank() %}
+
+    return ()
+end
+
+@view
+func test_anyone_cannot_unregister_a_github_handle{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const ANYONE = 'anyone'
+
+    %{
+        stop_prank = start_prank(ids.OWNER)
+        mock_call(ids.BADGE, 'mint', [0, 0])
+    %}
+    badge_registry.register_github_handle(CONTRIBUTOR, GITHUB_USER)
+    %{ stop_prank() %}
+
+    %{
+        stop_prank = start_prank(ids.ANYONE)
+        expect_revert(error_message='Ownable: caller is not the owner')
+    %}
+    badge_registry.unregister_github_handle(CONTRIBUTOR, GITHUB_USER)
+    %{ stop_prank() %}
+
+    return ()
+end
+
+@view
+func test_prevent_double_registration_of_github_handle{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const ANYONE = 'anyone'
+
+    %{
+        stop_prank = start_prank(ids.OWNER)
+        mock_call(ids.BADGE, 'mint', [0, 0])
+        expect_revert(error_message='Badge Registry: Github handle already registered')
+    %}
+    badge_registry.register_github_handle(CONTRIBUTOR, GITHUB_USER)
+    badge_registry.register_github_handle(CONTRIBUTOR, GITHUB_USER)
+    %{ stop_prank() %}
 
     return ()
 end
