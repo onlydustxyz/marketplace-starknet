@@ -9,18 +9,13 @@ from onlydust.deathnote.core.contributions.github.library import github, Contrib
 # Constructor
 #
 @constructor
-func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(owner : felt):
-    return github.initialize(owner)
+func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(admin : felt):
+    return github.initialize(admin)
 end
 
 #
 # Views
 #
-@view
-func owner{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (owner : felt):
-    return github.owner()
-end
-
 @view
 func contribution_count{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     token_id : Uint256
@@ -38,11 +33,33 @@ end
 #
 # Externals
 #
+
 @external
-func transfer_ownership{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    new_owner : felt
+func grant_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    address : felt
 ):
-    return github.transfer_ownership(new_owner)
+    return github.grant_admin_role(address)
+end
+
+@external
+func revoke_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    address : felt
+):
+    return github.revoke_admin_role(address)
+end
+
+@external
+func grant_feeder_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    address : felt
+):
+    return github.grant_feeder_role(address)
+end
+
+@external
+func revoke_feeder_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    address : felt
+):
+    return github.revoke_feeder_role(address)
 end
 
 @external

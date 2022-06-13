@@ -112,7 +112,7 @@ namespace internal:
             assert_not_zero(badge_contract)
         end
 
-        if badge_contract - user.badge_contract == 0:
+        if badge_contract == user.badge_contract:
             return ()  # user badge contract is up-to-date, no need to mint
         end
 

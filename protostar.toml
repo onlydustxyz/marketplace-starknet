@@ -7,6 +7,12 @@ libs_path = "lib"
 [profile.ci.protostar.shared_command_configs]
 no_color=true
 
+[profile.testnet.protostar.deploy]
+network="alpha-goerli"
+
+[profile.mainnet.protostar.deploy]
+network="alpha-mainnet"
+
 ["protostar.shared_command_configs"]
 cairo_path = ["contracts", "lib/cairo_contracts/src"]
 
