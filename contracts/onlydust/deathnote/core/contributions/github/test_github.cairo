@@ -8,6 +8,7 @@ from onlydust.deathnote.test.libraries.contributions.github import assert_github
 
 const ADMIN = 'admin'
 const FEEDER = 'feeder'
+const REGISTRY = 'registry'
 
 @view
 func test_github_contribution_can_be_created{
@@ -32,6 +33,52 @@ func test_github_contribution_can_be_created{
         assert_github_contribution_that.pr_id_is(23)
         assert_github_contribution_that.pr_status_is(Status.MERGED)
     end
+
+    return ()
+end
+
+@view
+func test_github_contribution_can_be_created_from_github_handle{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    alloc_locals
+
+    fixture.initialize()
+
+    let GITHUB_USER = 'user123'
+    local TOKEN_ID : Uint256 = Uint256(12, 0)
+    let contribution = Contribution('onlydust', 'starkonquest', 23, Status.MERGED)
+
+    %{
+        stop_prank = start_prank(ids.FEEDER)
+        mock_call(ids.REGISTRY, 'get_user_information_from_github_handle', [0, ids.TOKEN_ID.low, ids.TOKEN_ID.high, ids.GITHUB_USER])
+    %}
+    github.add_contribution_from_handle(GITHUB_USER, contribution)
+    %{ stop_prank() %}
+
+    let (contribution_count) = github.contribution_count(TOKEN_ID)
+    assert 1 = contribution_count
+
+    let (contribution) = github.contribution(TOKEN_ID, 0)
+    with contribution:
+        assert_github_contribution_that.repo_owner_is('onlydust')
+        assert_github_contribution_that.repo_name_is('starkonquest')
+        assert_github_contribution_that.pr_id_is(23)
+        assert_github_contribution_that.pr_status_is(Status.MERGED)
+    end
+
+    return ()
+end
+
+@view
+func test_adding_github_contribution_from_handle_wihtout_registry_should_revert{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    let GITHUB_USER = 'user123'
+    let contribution = Contribution('onlydust', 'starkonquest', 23, Status.MERGED)
+
+    %{ expect_revert(error_message="Github: Registry cannot be 0") %}
+    github.add_contribution_from_handle(GITHUB_USER, contribution)
 
     return ()
 end
@@ -248,11 +295,24 @@ func test_admin_can_grant_and_revoke_roles{
     return ()
 end
 
+@view
+func test_anyone_cannot_set_registry_contract{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    %{ expect_revert(error_message="Github: ADMIN role required") %}
+    github.set_registry_contract(REGISTRY)
+
+    return ()
+end
+
 namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         github.initialize(ADMIN)
         %{ stop_prank = start_prank(ids.ADMIN) %}
         github.grant_feeder_role(FEEDER)
+        github.set_registry_contract(REGISTRY)
         %{ stop_prank() %}
         return ()
     end

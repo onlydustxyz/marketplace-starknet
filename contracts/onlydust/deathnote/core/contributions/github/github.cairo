@@ -68,3 +68,17 @@ func add_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_ch
 ):
     return github.add_contribution(token_id, contribution)
 end
+
+@external
+func set_registry_contract{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    registry_contract : felt
+):
+    return github.set_registry_contract(registry_contract)
+end
+
+@external
+func add_contribution_from_handle{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}(handle : felt, contribution : Contribution):
+    return github.add_contribution_from_handle(handle, contribution)
+end

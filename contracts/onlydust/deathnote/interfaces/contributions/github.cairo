@@ -26,4 +26,10 @@ namespace IGithub:
 
     func revoke_feeder_role(address : felt):
     end
+
+    func set_registry_contract(registry_contract : felt):
+    end
+
+    func add_contribution_from_handle(handle : felt, contribution : Contribution):
+    end
 end
