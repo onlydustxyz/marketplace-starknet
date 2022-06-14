@@ -52,17 +52,17 @@ func set_badge_contract{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_
 end
 
 @external
-func register_github_handle{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    user_address : felt, handle : felt
+func register_github_identifier{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    user_address : felt, identifier : felt
 ):
-    return badge_registry.register_github_handle(user_address, handle)
+    return badge_registry.register_github_identifier(user_address, identifier)
 end
 
 @external
-func unregister_github_handle{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    user_address : felt, handle : felt
-):
-    return badge_registry.unregister_github_handle(user_address, handle)
+func unregister_github_identifier{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}(user_address : felt, identifier : felt):
+    return badge_registry.unregister_github_identifier(user_address, identifier)
 end
 
 #
@@ -83,8 +83,8 @@ func get_user_information{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, rang
 end
 
 @view
-func get_user_information_from_github_handle{
+func get_user_information_from_github_identifier{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}(handle : felt) -> (user : UserInformation):
-    return badge_registry.get_user_information_from_github_handle(handle)
+}(identifier : felt) -> (user : UserInformation):
+    return badge_registry.get_user_information_from_github_identifier(identifier)
 end

@@ -21,25 +21,25 @@ end
 #
 # Structs
 #
-struct Handles:
+struct Identifiers:
     member github : felt
 end
 
 struct UserInformation:
     member badge_contract : felt
     member token_id : Uint256
-    member handles : Handles
+    member identifiers : Identifiers
 end
 
 #
 # Events
 #
 @event
-func GithubHandleRegistered(badge_contract : felt, token_id : Uint256, handle : felt):
+func GithubIdentifierRegistered(badge_contract : felt, token_id : Uint256, identifier : felt):
 end
 
 @event
-func GithubHandleUnregistered(badge_contract : felt, token_id : Uint256, handle : felt):
+func GithubIdentifierUnregistered(badge_contract : felt, token_id : Uint256, identifier : felt):
 end
 
 #
@@ -54,7 +54,7 @@ func users_(address : felt) -> (user : UserInformation):
 end
 
 @storage_var
-func github_handles_to_user_address_(handle : felt) -> (user_address : felt):
+func github_identifiers_to_user_address_(identifier : felt) -> (user_address : felt):
 end
 
 namespace badge_registry:
@@ -128,52 +128,52 @@ namespace badge_registry:
         return (user)
     end
 
-    func get_user_information_from_github_handle{
+    func get_user_information_from_github_identifier{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-    }(handle : felt) -> (user : UserInformation):
-        let (user_address) = github_handles_to_user_address_.read(handle)
+    }(identifier : felt) -> (user : UserInformation):
+        let (user_address) = github_identifiers_to_user_address_.read(identifier)
         let (user) = get_user_information(user_address)
         return (user)
     end
 
-    func register_github_handle{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        user_address : felt, handle : felt
-    ):
+    func register_github_identifier{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(user_address : felt, identifier : felt):
         internal.assert_only_register()
 
-        with_attr error_message("Badge Registry: Github handle already registered"):
-            let (address) = github_handles_to_user_address_.read(handle)
+        with_attr error_message("Badge Registry: Github identifier already registered"):
+            let (address) = github_identifiers_to_user_address_.read(identifier)
             assert 0 = address
         end
 
         let (user) = users_.read(user_address)
         with user:
             internal.mint_badge_if_needed(user_address)
-            internal.set_github_handle(handle)
+            internal.set_github_identifier(identifier)
         end
 
         users_.write(user_address, user)
-        github_handles_to_user_address_.write(handle, user_address)
+        github_identifiers_to_user_address_.write(identifier, user_address)
 
         return ()
     end
 
-    func unregister_github_handle{
+    func unregister_github_identifier{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-    }(user_address : felt, handle : felt):
+    }(user_address : felt, identifier : felt):
         internal.assert_only_register()
 
         let (user) = users_.read(user_address)
         with_attr error_message(
-                "Badge Registry: The address does not match the github handle provided"):
-            assert handle = user.handles.github
+                "Badge Registry: The address does not match the github identifier provided"):
+            assert identifier = user.identifiers.github
         end
         with user:
-            internal.remove_github_handle()
+            internal.remove_github_identifier()
         end
 
         users_.write(user_address, user)
-        github_handles_to_user_address_.write(handle, 0)
+        github_identifiers_to_user_address_.write(identifier, 0)
 
         return ()
     end
@@ -217,32 +217,36 @@ namespace internal:
         # Update user with minted token
         let (token_id) = IBadge.mint(badge_contract, address)
         let user = UserInformation(
-            badge_contract=badge_contract, token_id=token_id, handles=user.handles
+            badge_contract=badge_contract, token_id=token_id, identifiers=user.identifiers
         )
 
         return ()
     end
 
-    func set_github_handle{
+    func set_github_identifier{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, user : UserInformation
-    }(handle : felt):
-        GithubHandleRegistered.emit(user.badge_contract, user.token_id, handle)
+    }(identifier : felt):
+        GithubIdentifierRegistered.emit(user.badge_contract, user.token_id, identifier)
 
         let user = UserInformation(
             badge_contract=user.badge_contract,
             token_id=user.token_id,
-            handles=Handles(github=handle),
+            identifiers=Identifiers(github=identifier),
         )
         return ()
     end
 
-    func remove_github_handle{
+    func remove_github_identifier{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, user : UserInformation
     }():
-        GithubHandleUnregistered.emit(user.badge_contract, user.token_id, user.handles.github)
+        GithubIdentifierUnregistered.emit(
+            user.badge_contract, user.token_id, user.identifiers.github
+        )
 
         let user = UserInformation(
-            badge_contract=user.badge_contract, token_id=user.token_id, handles=Handles(github=0)
+            badge_contract=user.badge_contract,
+            token_id=user.token_id,
+            identifiers=Identifiers(github=0),
         )
         return ()
     end

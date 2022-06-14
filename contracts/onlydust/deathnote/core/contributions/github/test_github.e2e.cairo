@@ -39,7 +39,7 @@ func test_github_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_che
         github_access.add_contribution(
             TOKEN_ID, Contribution('onlydust', 'starklings', 23, Status.OPEN)
         )
-        github_access.add_contribution_from_handle(
+        github_access.add_contribution_from_identifier(
             GITHUB_USER, TOKEN_ID, Contribution('onlydust', 'starklings', 24, Status.OPEN)
         )
         let (contribution_count) = github_access.contribution_count(TOKEN_ID)
@@ -94,14 +94,14 @@ namespace github_access:
         return ()
     end
 
-    func add_contribution_from_handle{
+    func add_contribution_from_identifier{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, github : felt
-    }(handle : felt, token_id : Uint256, contribution : Contribution):
+    }(identifier : felt, token_id : Uint256, contribution : Contribution):
         %{
             stop_prank = start_prank(ids.FEEDER, ids.github) 
-            mock_call(ids.REGISTRY, 'get_user_information_from_github_handle', [0, ids.token_id.low, ids.token_id.high, ids.handle])
+            mock_call(ids.REGISTRY, 'get_user_information_from_github_identifier', [0, ids.token_id.low, ids.token_id.high, ids.identifier])
         %}
-        IGithub.add_contribution_from_handle(github, handle, contribution)
+        IGithub.add_contribution_from_identifier(github, identifier, contribution)
         %{ stop_prank() %}
         return ()
     end

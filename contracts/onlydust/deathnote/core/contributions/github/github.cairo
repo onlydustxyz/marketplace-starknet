@@ -77,8 +77,8 @@ func set_registry_contract{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ran
 end
 
 @external
-func add_contribution_from_handle{
+func add_contribution_from_identifier{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}(handle : felt, contribution : Contribution):
-    return github.add_contribution_from_handle(handle, contribution)
+}(identifier : felt, contribution : Contribution):
+    return github.add_contribution_from_identifier(identifier, contribution)
 end

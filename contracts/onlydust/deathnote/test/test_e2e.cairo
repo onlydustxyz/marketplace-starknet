@@ -15,7 +15,7 @@ const FEEDER = 'feeder'
 const REGISTER = 'register'
 const GITHUB = 'GITHUB'
 const CONTRIBUTOR = '0xdead'
-const GITHUB_HANDLE = 'user123'
+const GITHUB_ID = 'user123'
 
 #
 # Tests
@@ -52,11 +52,11 @@ func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
     let (badge_registry) = badge_registry_access.deployed()
 
     with badge_registry:
-        let (local user) = badge_registry_access.register_github_handle(CONTRIBUTOR, GITHUB_HANDLE)
+        let (local user) = badge_registry_access.register_github_identifier(CONTRIBUTOR, GITHUB_ID)
     end
 
     with user:
-        assert_user_that.github_handle_is(GITHUB_HANDLE)
+        assert_user_that.github_identifier_is(GITHUB_ID)
     end
 
     let (github) = IBadge.metadata_contract(user.badge_contract, 'GITHUB')
@@ -64,8 +64,8 @@ func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
         github_access.add_contribution(
             user.token_id, Contribution('onlydust', 'starklings', 23, Status.OPEN)
         )
-        github_access.add_contribution_from_handle(
-            GITHUB_HANDLE, Contribution('onlydust', 'starklings', 24, Status.OPEN)
+        github_access.add_contribution_from_identifier(
+            GITHUB_ID, Contribution('onlydust', 'starklings', 24, Status.OPEN)
         )
         let (contribution_count) = github_access.contribution_count(user.token_id)
         assert contribution_count = 2
@@ -93,11 +93,11 @@ namespace badge_registry_access:
         return (badge_registry)
     end
 
-    func register_github_handle{
+    func register_github_identifier{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, badge_registry : felt
-    }(contributor : felt, handle : felt) -> (user : UserInformation):
+    }(contributor : felt, identifier : felt) -> (user : UserInformation):
         %{ stop_prank = start_prank(ids.REGISTER, ids.badge_registry) %}
-        IBadgeRegistry.register_github_handle(badge_registry, contributor, handle)
+        IBadgeRegistry.register_github_identifier(badge_registry, contributor, identifier)
         %{ stop_prank() %}
 
         let (user) = IBadgeRegistry.get_user_information(badge_registry, contributor)
@@ -121,11 +121,11 @@ namespace github_access:
         return ()
     end
 
-    func add_contribution_from_handle{
+    func add_contribution_from_identifier{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, github : felt
-    }(handle : felt, contribution : Contribution):
+    }(identifier : felt, contribution : Contribution):
         %{ stop_prank = start_prank(ids.FEEDER, ids.github) %}
-        IGithub.add_contribution_from_handle(github, handle, contribution)
+        IGithub.add_contribution_from_identifier(github, identifier, contribution)
         %{ stop_prank() %}
         return ()
     end

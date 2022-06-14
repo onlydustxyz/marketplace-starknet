@@ -65,7 +65,7 @@ func test_anyone_cannot_register_a_user{
     fixture.initialize()
 
     %{ expect_revert(error_message="Badge Registry: REGISTER role required") %}
-    badge_registry.register_github_handle(CONTRIBUTOR, GITHUB_USER)
+    badge_registry.register_github_identifier(CONTRIBUTOR, GITHUB_USER)
     return ()
 end
 
@@ -93,14 +93,14 @@ func test_registering_a_user_without_badge_contract_should_revert{
         stop_prank = start_prank(ids.REGISTER)
         expect_revert(error_message="Badge Registry: Missing Badge contract")
     %}
-    badge_registry.register_github_handle(CONTRIBUTOR, GITHUB_USER)
+    badge_registry.register_github_identifier(CONTRIBUTOR, GITHUB_USER)
     %{ stop_prank() %}
 
     return ()
 end
 
 @view
-func test_register_can_register_a_github_handle{
+func test_register_can_register_a_github_identifier{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     alloc_locals
@@ -113,27 +113,27 @@ func test_register_can_register_a_github_handle{
         stop_prank = start_prank(ids.REGISTER)
         mock_call(ids.BADGE, 'mint', [0, 0])
     %}
-    badge_registry.register_github_handle(CONTRIBUTOR, GITHUB_USER)
+    badge_registry.register_github_identifier(CONTRIBUTOR, GITHUB_USER)
     %{
         stop_prank() 
-        expect_events({"name": "GithubHandleRegistered", "data": [ids.BADGE, ids.TOKEN_ID.low, ids.TOKEN_ID.high, ids.GITHUB_USER]})
+        expect_events({"name": "GithubIdentifierRegistered", "data": [ids.BADGE, ids.TOKEN_ID.low, ids.TOKEN_ID.high, ids.GITHUB_USER]})
     %}
 
-    let (user) = badge_registry.get_user_information_from_github_handle(GITHUB_USER)
+    let (user) = badge_registry.get_user_information_from_github_identifier(GITHUB_USER)
 
     local syscall_ptr : felt* = syscall_ptr
 
     with user:
         assert_user_that.badge_contract_is(BADGE)
         assert_user_that.token_id_is(TOKEN_ID)
-        assert_user_that.github_handle_is(GITHUB_USER)
+        assert_user_that.github_identifier_is(GITHUB_USER)
     end
 
     return ()
 end
 
 @view
-func test_register_can_unregister_a_github_handle{
+func test_register_can_unregister_a_github_identifier{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     fixture.initialize()
@@ -142,25 +142,25 @@ func test_register_can_unregister_a_github_handle{
         stop_prank = start_prank(ids.REGISTER)
         mock_call(ids.BADGE, 'mint', [0, 0])
     %}
-    badge_registry.register_github_handle(CONTRIBUTOR, GITHUB_USER)
-    badge_registry.unregister_github_handle(CONTRIBUTOR, GITHUB_USER)
+    badge_registry.register_github_identifier(CONTRIBUTOR, GITHUB_USER)
+    badge_registry.unregister_github_identifier(CONTRIBUTOR, GITHUB_USER)
 
     tempvar TOKEN_ID = Uint256(0, 0)
     %{
         stop_prank() 
         expect_events(
-            {"name": "GithubHandleRegistered", "data": [ids.BADGE, ids.TOKEN_ID.low, ids.TOKEN_ID.high, ids.GITHUB_USER]}, 
-            {"name": "GithubHandleUnregistered", "data": [ids.BADGE, ids.TOKEN_ID.low, ids.TOKEN_ID.high, ids.GITHUB_USER]}
+            {"name": "GithubIdentifierRegistered", "data": [ids.BADGE, ids.TOKEN_ID.low, ids.TOKEN_ID.high, ids.GITHUB_USER]}, 
+            {"name": "GithubIdentifierUnregistered", "data": [ids.BADGE, ids.TOKEN_ID.low, ids.TOKEN_ID.high, ids.GITHUB_USER]}
         )
         expect_revert(error_message="Badge Registry: Unregistered user")
     %}
-    badge_registry.get_user_information_from_github_handle(GITHUB_USER)
+    badge_registry.get_user_information_from_github_identifier(GITHUB_USER)
 
     return ()
 end
 
 @view
-func test_register_cannot_unregister_a_github_handle_from_wrong_user{
+func test_register_cannot_unregister_a_github_identifier_from_wrong_user{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     fixture.initialize()
@@ -170,17 +170,17 @@ func test_register_cannot_unregister_a_github_handle_from_wrong_user{
     %{
         stop_prank = start_prank(ids.REGISTER)
         mock_call(ids.BADGE, 'mint', [0, 0])
-        expect_revert(error_message='Badge Registry: The address does not match the github handle provided')
+        expect_revert(error_message='Badge Registry: The address does not match the github identifier provided')
     %}
-    badge_registry.register_github_handle(CONTRIBUTOR, GITHUB_USER)
-    badge_registry.unregister_github_handle(ANYONE, GITHUB_USER)
+    badge_registry.register_github_identifier(CONTRIBUTOR, GITHUB_USER)
+    badge_registry.unregister_github_identifier(ANYONE, GITHUB_USER)
     %{ stop_prank() %}
 
     return ()
 end
 
 @view
-func test_anyone_cannot_unregister_a_github_handle{
+func test_anyone_cannot_unregister_a_github_identifier{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     fixture.initialize()
@@ -191,21 +191,21 @@ func test_anyone_cannot_unregister_a_github_handle{
         stop_prank = start_prank(ids.REGISTER)
         mock_call(ids.BADGE, 'mint', [0, 0])
     %}
-    badge_registry.register_github_handle(CONTRIBUTOR, GITHUB_USER)
+    badge_registry.register_github_identifier(CONTRIBUTOR, GITHUB_USER)
     %{ stop_prank() %}
 
     %{
         stop_prank = start_prank(ids.ANYONE)
         expect_revert(error_message='Badge Registry: REGISTER role required')
     %}
-    badge_registry.unregister_github_handle(CONTRIBUTOR, GITHUB_USER)
+    badge_registry.unregister_github_identifier(CONTRIBUTOR, GITHUB_USER)
     %{ stop_prank() %}
 
     return ()
 end
 
 @view
-func test_prevent_double_registration_of_github_handle{
+func test_prevent_double_registration_of_github_identifier{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     fixture.initialize()
@@ -215,10 +215,10 @@ func test_prevent_double_registration_of_github_handle{
     %{
         stop_prank = start_prank(ids.REGISTER)
         mock_call(ids.BADGE, 'mint', [0, 0])
-        expect_revert(error_message='Badge Registry: Github handle already registered')
+        expect_revert(error_message='Badge Registry: Github identifier already registered')
     %}
-    badge_registry.register_github_handle(CONTRIBUTOR, GITHUB_USER)
-    badge_registry.register_github_handle(CONTRIBUTOR, GITHUB_USER)
+    badge_registry.register_github_identifier(CONTRIBUTOR, GITHUB_USER)
+    badge_registry.register_github_identifier(CONTRIBUTOR, GITHUB_USER)
     %{ stop_prank() %}
 
     return ()
@@ -306,7 +306,7 @@ func test_admin_can_grant_and_revoke_roles{
         stop_prank = start_prank(ids.RANDOM_ADDRESS) 
         mock_call(ids.BADGE, 'mint', [0, 0])
     %}
-    badge_registry.register_github_handle(CONTRIBUTOR, GITHUB_USER)
+    badge_registry.register_github_identifier(CONTRIBUTOR, GITHUB_USER)
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
@@ -323,7 +323,7 @@ func test_admin_can_grant_and_revoke_roles{
         stop_prank = start_prank(ids.RANDOM_ADDRESS) 
         expect_revert(error_message='Badge Registry: REGISTER role required')
     %}
-    badge_registry.register_github_handle(CONTRIBUTOR, GITHUB_USER)
+    badge_registry.register_github_identifier(CONTRIBUTOR, GITHUB_USER)
     %{ stop_prank() %}
 
     return ()

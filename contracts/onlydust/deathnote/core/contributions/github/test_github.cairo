@@ -38,7 +38,7 @@ func test_github_contribution_can_be_created{
 end
 
 @view
-func test_github_contribution_can_be_created_from_github_handle{
+func test_github_contribution_can_be_created_from_github_identifier{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     alloc_locals
@@ -51,9 +51,9 @@ func test_github_contribution_can_be_created_from_github_handle{
 
     %{
         stop_prank = start_prank(ids.FEEDER)
-        mock_call(ids.REGISTRY, 'get_user_information_from_github_handle', [0, ids.TOKEN_ID.low, ids.TOKEN_ID.high, ids.GITHUB_USER])
+        mock_call(ids.REGISTRY, 'get_user_information_from_github_identifier', [0, ids.TOKEN_ID.low, ids.TOKEN_ID.high, ids.GITHUB_USER])
     %}
-    github.add_contribution_from_handle(GITHUB_USER, contribution)
+    github.add_contribution_from_identifier(GITHUB_USER, contribution)
     %{ stop_prank() %}
 
     let (contribution_count) = github.contribution_count(TOKEN_ID)
@@ -71,14 +71,14 @@ func test_github_contribution_can_be_created_from_github_handle{
 end
 
 @view
-func test_adding_github_contribution_from_handle_wihtout_registry_should_revert{
+func test_adding_github_contribution_from_identifier_wihtout_registry_should_revert{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     let GITHUB_USER = 'user123'
     let contribution = Contribution('onlydust', 'starkonquest', 23, Status.MERGED)
 
     %{ expect_revert(error_message="Github: Registry cannot be 0") %}
-    github.add_contribution_from_handle(GITHUB_USER, contribution)
+    github.add_contribution_from_identifier(GITHUB_USER, contribution)
 
     return ()
 end
