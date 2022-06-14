@@ -10,7 +10,7 @@ const ADMIN = 'admin'
 const REGISTER = 'register'
 const BADGE = 'badge'
 const CONTRIBUTOR = 'contributor'
-const GITHUB_HANDLE = 'github_user'
+const GITHUB_ID = 'github_user'
 
 #
 # Tests
@@ -36,23 +36,23 @@ func test_badge_registry_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, r
 
     with badge_registry:
         %{ mock_call(ids.BADGE, 'mint', [0, 0]) %}
-        let (user) = badge_registry_access.register_github_handle(CONTRIBUTOR, GITHUB_HANDLE)
+        let (user) = badge_registry_access.register_github_identifier(CONTRIBUTOR, GITHUB_ID)
     end
 
     with user:
         assert_user_that.badge_contract_is(BADGE)
         assert_user_that.token_id_is(Uint256(0, 0))
-        assert_user_that.github_handle_is(GITHUB_HANDLE)
+        assert_user_that.github_identifier_is(GITHUB_ID)
     end
 
     with badge_registry:
-        let (user) = badge_registry_access.unregister_github_handle(CONTRIBUTOR, GITHUB_HANDLE)
+        let (user) = badge_registry_access.unregister_github_identifier(CONTRIBUTOR, GITHUB_ID)
     end
 
     with user:
         assert_user_that.badge_contract_is(BADGE)
         assert_user_that.token_id_is(Uint256(0, 0))
-        assert_user_that.github_handle_is(0)
+        assert_user_that.github_identifier_is(0)
     end
 
     return ()
@@ -68,22 +68,24 @@ namespace badge_registry_access:
         return (badge_registry)
     end
 
-    func register_github_handle{
+    func register_github_identifier{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, badge_registry : felt
-    }(contributor : felt, handle : felt) -> (user : UserInformation):
+    }(contributor : felt, identifier : felt) -> (user : UserInformation):
         %{ stop_prank = start_prank(ids.REGISTER, ids.badge_registry) %}
-        IBadgeRegistry.register_github_handle(badge_registry, contributor, handle)
+        IBadgeRegistry.register_github_identifier(badge_registry, contributor, identifier)
         %{ stop_prank() %}
 
-        let (user) = IBadgeRegistry.get_user_information_from_github_handle(badge_registry, handle)
+        let (user) = IBadgeRegistry.get_user_information_from_github_identifier(
+            badge_registry, identifier
+        )
         return (user)
     end
 
-    func unregister_github_handle{
+    func unregister_github_identifier{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, badge_registry : felt
-    }(contributor : felt, handle : felt) -> (user : UserInformation):
+    }(contributor : felt, identifier : felt) -> (user : UserInformation):
         %{ stop_prank = start_prank(ids.REGISTER, ids.badge_registry) %}
-        IBadgeRegistry.unregister_github_handle(badge_registry, contributor, handle)
+        IBadgeRegistry.unregister_github_identifier(badge_registry, contributor, identifier)
         %{ stop_prank() %}
 
         let (user) = IBadgeRegistry.get_user_information(badge_registry, contributor)

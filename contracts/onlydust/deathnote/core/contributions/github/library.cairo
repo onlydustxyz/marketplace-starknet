@@ -137,16 +137,16 @@ namespace github:
         return ()
     end
 
-    func add_contribution_from_handle{
+    func add_contribution_from_identifier{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-    }(handle : felt, contribution : Contribution):
+    }(identifier : felt, contribution : Contribution):
         let (registry_contract) = registry_contract_.read()
         with_attr error_message("Github: Registry cannot be 0"):
             assert_not_zero(registry_contract)
         end
 
-        let (user) = IBadgeRegistry.get_user_information_from_github_handle(
-            registry_contract, handle
+        let (user) = IBadgeRegistry.get_user_information_from_github_identifier(
+            registry_contract, identifier
         )
         return add_contribution(user.token_id, contribution)
     end

@@ -30,6 +30,6 @@ namespace IGithub:
     func set_registry_contract(registry_contract : felt):
     end
 
-    func add_contribution_from_handle(handle : felt, contribution : Contribution):
+    func add_contribution_from_identifier(identifier : felt, contribution : Contribution):
     end
 end

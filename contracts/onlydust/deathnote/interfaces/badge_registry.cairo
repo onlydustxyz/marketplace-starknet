@@ -19,10 +19,10 @@ namespace IBadgeRegistry:
     func revoke_register_role(address : felt):
     end
 
-    func register_github_handle(user_address : felt, handle : felt):
+    func register_github_identifier(user_address : felt, identifier : felt):
     end
 
-    func unregister_github_handle(user_address : felt, handle : felt):
+    func unregister_github_identifier(user_address : felt, identifier : felt):
     end
 
     func badge_contract() -> (badge_contract : felt):
@@ -31,6 +31,6 @@ namespace IBadgeRegistry:
     func get_user_information(user_address : felt) -> (user : UserInformation):
     end
 
-    func get_user_information_from_github_handle(handle : felt) -> (user : UserInformation):
+    func get_user_information_from_github_identifier(identifier : felt) -> (user : UserInformation):
     end
 end

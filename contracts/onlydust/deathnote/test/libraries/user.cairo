@@ -22,9 +22,10 @@ namespace assert_user_that:
         return ()
     end
 
-    func github_handle_is{user : UserInformation}(expected : felt):
-        let actual = user.handles.github
-        with_attr error_message("Invalid user github handle: expected {expected}, actual {actual}"):
+    func github_identifier_is{user : UserInformation}(expected : felt):
+        let actual = user.identifiers.github
+        with_attr error_message(
+                "Invalid user github identifier: expected {expected}, actual {actual}"):
             assert expected = actual
         end
         return ()
