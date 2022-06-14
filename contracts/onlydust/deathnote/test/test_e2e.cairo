@@ -39,6 +39,7 @@ func __setup__{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
     IBadge.grant_minter_role(badge_contract, badge_registry)
     IBadge.register_metadata_contract(badge_contract, GITHUB, github_contract)
     IGithub.grant_feeder_role(github_contract, FEEDER)
+    IGithub.set_registry_contract(github_contract, badge_registry)
     %{ [stop_prank() for stop_prank in stop_pranks] %}
 
     return ()
@@ -63,8 +64,8 @@ func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
         github_access.add_contribution(
             user.token_id, Contribution('onlydust', 'starklings', 23, Status.OPEN)
         )
-        github_access.add_contribution(
-            user.token_id, Contribution('onlydust', 'starklings', 24, Status.OPEN)
+        github_access.add_contribution_from_handle(
+            GITHUB_HANDLE, Contribution('onlydust', 'starklings', 24, Status.OPEN)
         )
         let (contribution_count) = github_access.contribution_count(user.token_id)
         assert contribution_count = 2
@@ -116,6 +117,15 @@ namespace github_access:
     }(token_id : Uint256, contribution : Contribution):
         %{ stop_prank = start_prank(ids.FEEDER, ids.github) %}
         IGithub.add_contribution(github, token_id, contribution)
+        %{ stop_prank() %}
+        return ()
+    end
+
+    func add_contribution_from_handle{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, github : felt
+    }(handle : felt, contribution : Contribution):
+        %{ stop_prank = start_prank(ids.FEEDER, ids.github) %}
+        IGithub.add_contribution_from_handle(github, handle, contribution)
         %{ stop_prank() %}
         return ()
     end

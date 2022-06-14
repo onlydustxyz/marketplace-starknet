@@ -9,6 +9,7 @@ from onlydust.deathnote.test.libraries.contributions.github import assert_github
 
 const ADMIN = 'admin'
 const FEEDER = 'feeder'
+const REGISTRY = 'registry'
 
 #
 # Tests
@@ -22,6 +23,7 @@ func __setup__{syscall_ptr : felt*, range_check_ptr}():
         stop_prank = start_prank(ids.ADMIN, ids.github_contract)
     %}
     IGithub.grant_feeder_role(github_contract, FEEDER)
+    IGithub.set_registry_contract(github_contract, REGISTRY)
     %{ stop_prank() %}
     return ()
 end
@@ -31,13 +33,14 @@ func test_github_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_che
     let (github) = github_access.deployed()
 
     let TOKEN_ID = Uint256(12, 0)
+    let GITHUB_USER = 'user123'
 
     with github:
         github_access.add_contribution(
             TOKEN_ID, Contribution('onlydust', 'starklings', 23, Status.OPEN)
         )
-        github_access.add_contribution(
-            TOKEN_ID, Contribution('onlydust', 'starklings', 24, Status.OPEN)
+        github_access.add_contribution_from_handle(
+            GITHUB_USER, TOKEN_ID, Contribution('onlydust', 'starklings', 24, Status.OPEN)
         )
         let (contribution_count) = github_access.contribution_count(TOKEN_ID)
         assert contribution_count = 2
@@ -87,6 +90,18 @@ namespace github_access:
     }(token_id : Uint256, contribution : Contribution):
         %{ stop_prank = start_prank(ids.FEEDER, ids.github) %}
         IGithub.add_contribution(github, token_id, contribution)
+        %{ stop_prank() %}
+        return ()
+    end
+
+    func add_contribution_from_handle{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, github : felt
+    }(handle : felt, token_id : Uint256, contribution : Contribution):
+        %{
+            stop_prank = start_prank(ids.FEEDER, ids.github) 
+            mock_call(ids.REGISTRY, 'get_user_information_from_github_handle', [0, ids.token_id.low, ids.token_id.high, ids.handle])
+        %}
+        IGithub.add_contribution_from_handle(github, handle, contribution)
         %{ stop_prank() %}
         return ()
     end

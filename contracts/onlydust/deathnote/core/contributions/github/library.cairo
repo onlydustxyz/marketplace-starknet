@@ -7,6 +7,8 @@ from starkware.cairo.common.math_cmp import is_not_zero
 from starkware.cairo.common.hash import hash2
 from starkware.starknet.common.syscalls import get_caller_address
 
+from onlydust.deathnote.interfaces.badge_registry import IBadgeRegistry
+
 from onlydust.deathnote.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
 
 #
@@ -52,6 +54,10 @@ end
 
 @storage_var
 func contribution_count_(token_id : Uint256) -> (count : felt):
+end
+
+@storage_var
+func registry_contract_() -> (registry_contract : felt):
 end
 
 #
@@ -101,6 +107,15 @@ namespace github:
         return ()
     end
 
+    # Set the Badge Registry contract
+    func set_registry_contract{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        registry_contract : felt
+    ):
+        internal.assert_only_admin()
+        registry_contract_.write(registry_contract)
+        return ()
+    end
+
     # Add a contribution for a given token id
     func add_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         token_id : Uint256, contribution : Contribution
@@ -120,6 +135,20 @@ namespace github:
         end
 
         return ()
+    end
+
+    func add_contribution_from_handle{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(handle : felt, contribution : Contribution):
+        let (registry_contract) = registry_contract_.read()
+        with_attr error_message("Github: Registry cannot be 0"):
+            assert_not_zero(registry_contract)
+        end
+
+        let (user) = IBadgeRegistry.get_user_information_from_github_handle(
+            registry_contract, handle
+        )
+        return add_contribution(user.token_id, contribution)
     end
 
     # Get the contribution count for a given token id
@@ -146,6 +175,14 @@ namespace internal:
     func assert_only_feeder{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         with_attr error_message("Github: FEEDER role required"):
             AccessControl._only_role(Role.FEEDER)
+        end
+
+        return ()
+    end
+
+    func assert_only_admin{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
+        with_attr error_message("Github: ADMIN role required"):
+            AccessControl._only_role(Role.ADMIN)
         end
 
         return ()
