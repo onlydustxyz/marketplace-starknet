@@ -152,7 +152,7 @@ deploy_all_contracts() {
     send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/badge_registry_abi.json --function grant_register_role --inputs $SIGNER_BACKEND_ADDRESS"
 
     log_info "Granting 'FEEDER' role to the feeder back-end"
-    FEEDER_BACKEND_ADDRESS=0x7343772b33dd34cbb1e23b9abefdde5b7addccb3e3c66943b78e5e52d416c29
+    FEEDER_BACKEND_ADDRESS=0x07eba18A6C8aF86F6A34C24f21A1684D50Aa451091E72026942eCa20D3d15EbA
     send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $METADATA_ADDRESS --abi ./build/github_contributions_abi.json --function grant_feeder_role --inputs $FEEDER_BACKEND_ADDRESS"
 }
 
