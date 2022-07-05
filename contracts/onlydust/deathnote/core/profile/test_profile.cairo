@@ -3,12 +3,11 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from onlydust.deathnote.core.badge.library import badge, Role
+from onlydust.deathnote.core.profile.library import profile, Role
 
 const ADMIN = 'onlydust_admin'
 const REGISTRY = 'registry'
 const CONTRIBUTOR = 'Antho'
-const GITHUB = 'github_metadata_contract'
 
 #
 # Fixtures
@@ -16,8 +15,8 @@ const GITHUB = 'github_metadata_contract'
 namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         %{ stop_prank = start_prank(ids.ADMIN) %}
-        badge.initialize(ADMIN)
-        badge.grant_minter_role(REGISTRY)
+        profile.initialize(ADMIN)
+        profile.grant_minter_role(REGISTRY)
         %{
             stop_prank() 
             expect_events(
@@ -34,30 +33,30 @@ end
 # Tests
 #
 @view
-func test_badge_has_a_name_and_symbol{
+func test_profile_has_a_name_and_symbol{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     fixture.initialize()
 
-    assert_that.badge_name_is('Death Note Badge')
-    assert_that.badge_symbol_is('DNB')
+    assert_that.profile_name_is('Death Note Profile')
+    assert_that.profile_symbol_is('DNP')
 
     return ()
 end
 
 @view
-func test_badge_can_be_minted{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
+func test_profile_can_be_minted{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
     alloc_locals
 
     fixture.initialize()
 
     %{ stop_prank = start_prank(ids.REGISTRY) %}
-    let (local tokenId) = badge.mint(CONTRIBUTOR)
+    let (local tokenId) = profile.mint(CONTRIBUTOR)
     %{ stop_prank() %}
 
-    let (owner) = badge.ownerOf(tokenId)
+    let (owner) = profile.ownerOf(tokenId)
 
-    assert_that.badge_owner_is(tokenId, CONTRIBUTOR)
+    assert_that.profile_owner_is(tokenId, CONTRIBUTOR)
 
     %{ expect_events({"name": "Transfer", "data": [0, ids.CONTRIBUTOR, ids.tokenId.low, ids.tokenId.high]}) %}
 
@@ -73,8 +72,8 @@ func test_minting_twice_always_returns_the_same_token_id{
     fixture.initialize()
 
     %{ stop_prank = start_prank(ids.REGISTRY) %}
-    let (local tokenId1) = badge.mint(CONTRIBUTOR)
-    let (tokenId2) = badge.mint(CONTRIBUTOR)
+    let (local tokenId1) = profile.mint(CONTRIBUTOR)
+    let (tokenId2) = profile.mint(CONTRIBUTOR)
     %{ stop_prank() %}
 
     assert tokenId1 = tokenId2
@@ -85,13 +84,13 @@ func test_minting_twice_always_returns_the_same_token_id{
 end
 
 @view
-func test_badge_cannot_be_minted_by_anyone{
+func test_profile_cannot_be_minted_by_anyone{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     fixture.initialize()
 
-    %{ expect_revert(error_message="Badge: MINTER role required") %}
-    badge.mint(CONTRIBUTOR)
+    %{ expect_revert(error_message="profile: MINTER role required") %}
+    profile.mint(CONTRIBUTOR)
 
     return ()
 end
@@ -104,9 +103,9 @@ func test_admin_cannot_revoke_himself{
 
     %{
         stop_prank = start_prank(ids.ADMIN)
-        expect_revert(error_message="Badge: Cannot self renounce to ADMIN role")
+        expect_revert(error_message="profile: Cannot self renounce to ADMIN role")
     %}
-    badge.revoke_admin_role(ADMIN)
+    profile.revoke_admin_role(ADMIN)
 
     %{ stop_prank() %}
 
@@ -122,11 +121,11 @@ func test_admin_can_transfer_ownership{
     const NEW_ADMIN = 'new_admin'
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    badge.grant_admin_role(NEW_ADMIN)
+    profile.grant_admin_role(NEW_ADMIN)
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.NEW_ADMIN) %}
-    badge.revoke_admin_role(ADMIN)
+    profile.revoke_admin_role(ADMIN)
     %{
         stop_prank() 
         expect_events(
@@ -145,7 +144,7 @@ func test_anyone_cannot_grant_role{
     fixture.initialize()
 
     %{ expect_revert(error_message="AccessControl: caller is missing role 0") %}
-    badge.grant_admin_role(CONTRIBUTOR)
+    profile.grant_admin_role(CONTRIBUTOR)
 
     return ()
 end
@@ -157,7 +156,7 @@ func test_anyone_cannot_revoke_role{
     fixture.initialize()
 
     %{ expect_revert(error_message="AccessControl: caller is missing role 0") %}
-    badge.revoke_admin_role(ADMIN)
+    profile.revoke_admin_role(ADMIN)
 
     return ()
 end
@@ -171,15 +170,15 @@ func test_admin_can_grant_and_revoke_roles{
     const RANDOM_ADDRESS = 'rand'
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    badge.grant_minter_role(RANDOM_ADDRESS)
+    profile.grant_minter_role(RANDOM_ADDRESS)
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.RANDOM_ADDRESS) %}
-    badge.mint(RANDOM_ADDRESS)
+    profile.mint(RANDOM_ADDRESS)
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    badge.revoke_minter_role(RANDOM_ADDRESS)
+    profile.revoke_minter_role(RANDOM_ADDRESS)
     %{
         stop_prank() 
         expect_events(
@@ -190,37 +189,10 @@ func test_admin_can_grant_and_revoke_roles{
 
     %{
         stop_prank = start_prank(ids.RANDOM_ADDRESS) 
-        expect_revert(error_message='Badge: MINTER role required')
+        expect_revert(error_message='profile: MINTER role required')
     %}
-    badge.mint(RANDOM_ADDRESS)
+    profile.mint(RANDOM_ADDRESS)
     %{ stop_prank() %}
-
-    return ()
-end
-
-@view
-func test_anyone_cannot_register_metadata_contract{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    %{ expect_revert(error_message='Badge: ADMIN role required') %}
-    badge.register_metadata_contract('GITHUB', GITHUB)
-
-    return ()
-end
-
-@view
-func test_admin_can_register_metadata_contract{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    %{ stop_prank = start_prank(ids.ADMIN) %}
-    badge.register_metadata_contract('GITHUB', GITHUB)
-    %{ stop_prank() %}
-
-    assert_that.metadata_contract_is('GITHUB', GITHUB)
 
     return ()
 end
@@ -229,11 +201,11 @@ end
 # Helpers
 #
 namespace assert_that:
-    func badge_name_is{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    func profile_name_is{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         expected : felt
     ):
         alloc_locals
-        let (local actual) = badge.name()
+        let (local actual) = profile.name()
 
         with_attr error_message("Invalid name: expected {expected}, actual {actual}"):
             assert expected = actual
@@ -241,11 +213,11 @@ namespace assert_that:
         return ()
     end
 
-    func badge_symbol_is{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    func profile_symbol_is{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         expected : felt
     ):
         alloc_locals
-        let (local actual) = badge.symbol()
+        let (local actual) = profile.symbol()
 
         with_attr error_message("Invalid symbol: expected {expected}, actual {actual}"):
             assert expected = actual
@@ -253,11 +225,11 @@ namespace assert_that:
         return ()
     end
 
-    func badge_owner_is{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    func profile_owner_is{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         tokenId : Uint256, expected : felt
     ):
         alloc_locals
-        let (local actual) = badge.ownerOf(tokenId)
+        let (local actual) = profile.ownerOf(tokenId)
 
         with_attr error_message("Invalid owner: expected {expected}, actual {actual}"):
             assert expected = actual
@@ -265,15 +237,4 @@ namespace assert_that:
         return ()
     end
 
-    func metadata_contract_is{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        label : felt, expected : felt
-    ):
-        alloc_locals
-        let (local actual) = badge.metadata_contract(label)
-
-        with_attr error_message("Invalid metadata contract: expected {expected}, actual {actual}"):
-            assert expected = actual
-        end
-        return ()
-    end
 end

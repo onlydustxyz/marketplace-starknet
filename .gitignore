@@ -11,3 +11,6 @@ logs.json
 
 # vscode
 .vscode
+
+# MacOS
+.DS_Store

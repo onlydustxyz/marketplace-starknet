@@ -93,7 +93,7 @@ send_transaction() {
     echo $contract_address
 }
 
-# Deploy the Badge, Registry and Metadata contracts and log the deployed addresses in the cache file
+# Deploy all contracts and log the deployed addresses in the cache file
 deploy_all_contracts() {
     [ -f $CACHE_FILE ] && {
         . $CACHE_FILE
@@ -111,49 +111,42 @@ deploy_all_contracts() {
 
     [ ! -z $PROFILE ] && PROFILE_OPT="--profile $PROFILE"
 
-    if [ -z $BADGE_ADDRESS ]; then
-        log_info "Deploying badge..."
-        BADGE_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/badge.json --inputs $ADMIN_ADDRESS"` || exit_error
+    if [ -z $PROFILE_ADDRESS ]; then
+        log_info "Deploying profile contract..."
+        PROFILE_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/profile.json --inputs $ADMIN_ADDRESS"` || exit_error
     fi
 
     if [ -z $REGISTRY_ADDRESS ]; then
-        log_info "Deploying badge registry..."
-        REGISTRY_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/badge_registry.json --inputs $ADMIN_ADDRESS"` || exit_error
+        log_info "Deploying registry contract..."
+        REGISTRY_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/registry.json --inputs $ADMIN_ADDRESS"` || exit_error
     fi
 
     if [ -z $METADATA_ADDRESS ]; then
-        log_info "Deploying github metadata..."
-        METADATA_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/github_contributions.json --inputs $ADMIN_ADDRESS"` || exit_error
+        log_info "Deploying contributions contract..."
+        CONTRIBUTIONS_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/contributions.json --inputs $ADMIN_ADDRESS"` || exit_error
     fi
 
     (
-        echo "BADGE_ADDRESS=$BADGE_ADDRESS"
+        echo "PROFILE_ADDRESS=$PROFILE_ADDRESS"
         echo "REGISTRY_ADDRESS=$REGISTRY_ADDRESS"
-        echo "METADATA_ADDRESS=$METADATA_ADDRESS"
+        echo "CONTRIBUTIONS_ADDRESS=$CONTRIBUTIONS_ADDRESS"
     ) | tee >&2 $CACHE_FILE
 
     [ ! -z $ACCOUNT ] && ACCOUNT_OPT="--account $ACCOUNT"
 
-    log_info "Setting badge contract inside registry"
-    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/badge_registry_abi.json --function set_badge_contract --inputs $BADGE_ADDRESS"
-
-    log_info "Setting registry contract inside github contributions"
-    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $METADATA_ADDRESS --abi ./build/github_contributions_abi.json --function set_registry_contract --inputs $REGISTRY_ADDRESS"
-
-    log_info "Register metadata contract under the 'GITHUB' label"
-    GITHUB_LABEL=78380272211266
-    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $BADGE_ADDRESS --abi ./build/badge_abi.json --function register_metadata_contract --inputs $GITHUB_LABEL $METADATA_ADDRESS"
+    log_info "Setting profile contract inside registry"
+    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function set_profile_contract --inputs $PROFILE_ADDRESS"
 
     log_info "Granting 'MINTER' role to the registry"
-    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $BADGE_ADDRESS --abi ./build/badge_abi.json --function grant_minter_role --inputs $REGISTRY_ADDRESS"
+    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $PROFILE_ADDRESS --abi ./build/profile_abi.json --function grant_minter_role --inputs $REGISTRY_ADDRESS"
 
     log_info "Granting 'REGISTER' role to the signer back-end"
-    SIGNER_BACKEND_ADDRESS=0x7343772b33dd34cbb1e23b9abefdde5b7addccb3e3c66943b78e5e52d416c29
-    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/badge_registry_abi.json --function grant_register_role --inputs $SIGNER_BACKEND_ADDRESS"
+    SIGNER_BACKEND_ADDRESS=0x05F5ae3aD947d52abA4034F8491357d98c91fA2b59FfC5A4F66Cf4a9dc568153
+    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_register_role --inputs $SIGNER_BACKEND_ADDRESS"
 
     log_info "Granting 'FEEDER' role to the feeder back-end"
-    FEEDER_BACKEND_ADDRESS=0x7343772b33dd34cbb1e23b9abefdde5b7addccb3e3c66943b78e5e52d416c29
-    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $METADATA_ADDRESS --abi ./build/github_contributions_abi.json --function grant_feeder_role --inputs $FEEDER_BACKEND_ADDRESS"
+    FEEDER_BACKEND_ADDRESS=0x01f882ba4a552ae0DF87f33ae4c2f8Bfb99A1fa401C8976f92225B011CBBe0e1
+    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $CONTRIBUTIONS_ADDRESS --abi ./build/contributions_abi.json --function grant_feeder_role --inputs $FEEDER_BACKEND_ADDRESS"
 }
 
 ### ARGUMENT PARSING
