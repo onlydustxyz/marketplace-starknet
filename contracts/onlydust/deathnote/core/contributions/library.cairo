@@ -143,9 +143,18 @@ namespace contributions:
         let (contribution) = contribution_access.read(contribution_id)
         with contribution:
             contribution_access.only_open()
+<<<<<<< HEAD
             let contribution = Contribution(
                 contribution.id, contribution.project_id, Status.ASSIGNED, contributor_id
             )
+=======
+        end
+
+        let contribution = Contribution(
+            contribution.id, contribution.project_id, Status.ASSIGNED, contributor_id
+        )
+        with contribution:
+>>>>>>> d20543b (:sparkles: store the contributor_id inside the contribution struct)
             contribution_access.store()
         end
 
