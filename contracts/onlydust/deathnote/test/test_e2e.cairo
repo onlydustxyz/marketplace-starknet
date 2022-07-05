@@ -12,7 +12,7 @@ from onlydust.deathnote.test.libraries.contributions import assert_contribution_
 
 const ADMIN = 'onlydust'
 const FEEDER = 'feeder'
-const REGISTER = 'register'
+const REGISTERER = 'register'
 const CONTRIBUTOR = '0xdead'
 const GITHUB_ID = 'user123'
 
@@ -35,7 +35,7 @@ func __setup__{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 
     %{ stop_pranks = [start_prank(ids.ADMIN, contract) for contract in [ids.registry, ids.profile_contract, ids.contributions_contract] ] %}
     IRegistry.set_profile_contract(registry, profile_contract)
-    IRegistry.grant_register_role(registry, REGISTER)
+    IRegistry.grant_registerer_role(registry, REGISTERER)
     IProfile.grant_minter_role(profile_contract, registry)
     IContributions.grant_feeder_role(contributions_contract, FEEDER)
     %{ [stop_prank() for stop_prank in stop_pranks] %}
@@ -94,7 +94,7 @@ namespace registry_access:
     func register_github_identifier{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, registry : felt
     }(contributor : felt, identifier : felt) -> (user : UserInformation):
-        %{ stop_prank = start_prank(ids.REGISTER, ids.registry) %}
+        %{ stop_prank = start_prank(ids.REGISTERER, ids.registry) %}
         IRegistry.register_github_identifier(registry, contributor, identifier)
         %{ stop_prank() %}
 

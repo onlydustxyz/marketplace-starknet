@@ -31,17 +31,17 @@ func revoke_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_c
 end
 
 @external
-func grant_register_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+func grant_registerer_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     address : felt
 ):
-    return registry.grant_register_role(address)
+    return registry.grant_registerer_role(address)
 end
 
 @external
-func revoke_register_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+func revoke_registerer_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     address : felt
 ):
-    return registry.revoke_register_role(address)
+    return registry.revoke_registerer_role(address)
 end
 
 @external

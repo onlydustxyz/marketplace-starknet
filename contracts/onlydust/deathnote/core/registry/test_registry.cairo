@@ -7,7 +7,7 @@ from onlydust.deathnote.core.registry.library import registry, Role
 from onlydust.deathnote.test.libraries.user import assert_user_that
 
 const PROFILE = 'deathnote profile'
-const REGISTER = 'register'
+const REGISTERER = 'register'
 const CONTRIBUTOR = 'Antho'
 const GITHUB_USER = 'github_user'
 const ADMIN = 'onlydust'
@@ -19,7 +19,7 @@ namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         %{ stop_prank = start_prank(ids.ADMIN) %}
         registry.initialize(ADMIN)
-        registry.grant_register_role(REGISTER)
+        registry.grant_registerer_role(REGISTERER)
         registry.set_profile_contract(PROFILE)
         %{ stop_prank() %}
 
@@ -64,7 +64,7 @@ func test_anyone_cannot_register_a_user{
 }():
     fixture.initialize()
 
-    %{ expect_revert(error_message="Registry: REGISTER role required") %}
+    %{ expect_revert(error_message="Registry: REGISTERER role required") %}
     registry.register_github_identifier(CONTRIBUTOR, GITHUB_USER)
     return ()
 end
@@ -87,10 +87,10 @@ func test_registering_a_user_without_profile_contract_should_revert{
 }():
     %{ stop_prank = start_prank(ids.ADMIN) %}
     registry.initialize(ADMIN)
-    registry.grant_register_role(REGISTER)
+    registry.grant_registerer_role(REGISTERER)
     %{
         stop_prank()
-        stop_prank = start_prank(ids.REGISTER)
+        stop_prank = start_prank(ids.REGISTERER)
         expect_revert(error_message="Registry: Missing Profile contract")
     %}
     registry.register_github_identifier(CONTRIBUTOR, GITHUB_USER)
@@ -110,7 +110,7 @@ func test_register_can_register_a_github_identifier{
     tempvar CONTRIBUTOR_ID = Uint256(0, 0)
 
     %{
-        stop_prank = start_prank(ids.REGISTER)
+        stop_prank = start_prank(ids.REGISTERER)
         mock_call(ids.PROFILE, 'mint', [0, 0])
     %}
     registry.register_github_identifier(CONTRIBUTOR, GITHUB_USER)
@@ -139,7 +139,7 @@ func test_register_can_unregister_a_github_identifier{
     fixture.initialize()
 
     %{
-        stop_prank = start_prank(ids.REGISTER)
+        stop_prank = start_prank(ids.REGISTERER)
         mock_call(ids.PROFILE, 'mint', [0, 0])
     %}
     registry.register_github_identifier(CONTRIBUTOR, GITHUB_USER)
@@ -168,7 +168,7 @@ func test_register_cannot_unregister_a_github_identifier_from_wrong_user{
     const ANYONE = 'anyone'
 
     %{
-        stop_prank = start_prank(ids.REGISTER)
+        stop_prank = start_prank(ids.REGISTERER)
         mock_call(ids.PROFILE, 'mint', [0, 0])
         expect_revert(error_message='Registry: The address does not match the github identifier provided')
     %}
@@ -188,7 +188,7 @@ func test_anyone_cannot_unregister_a_github_identifier{
     const ANYONE = 'anyone'
 
     %{
-        stop_prank = start_prank(ids.REGISTER)
+        stop_prank = start_prank(ids.REGISTERER)
         mock_call(ids.PROFILE, 'mint', [0, 0])
     %}
     registry.register_github_identifier(CONTRIBUTOR, GITHUB_USER)
@@ -196,7 +196,7 @@ func test_anyone_cannot_unregister_a_github_identifier{
 
     %{
         stop_prank = start_prank(ids.ANYONE)
-        expect_revert(error_message='Registry: REGISTER role required')
+        expect_revert(error_message='Registry: REGISTERER role required')
     %}
     registry.unregister_github_identifier(CONTRIBUTOR, GITHUB_USER)
     %{ stop_prank() %}
@@ -213,7 +213,7 @@ func test_prevent_double_registration_of_github_identifier{
     const ANYONE = 'anyone'
 
     %{
-        stop_prank = start_prank(ids.REGISTER)
+        stop_prank = start_prank(ids.REGISTERER)
         mock_call(ids.PROFILE, 'mint', [0, 0])
         expect_revert(error_message='Registry: Github identifier already registered')
     %}
@@ -299,7 +299,7 @@ func test_admin_can_grant_and_revoke_roles{
     const RANDOM_ADDRESS = 'rand'
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    registry.grant_register_role(RANDOM_ADDRESS)
+    registry.grant_registerer_role(RANDOM_ADDRESS)
     %{ stop_prank() %}
 
     %{
@@ -310,18 +310,18 @@ func test_admin_can_grant_and_revoke_roles{
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    registry.revoke_register_role(RANDOM_ADDRESS)
+    registry.revoke_registerer_role(RANDOM_ADDRESS)
     %{
         stop_prank() 
         expect_events(
-            {"name": "RoleGranted", "data": [ids.Role.REGISTER, ids.RANDOM_ADDRESS, ids.ADMIN]},
-            {"name": "RoleRevoked", "data": [ids.Role.REGISTER, ids.RANDOM_ADDRESS, ids.ADMIN]}
+            {"name": "RoleGranted", "data": [ids.Role.REGISTERER, ids.RANDOM_ADDRESS, ids.ADMIN]},
+            {"name": "RoleRevoked", "data": [ids.Role.REGISTERER, ids.RANDOM_ADDRESS, ids.ADMIN]}
         )
     %}
 
     %{
         stop_prank = start_prank(ids.RANDOM_ADDRESS) 
-        expect_revert(error_message='Registry: REGISTER role required')
+        expect_revert(error_message='Registry: REGISTERER role required')
     %}
     registry.register_github_identifier(CONTRIBUTOR, GITHUB_USER)
     %{ stop_prank() %}
