@@ -4,7 +4,10 @@ from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 
 from onlydust.deathnote.core.contributions.library import contributions, Contribution, Status, Role
-from onlydust.deathnote.test.libraries.contributions import assert_contribution_that
+from onlydust.deathnote.test.libraries.contributions import (
+    assert_contribution_that,
+    contribution_access,
+)
 
 const ADMIN = 'admin'
 const FEEDER = 'feeder'
@@ -14,10 +17,11 @@ const REGISTRY = 'registry'
 func test_new_contribution_can_be_added{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
+    alloc_locals
     fixture.initialize()
 
-    let contribution1 = Contribution(123, 456, Status.OPEN)
-    let contribution2 = Contribution(124, 456, Status.OPEN)
+    let (local contribution1) = contribution_access.create(123, 456)
+    let (contribution2) = contribution_access.create(124, 456)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
     contributions.new_contribution(contribution1)
@@ -28,8 +32,20 @@ func test_new_contribution_can_be_added{
     let (count, contribs) = contributions.all_contributions()
 
     assert 2 = count
-    assert contribution2 = contribs[0]
-    assert contribution1 = contribs[1]
+
+    let contribution = contribs[0]
+    with contribution:
+        assert_contribution_that.id_is(contribution2.id)
+        assert_contribution_that.project_id_is(contribution2.project_id)
+        assert_contribution_that.status_is(Status.OPEN)
+    end
+
+    let contribution = contribs[1]
+    with contribution:
+        assert_contribution_that.id_is(contribution1.id)
+        assert_contribution_that.project_id_is(contribution1.project_id)
+        assert_contribution_that.status_is(Status.OPEN)
+    end
 
     return ()
 end
@@ -41,7 +57,7 @@ func test_feeder_can_assign_contribution_to_contributor{
     fixture.initialize()
 
     const contribution_id = 123
-    let contribution = Contribution(contribution_id, 456, Status.OPEN)
+    let (contribution) = contribution_access.create(contribution_id, 456)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
@@ -52,6 +68,7 @@ func test_feeder_can_assign_contribution_to_contributor{
     let (contribution) = contributions.contribution(contribution_id)
     with contribution:
         assert_contribution_that.status_is(Status.ASSIGNED)
+        assert_contribution_that.contributor_is(contributor_id)
     end
 
     return ()
@@ -64,7 +81,7 @@ func test_anyone_cannot_assign_contribution_to_contributor{
     fixture.initialize()
 
     const contribution_id = 123
-    let contribution = Contribution(contribution_id, 456, Status.OPEN)
+    let (contribution) = contribution_access.create(contribution_id, 456)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
@@ -104,7 +121,7 @@ func test_cannot_assign_twice_a_contribution{
     fixture.initialize()
 
     const contribution_id = 123
-    let contribution = Contribution(contribution_id, 456, Status.OPEN)
+    let (contribution) = contribution_access.create(contribution_id, 456)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
@@ -127,7 +144,7 @@ func test_contribution_creation_with_invalid_status_is_reverted{
         stop_prank = start_prank(ids.FEEDER)
         expect_revert(error_message="Contributions: Invalid contribution status")
     %}
-    contributions.new_contribution(Contribution(123, 456, 10))
+    contributions.new_contribution(Contribution(123, 456, 10, Uint256(0, 0)))
     %{ stop_prank() %}
 
     return ()
@@ -143,7 +160,7 @@ func test_contribution_creation_with_status_not_open_is_reverted{
         stop_prank = start_prank(ids.FEEDER)
         expect_revert(error_message="Contributions: Contribution is not OPEN")
     %}
-    contributions.new_contribution(Contribution(123, 456, Status.COMPLETED))
+    contributions.new_contribution(Contribution(123, 456, Status.COMPLETED, Uint256(0, 0)))
     %{ stop_prank() %}
 
     return ()
@@ -159,7 +176,8 @@ func test_contribution_creation_with_invalid_id_is_reverted{
         stop_prank = start_prank(ids.FEEDER)
         expect_revert(error_message="Contributions: Invalid contribution ID")
     %}
-    contributions.new_contribution(Contribution(0, 456, Status.OPEN))
+    let (contribution) = contribution_access.create(0, 456)
+    contributions.new_contribution(contribution)
     %{ stop_prank() %}
 
     return ()
@@ -175,7 +193,8 @@ func test_contribution_creation_with_invalid_project_id_is_reverted{
         stop_prank = start_prank(ids.FEEDER)
         expect_revert(error_message="Contributions: Invalid project ID")
     %}
-    contributions.new_contribution(Contribution(123, 0, Status.OPEN))
+    let (contribution) = contribution_access.create(123, 0)
+    contributions.new_contribution(contribution)
     %{ stop_prank() %}
 
     return ()
@@ -188,7 +207,8 @@ func test_anyone_cannot_add_contribution{
     fixture.initialize()
 
     %{ expect_revert(error_message="Contributions: FEEDER role required") %}
-    contributions.new_contribution(Contribution(123, 456, Status.OPEN))
+    let (contribution) = contribution_access.create(123, 456)
+    contributions.new_contribution(contribution)
 
     return ()
 end
@@ -263,6 +283,7 @@ end
 func test_admin_can_grant_and_revoke_roles{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
+    alloc_locals
     fixture.initialize()
 
     const RANDOM_ADDRESS = 'rand'
@@ -272,7 +293,8 @@ func test_admin_can_grant_and_revoke_roles{
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.RANDOM_ADDRESS) %}
-    contributions.new_contribution(Contribution(123, 456, Status.OPEN))
+    let (local contribution) = contribution_access.create(123, 456)
+    contributions.new_contribution(contribution)
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
@@ -289,7 +311,7 @@ func test_admin_can_grant_and_revoke_roles{
         stop_prank = start_prank(ids.RANDOM_ADDRESS) 
         expect_revert(error_message='Contributions: FEEDER role required')
     %}
-    contributions.new_contribution(Contribution(123, 456, Status.OPEN))
+    contributions.new_contribution(contribution)
     %{ stop_prank() %}
 
     return ()
