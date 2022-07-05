@@ -8,7 +8,10 @@ from onlydust.deathnote.interfaces.contributions import IContributions
 from onlydust.deathnote.interfaces.profile import IProfile
 from onlydust.deathnote.core.contributions.library import Contribution, Status
 from onlydust.deathnote.test.libraries.user import assert_user_that
-from onlydust.deathnote.test.libraries.contributions import assert_contribution_that
+from onlydust.deathnote.test.libraries.contributions import (
+    assert_contribution_that,
+    contribution_access,
+)
 
 const ADMIN = 'onlydust'
 const FEEDER = 'feeder'
@@ -59,10 +62,8 @@ func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
 
     let (contributions) = contributions_access.deployed()
     with contributions:
-        let contribution1 = Contribution(123, 456, Status.OPEN)
-        let contribution2 = Contribution(124, 456, Status.OPEN)
-        contributions_access.new_contribution(contribution1)
-        contributions_access.new_contribution(contribution2)
+        contributions_access.new_contribution(123, 456)
+        contributions_access.new_contribution(124, 456)
 
         let contributor_id = user.contributor_id
         contributions_access.assign_contributor_to_contribution(123, contributor_id)
@@ -84,6 +85,7 @@ func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
         assert_contribution_that.id_is(123)
         assert_contribution_that.project_id_is(456)
         assert_contribution_that.status_is(Status.ASSIGNED)
+        assert_contribution_that.contributor_is(contributor_id)
     end
 
     return ()
@@ -120,8 +122,9 @@ namespace contributions_access:
 
     func new_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(contribution : Contribution):
+    }(contribution_id : felt, project_id : felt):
         %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
+        let (contribution) = contribution_access.create(contribution_id, project_id)
         IContributions.new_contribution(contributions, contribution)
         %{ stop_prank() %}
         return ()

@@ -5,7 +5,10 @@ from starkware.cairo.common.uint256 import Uint256
 
 from onlydust.deathnote.interfaces.contributions import IContributions
 from onlydust.deathnote.core.contributions.library import Contribution, Status
-from onlydust.deathnote.test.libraries.contributions import assert_contribution_that
+from onlydust.deathnote.test.libraries.contributions import (
+    assert_contribution_that,
+    contribution_access,
+)
 
 const ADMIN = 'admin'
 const FEEDER = 'feeder'
@@ -33,8 +36,8 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
     let CONTRIBUTOR_ID = Uint256(12, 0)
 
     with contributions:
-        contributions_access.new_contribution(Contribution(123, 456, Status.OPEN))
-        contributions_access.new_contribution(Contribution(124, 456, Status.OPEN))
+        contributions_access.new_contribution(123, 456)
+        contributions_access.new_contribution(124, 456)
 
         contributions_access.assign_contributor_to_contribution(123, CONTRIBUTOR_ID)
         let (contribs_len, contribs) = contributions_access.all_contributions()
@@ -54,6 +57,7 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
         assert_contribution_that.id_is(123)
         assert_contribution_that.project_id_is(456)
         assert_contribution_that.status_is(Status.ASSIGNED)
+        assert_contribution_that.contributor_is(CONTRIBUTOR_ID)
     end
 
     return ()
@@ -71,8 +75,9 @@ namespace contributions_access:
 
     func new_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(contribution : Contribution):
+    }(contribution_id : felt, project_id : felt):
         %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
+        let (contribution) = contribution_access.create(contribution_id, project_id)
         IContributions.new_contribution(contributions, contribution)
         %{ stop_prank() %}
         return ()

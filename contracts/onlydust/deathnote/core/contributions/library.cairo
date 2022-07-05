@@ -33,6 +33,7 @@ struct Contribution:
     member id : felt
     member project_id : felt
     member status : felt
+    member contributor_id : Uint256
 end
 
 #
@@ -142,10 +143,9 @@ namespace contributions:
         let (contribution) = contribution_access.read(contribution_id)
         with contribution:
             contribution_access.only_open()
-        end
-
-        let contribution = Contribution(contribution.id, contribution.project_id, Status.ASSIGNED)
-        with contribution:
+            let contribution = Contribution(
+                contribution.id, contribution.project_id, Status.ASSIGNED, contributor_id
+            )
             contribution_access.store()
         end
 
@@ -251,7 +251,7 @@ namespace contribution_access:
         contribution : Contribution,
     }():
         with_attr error_message("Contributions: Contribution is not OPEN"):
-            assert contribution.status = Status.OPEN
+            assert Status.OPEN = contribution.status
         end
         return ()
     end
