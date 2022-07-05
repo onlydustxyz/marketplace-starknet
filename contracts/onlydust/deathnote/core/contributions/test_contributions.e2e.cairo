@@ -33,40 +33,16 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
     let CONTRIBUTOR_ID = Uint256(12, 0)
 
     with contributions:
-        contributions_access.add_contribution(
-            CONTRIBUTOR_ID, Contribution('onlydust', 'starklings', 23, Status.OPEN)
-        )
-        contributions_access.add_contribution(
-            CONTRIBUTOR_ID, Contribution('onlydust', 'starklings', 24, Status.OPEN)
-        )
-        let (contribution_count) = contributions_access.contribution_count(CONTRIBUTOR_ID)
-        assert contribution_count = 2
+        contributions_access.new_contribution(Contribution(123, 456, Status.OPEN))
+        contributions_access.new_contribution(Contribution(123, 456, Status.OPEN))
 
-        let (contribution) = contributions_access.contribution(CONTRIBUTOR_ID, 0)
+        let (contribution) = contributions_access.contribution(123)
     end
 
     with contribution:
-        assert_contribution_that.repo_owner_is('onlydust')
-        assert_contribution_that.repo_name_is('starklings')
-        assert_contribution_that.pr_id_is(23)
-        assert_contribution_that.pr_status_is(Status.OPEN)
-    end
-
-    with contributions:
-        contributions_access.add_contribution(
-            CONTRIBUTOR_ID, Contribution('onlydust', 'starklings', 23, Status.MERGED)
-        )
-        let (contribution_count) = contributions_access.contribution_count(CONTRIBUTOR_ID)
-        assert contribution_count = 2
-
-        let (contribution) = contributions_access.contribution(CONTRIBUTOR_ID, 0)
-    end
-
-    with contribution:
-        assert_contribution_that.repo_owner_is('onlydust')
-        assert_contribution_that.repo_name_is('starklings')
-        assert_contribution_that.pr_id_is(23)
-        assert_contribution_that.pr_status_is(Status.MERGED)
+        assert_contribution_that.id_is(123)
+        assert_contribution_that.project_id_is(456)
+        assert_contribution_that.status_is(Status.OPEN)
     end
 
     return ()
@@ -82,26 +58,19 @@ namespace contributions_access:
         return (contributions_contract)
     end
 
-    func add_contribution{
+    func new_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(contributor_id : Uint256, contribution : Contribution):
+    }(contribution : Contribution):
         %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
-        IContributions.add_contribution(contributions, contributor_id, contribution)
+        IContributions.new_contribution(contributions, contribution)
         %{ stop_prank() %}
         return ()
     end
 
-    func contribution_count{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(contributor_id : Uint256) -> (contribution_count : felt):
-        let (contribution_count) = IContributions.contribution_count(contributions, contributor_id)
-        return (contribution_count)
-    end
-
     func contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(contributor_id : Uint256, contribution_id : felt) -> (contribution : Contribution):
-        let (contribution) = IContributions.contribution(contributions, contributor_id, contribution_id)
+    }(contribution_id : felt) -> (contribution : Contribution):
+        let (contribution) = IContributions.contribution(contributions, contribution_id)
         return (contribution)
     end
 end

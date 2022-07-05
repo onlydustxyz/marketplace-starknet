@@ -17,17 +17,10 @@ end
 # Views
 #
 @view
-func contribution_count{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    contributor_id : Uint256
-) -> (contribution_count : felt):
-    return contributions.contribution_count(contributor_id)
-end
-
-@view
 func contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    contributor_id : Uint256, contribution_id : felt
+    contribution_id : felt
 ) -> (contribution : Contribution):
-    return contributions.contribution(contributor_id, contribution_id)
+    return contributions.contribution(contribution_id)
 end
 
 #
@@ -63,8 +56,8 @@ func revoke_feeder_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_
 end
 
 @external
-func add_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    contributor_id : Uint256, contribution : Contribution
+func new_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    contribution : Contribution
 ):
-    return contributions.add_contribution(contributor_id, contribution)
+    return contributions.new_contribution(contribution)
 end

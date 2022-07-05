@@ -35,11 +35,15 @@ end
 # Events
 #
 @event
-func GithubIdentifierRegistered(profile_contract : felt, contributor_id : Uint256, identifier : felt):
+func GithubIdentifierRegistered(
+    profile_contract : felt, contributor_id : Uint256, identifier : felt
+):
 end
 
 @event
-func GithubIdentifierUnregistered(profile_contract : felt, contributor_id : Uint256, identifier : felt):
+func GithubIdentifierUnregistered(
+    profile_contract : felt, contributor_id : Uint256, identifier : felt
+):
 end
 
 #
@@ -217,7 +221,9 @@ namespace internal:
         # Update user with minted token
         let (contributor_id) = IProfile.mint(profile_contract, address)
         let user = UserInformation(
-            profile_contract=profile_contract, contributor_id=contributor_id, identifiers=user.identifiers
+            profile_contract=profile_contract,
+            contributor_id=contributor_id,
+            identifiers=user.identifiers,
         )
 
         return ()

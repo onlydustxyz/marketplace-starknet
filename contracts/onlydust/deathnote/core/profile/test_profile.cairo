@@ -45,7 +45,8 @@ func test_profile_has_a_name_and_symbol{
 end
 
 @view
-func test_profile_can_be_minted{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
+func test_profile_can_be_minted{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    ):
     alloc_locals
 
     fixture.initialize()
@@ -236,5 +237,4 @@ namespace assert_that:
         end
         return ()
     end
-
 end
