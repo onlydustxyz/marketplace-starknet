@@ -270,8 +270,8 @@ namespace contribution_access:
         range_check_ptr,
         contribution : Contribution,
     }():
-        let (existing_contribution) = read(contribution.id)
-        if existing_contribution.id == 0:
+        let (already_exists) = exists(contribution.id)
+        if already_exists == 0:
             let (contribution_count) = contribution_count_.read()
             indexed_contribution_ids_.write(contribution_count, contribution.id)
             contribution_count_.write(contribution_count + 1)
@@ -285,6 +285,18 @@ namespace contribution_access:
         contribution_id : felt
     ) -> (contribution : Contribution):
         let (contribution) = contributions_.read(contribution_id)
+        with_attr error_message("Contributions: Contribution does not exist"):
+            assert_not_zero(contribution.id)
+        end
+
         return (contribution)
+    end
+
+    func exists{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contribution_id : felt
+    ) -> (exists : felt):
+        let (contribution) = contributions_.read(contribution_id)
+        let (exists) = is_not_zero(contribution.id)
+        return (exists)
     end
 end
