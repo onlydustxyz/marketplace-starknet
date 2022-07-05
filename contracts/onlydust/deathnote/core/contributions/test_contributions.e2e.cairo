@@ -34,15 +34,26 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
 
     with contributions:
         contributions_access.new_contribution(Contribution(123, 456, Status.OPEN))
-        contributions_access.new_contribution(Contribution(123, 456, Status.OPEN))
+        contributions_access.new_contribution(Contribution(124, 456, Status.OPEN))
 
-        let (contribution) = contributions_access.contribution(123)
+        contributions_access.assign_contributor_to_contribution(123, CONTRIBUTOR_ID)
+        let (contribs_len, contribs) = contributions_access.all_contributions()
     end
 
+    assert 2 = contribs_len
+
+    let contribution = contribs[0]
+    with contribution:
+        assert_contribution_that.id_is(124)
+        assert_contribution_that.project_id_is(456)
+        assert_contribution_that.status_is(Status.OPEN)
+    end
+
+    let contribution = contribs[1]
     with contribution:
         assert_contribution_that.id_is(123)
         assert_contribution_that.project_id_is(456)
-        assert_contribution_that.status_is(Status.OPEN)
+        assert_contribution_that.status_is(Status.ASSIGNED)
     end
 
     return ()
@@ -67,10 +78,28 @@ namespace contributions_access:
         return ()
     end
 
+    func assign_contributor_to_contribution{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
+    }(contribution_id : felt, contributor_id : Uint256):
+        %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
+        IContributions.assign_contributor_to_contribution(
+            contributions, contribution_id, contributor_id
+        )
+        %{ stop_prank() %}
+        return ()
+    end
+
     func contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
     }(contribution_id : felt) -> (contribution : Contribution):
         let (contribution) = IContributions.contribution(contributions, contribution_id)
         return (contribution)
+    end
+
+    func all_contributions{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
+    }() -> (contribs_len, contribs : Contribution*):
+        let (contribs_len, contribs) = IContributions.all_contributions(contributions)
+        return (contribs_len, contribs)
     end
 end

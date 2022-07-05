@@ -68,3 +68,10 @@ func new_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_ch
 ):
     return contributions.new_contribution(contribution)
 end
+
+@external
+func assign_contributor_to_contribution{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}(contribution_id : felt, contributor_id : Uint256):
+    return contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
+end
