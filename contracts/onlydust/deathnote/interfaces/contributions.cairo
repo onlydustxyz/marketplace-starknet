@@ -6,13 +6,10 @@ from onlydust.deathnote.core.contributions.library import Contribution
 
 @contract_interface
 namespace IContributions:
-    func contribution_count(contributor_id : Uint256) -> (contribution_count : felt):
+    func new_contribution(contribution : Contribution):
     end
 
-    func contribution(contributor_id : Uint256, contribution_id : felt) -> (contribution : Contribution):
-    end
-
-    func add_contribution(contributor_id : Uint256, contribution : Contribution):
+    func contribution(contribution_id : felt) -> (contribution : Contribution):
     end
 
     func grant_admin_role(address : felt):

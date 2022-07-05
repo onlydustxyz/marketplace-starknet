@@ -75,9 +75,7 @@ namespace registry_access:
         IRegistry.register_github_identifier(registry, contributor, identifier)
         %{ stop_prank() %}
 
-        let (user) = IRegistry.get_user_information_from_github_identifier(
-            registry, identifier
-        )
+        let (user) = IRegistry.get_user_information_from_github_identifier(registry, identifier)
         return (user)
     end
 

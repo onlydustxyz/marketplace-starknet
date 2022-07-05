@@ -11,27 +11,23 @@ const FEEDER = 'feeder'
 const REGISTRY = 'registry'
 
 @view
-func test_contribution_can_be_added{
+func test_new_contribution_can_be_added{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     fixture.initialize()
 
-    let CONTRIBUTOR_ID = Uint256(12, 0)
-    let contribution = Contribution('onlydust', 'starkonquest', 23, Status.MERGED)
+    let contribution_id = 123
+    let project_id = 456
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    contributions.add_contribution(CONTRIBUTOR_ID, contribution)
+    contributions.new_contribution(Contribution(contribution_id, project_id, Status.OPEN))
     %{ stop_prank() %}
 
-    let (contribution_count) = contributions.contribution_count(CONTRIBUTOR_ID)
-    assert 1 = contribution_count
-
-    let (contribution) = contributions.contribution(CONTRIBUTOR_ID, 0)
+    let (contribution) = contributions.contribution(contribution_id)
     with contribution:
-        assert_contribution_that.repo_owner_is('onlydust')
-        assert_contribution_that.repo_name_is('starkonquest')
-        assert_contribution_that.pr_id_is(23)
-        assert_contribution_that.pr_status_is(Status.MERGED)
+        assert_contribution_that.id_is(contribution_id)
+        assert_contribution_that.project_id_is(project_id)
+        assert_contribution_that.status_is(Status.OPEN)
     end
 
     return ()
@@ -43,87 +39,59 @@ func test_contribution_creation_with_invalid_status_is_reverted{
 }():
     fixture.initialize()
 
-    let CONTRIBUTOR_ID = Uint256(23, 0)
-    let contribution = Contribution('onlydust', 'starkonquest', 23, 10)
-
-    %{ expect_revert(error_message="Contributions: Invalid PR status (10)") %}
-    contributions.add_contribution(CONTRIBUTOR_ID, contribution)
-
-    return ()
-end
-
-@view
-func test_contribution_creation_with_no_status_is_reverted{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    let CONTRIBUTOR_ID = Uint256(23, 0)
-    let contribution = Contribution('onlydust', 'starkonquest', 23, Status.NONE)
-
-    %{ expect_revert(error_message="Contributions: Invalid PR status (0)") %}
-    contributions.add_contribution(CONTRIBUTOR_ID, contribution)
-
-    return ()
-end
-
-@view
-func test_getting_contribution_from_invalid_id_should_revert{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    let CONTRIBUTOR_ID = Uint256(23, 0)
-    const INVALID_CONTRIBUTION_ID = 10
-
-    %{ expect_revert(error_message="Contributions: Invalid contribution id (10)") %}
-    contributions.contribution(CONTRIBUTOR_ID, INVALID_CONTRIBUTION_ID)
-
-    return ()
-end
-
-@view
-func test_contribution_can_be_updated{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    let CONTRIBUTOR_ID = Uint256(12, 0)
-
-    %{ stop_prank = start_prank(ids.FEEDER) %}
-    contributions.add_contribution(CONTRIBUTOR_ID, Contribution('onlydust', 'starkonquest', 23, Status.REVIEW))
-    contributions.add_contribution(CONTRIBUTOR_ID, Contribution('onlydust', 'starkonquest', 23, Status.MERGED))
+    %{
+        stop_prank = start_prank(ids.FEEDER)
+        expect_revert(error_message="Contributions: Invalid contribution status")
+    %}
+    contributions.new_contribution(Contribution(123, 456, 10))
     %{ stop_prank() %}
 
-    let (contribution_count) = contributions.contribution_count(CONTRIBUTOR_ID)
-    assert 1 = contribution_count
+    return ()
+end
 
-    let (contribution) = contributions.contribution(CONTRIBUTOR_ID, 0)
-    with contribution:
-        assert_contribution_that.repo_owner_is('onlydust')
-        assert_contribution_that.repo_name_is('starkonquest')
-        assert_contribution_that.pr_id_is(23)
-        assert_contribution_that.pr_status_is(Status.MERGED)
-    end
+@view
+func test_contribution_creation_with_status_not_open_is_reverted{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    %{
+        stop_prank = start_prank(ids.FEEDER)
+        expect_revert(error_message="Contributions: Invalid status ({contribution.status}), expected (0)")
+    %}
+    contributions.new_contribution(Contribution(123, 456, Status.COMPLETED))
+    %{ stop_prank() %}
 
     return ()
 end
 
 @view
-func test_contribution_cannot_update_owner{
+func test_contribution_creation_with_invalid_id_is_reverted{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     fixture.initialize()
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
-    contributions.add_contribution(
-        Uint256(12, 0), Contribution('onlydust', 'starkonquest', 23, Status.REVIEW)
-    )
+    %{
+        stop_prank = start_prank(ids.FEEDER)
+        expect_revert(error_message="Contributions: Invalid contribution ID")
+    %}
+    contributions.new_contribution(Contribution(0, 456, Status.OPEN))
+    %{ stop_prank() %}
 
-    %{ expect_revert(error_message="Contributions: Cannot change the owner of a given contribution") %}
-    contributions.add_contribution(
-        Uint256(13, 0), Contribution('onlydust', 'starkonquest', 23, Status.REVIEW)
-    )
+    return ()
+end
+
+@view
+func test_contribution_creation_with_invalid_project_id_is_reverted{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    %{
+        stop_prank = start_prank(ids.FEEDER)
+        expect_revert(error_message="Contributions: Invalid project ID")
+    %}
+    contributions.new_contribution(Contribution(123, 0, Status.OPEN))
     %{ stop_prank() %}
 
     return ()
@@ -136,9 +104,7 @@ func test_anyone_cannot_add_contribution{
     fixture.initialize()
 
     %{ expect_revert(error_message="Contributions: FEEDER role required") %}
-    contributions.add_contribution(
-        Uint256(13, 0), Contribution('onlydust', 'starkonquest', 23, Status.REVIEW)
-    )
+    contributions.new_contribution(Contribution(123, 456, Status.OPEN))
 
     return ()
 end
@@ -222,9 +188,7 @@ func test_admin_can_grant_and_revoke_roles{
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.RANDOM_ADDRESS) %}
-    contributions.add_contribution(
-        Uint256(13, 0), Contribution('onlydust', 'starkonquest', 23, Status.REVIEW)
-    )
+    contributions.new_contribution(Contribution(123, 456, Status.OPEN))
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
@@ -241,9 +205,7 @@ func test_admin_can_grant_and_revoke_roles{
         stop_prank = start_prank(ids.RANDOM_ADDRESS) 
         expect_revert(error_message='Contributions: FEEDER role required')
     %}
-    contributions.add_contribution(
-        Uint256(13, 0), Contribution('onlydust', 'starkonquest', 23, Status.REVIEW)
-    )
+    contributions.new_contribution(Contribution(123, 456, Status.OPEN))
     %{ stop_prank() %}
 
     return ()
