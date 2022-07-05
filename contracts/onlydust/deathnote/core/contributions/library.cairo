@@ -143,18 +143,30 @@ namespace contributions:
         let (contribution) = contribution_access.read(contribution_id)
         with contribution:
             contribution_access.only_open()
-<<<<<<< HEAD
             let contribution = Contribution(
                 contribution.id, contribution.project_id, Status.ASSIGNED, contributor_id
             )
-=======
+            contribution_access.store()
+        end
+
+        return ()
+    end
+
+    # Unassign a contributor from a contribution
+    func unassign_contributor_from_contribution{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(contribution_id : felt):
+        internal.only_feeder()
+
+        let (contribution) = contribution_access.read(contribution_id)
+        with contribution:
+            contribution_access.only_assigned()
         end
 
         let contribution = Contribution(
-            contribution.id, contribution.project_id, Status.ASSIGNED, contributor_id
+            contribution.id, contribution.project_id, Status.OPEN, Uint256(0, 0)
         )
         with contribution:
->>>>>>> d20543b (:sparkles: store the contributor_id inside the contribution struct)
             contribution_access.store()
         end
 
@@ -261,6 +273,18 @@ namespace contribution_access:
     }():
         with_attr error_message("Contributions: Contribution is not OPEN"):
             assert Status.OPEN = contribution.status
+        end
+        return ()
+    end
+
+    func only_assigned{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr,
+        contribution : Contribution,
+    }():
+        with_attr error_message("Contributions: Contribution is not ASSIGNED"):
+            assert Status.ASSIGNED = contribution.status
         end
         return ()
     end

@@ -18,6 +18,9 @@ namespace IContributions:
     func assign_contributor_to_contribution(contribution_id : felt, contributor_id : Uint256):
     end
 
+    func unassign_contributor_from_contribution(contribution_id : felt):
+    end
+
     func grant_admin_role(address : felt):
     end
 
