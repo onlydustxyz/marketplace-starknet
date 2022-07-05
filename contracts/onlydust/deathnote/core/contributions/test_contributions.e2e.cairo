@@ -40,6 +40,10 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
         contributions_access.new_contribution(124, 456)
 
         contributions_access.assign_contributor_to_contribution(123, CONTRIBUTOR_ID)
+
+        contributions_access.assign_contributor_to_contribution(124, CONTRIBUTOR_ID)
+        contributions_access.unassign_contributor_from_contribution(124)
+
         let (contribs_len, contribs) = contributions_access.all_contributions()
     end
 
@@ -90,6 +94,15 @@ namespace contributions_access:
         IContributions.assign_contributor_to_contribution(
             contributions, contribution_id, contributor_id
         )
+        %{ stop_prank() %}
+        return ()
+    end
+
+    func unassign_contributor_from_contribution{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
+    }(contribution_id : felt):
+        %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
+        IContributions.unassign_contributor_from_contribution(contributions, contribution_id)
         %{ stop_prank() %}
         return ()
     end
