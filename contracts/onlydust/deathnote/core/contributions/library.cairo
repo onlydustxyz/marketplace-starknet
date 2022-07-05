@@ -107,7 +107,7 @@ namespace contributions:
 
         with contribution:
             contribution_access.assert_valid()
-            contribution_access.only_status(Status.OPEN)
+            contribution_access.only_open()
             contribution_access.store()
         end
 
@@ -140,6 +140,10 @@ namespace contributions:
         internal.only_feeder()
 
         let (contribution) = contribution_access.read(contribution_id)
+        with contribution:
+            contribution_access.only_open()
+        end
+
         let contribution = Contribution(contribution.id, contribution.project_id, Status.ASSIGNED)
         with contribution:
             contribution_access.store()
@@ -240,15 +244,14 @@ namespace contribution_access:
         return ()
     end
 
-    func only_status{
+    func only_open{
         syscall_ptr : felt*,
         pedersen_ptr : HashBuiltin*,
         range_check_ptr,
         contribution : Contribution,
-    }(status : felt):
-        with_attr error_message(
-                "Contributions: Invalid status ({contribution.status}), expected ({status})"):
-            assert status = contribution.status
+    }():
+        with_attr error_message("Contributions: Contribution is not OPEN"):
+            assert contribution.status = Status.OPEN
         end
         return ()
     end
