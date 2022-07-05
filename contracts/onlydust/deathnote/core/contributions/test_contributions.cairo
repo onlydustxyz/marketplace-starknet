@@ -58,6 +58,27 @@ func test_feeder_can_assign_contribution_to_contributor{
 end
 
 @view
+func test_anyone_cannot_assign_contribution_to_contributor{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const contribution_id = 123
+    let contribution = Contribution(contribution_id, 456, Status.OPEN)
+    let contributor_id = Uint256(1, 0)
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    contributions.new_contribution(contribution)
+    %{
+        stop_prank() 
+        expect_revert(error_message="Contributions: FEEDER role required")
+    %}
+    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
+
+    return ()
+end
+
+@view
 func test_contribution_creation_with_invalid_status_is_reverted{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
