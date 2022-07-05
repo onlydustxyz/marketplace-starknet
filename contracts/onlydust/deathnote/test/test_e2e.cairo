@@ -59,16 +59,16 @@ func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
 
     let (contributions) = contributions_access.deployed()
     with contributions:
-        contributions_access.new_contribution(Contribution(123, 456, Status.OPEN))
-        contributions_access.new_contribution(Contribution(124, 456, Status.OPEN))
+        let contribution1 = Contribution(123, 456, Status.OPEN)
+        let contribution2 = Contribution(124, 456, Status.OPEN)
+        contributions_access.new_contribution(contribution1)
+        contributions_access.new_contribution(contribution2)
 
-        let (contribution) = contributions_access.contribution(123)
-    end
+        let (count, contribs) = contributions_access.all_contributions()
 
-    with contribution:
-        assert_contribution_that.id_is(123)
-        assert_contribution_that.project_id_is(456)
-        assert_contribution_that.status_is(Status.OPEN)
+        assert 2 = count
+        assert contribution2 = contribs[0]
+        assert contribution1 = contribs[1]
     end
 
     return ()
@@ -110,6 +110,13 @@ namespace contributions_access:
         IContributions.new_contribution(contributions, contribution)
         %{ stop_prank() %}
         return ()
+    end
+
+    func all_contributions{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
+    }() -> (contribs_len, contribs : Contribution*):
+        let (contribs_len, contribs) = IContributions.all_contributions(contributions)
+        return (contribs_len, contribs)
     end
 
     func contribution{

@@ -12,6 +12,9 @@ namespace IContributions:
     func contribution(contribution_id : felt) -> (contribution : Contribution):
     end
 
+    func all_contributions() -> (contributions_len : felt, contributions : Contribution*):
+    end
+
     func grant_admin_role(address : felt):
     end
 
