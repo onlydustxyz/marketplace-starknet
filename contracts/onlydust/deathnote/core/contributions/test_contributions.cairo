@@ -35,6 +35,29 @@ func test_new_contribution_can_be_added{
 end
 
 @view
+func test_feeder_can_assign_contribution_to_contributor{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const contribution_id = 123
+    let contribution = Contribution(contribution_id, 456, Status.OPEN)
+    let contributor_id = Uint256(1, 0)
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    contributions.new_contribution(contribution)
+    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
+    %{ stop_prank() %}
+
+    let (contribution) = contributions.contribution(contribution_id)
+    with contribution:
+        assert_contribution_that.status_is(Status.ASSIGNED)
+    end
+
+    return ()
+end
+
+@view
 func test_contribution_creation_with_invalid_status_is_reverted{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():

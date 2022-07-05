@@ -64,11 +64,26 @@ func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
         contributions_access.new_contribution(contribution1)
         contributions_access.new_contribution(contribution2)
 
-        let (count, contribs) = contributions_access.all_contributions()
+        let contributor_id = user.contributor_id
+        contributions_access.assign_contributor_to_contribution(123, contributor_id)
 
-        assert 2 = count
-        assert contribution2 = contribs[0]
-        assert contribution1 = contribs[1]
+        let (count, contribs) = contributions_access.all_contributions()
+    end
+
+    assert 2 = count
+
+    let contribution = contribs[0]
+    with contribution:
+        assert_contribution_that.id_is(124)
+        assert_contribution_that.project_id_is(456)
+        assert_contribution_that.status_is(Status.OPEN)
+    end
+
+    let contribution = contribs[1]
+    with contribution:
+        assert_contribution_that.id_is(123)
+        assert_contribution_that.project_id_is(456)
+        assert_contribution_that.status_is(Status.ASSIGNED)
     end
 
     return ()
@@ -124,5 +139,16 @@ namespace contributions_access:
     }(contribution_id : felt) -> (contribution : Contribution):
         let (contribution) = IContributions.contribution(contributions, contribution_id)
         return (contribution)
+    end
+
+    func assign_contributor_to_contribution{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
+    }(contribution_id : felt, contributor_id : Uint256):
+        %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
+        IContributions.assign_contributor_to_contribution(
+            contributions, contribution_id, contributor_id
+        )
+        %{ stop_prank() %}
+        return ()
     end
 end

@@ -132,6 +132,19 @@ namespace contributions:
         internal.fetch_contribution_loop(contribution_count, contributions)
         return (contributions_len=contribution_count, contributions=contributions)
     end
+
+    # Assign a contributor to a contribution
+    func assign_contributor_to_contribution{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(contribution_id : felt, contributor_id : Uint256):
+        let (contribution) = contribution_access.read(contribution_id)
+        let contribution = Contribution(contribution.id, contribution.project_id, Status.ASSIGNED)
+        with contribution:
+            contribution_access.store()
+        end
+
+        return ()
+    end
 end
 
 namespace internal:
