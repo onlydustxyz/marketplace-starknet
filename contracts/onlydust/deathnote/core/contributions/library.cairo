@@ -1,5 +1,6 @@
 %lang starknet
 
+from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math import assert_nn, assert_lt, assert_not_zero
@@ -39,6 +40,14 @@ end
 #
 @storage_var
 func contributions_(contribution_id : felt) -> (contribution : Contribution):
+end
+
+@storage_var
+func indexed_contribution_ids_(contribution_index : felt) -> (contribution_id : felt):
+end
+
+@storage_var
+func contribution_count_() -> (contribution_count : felt):
 end
 
 #
@@ -112,6 +121,17 @@ namespace contributions:
         let (contribution) = contribution_access.read(contribution_id)
         return (contribution)
     end
+
+    # Retrieve all contributions
+    func all_contributions{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
+        contributions_len : felt, contributions : Contribution*
+    ):
+        alloc_locals
+        let (local contribution_count) = contribution_count_.read()
+        let (contributions : Contribution*) = alloc()
+        internal.fetch_contribution_loop(contribution_count, contributions)
+        return (contributions_len=contribution_count, contributions=contributions)
+    end
 end
 
 namespace internal:
@@ -135,6 +155,20 @@ namespace internal:
         let (caller_address) = get_caller_address()
         assert_not_zero(caller_address - address)
         return ()
+    end
+
+    func fetch_contribution_loop{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contribution_index : felt, contributions : Contribution*
+    ):
+        if contribution_index == 0:
+            return ()
+        end
+
+        let (contribution_id) = indexed_contribution_ids_.read(contribution_index - 1)
+        let (contribution) = contribution_access.read(contribution_id)
+        assert [contributions] = contribution
+
+        return fetch_contribution_loop(contribution_index - 1, contributions + Contribution.SIZE)
     end
 end
 
@@ -210,7 +244,25 @@ namespace contribution_access:
         range_check_ptr,
         contribution : Contribution,
     }():
+        increase_contribution_count_if_needed()
         contributions_.write(contribution.id, contribution)
+        return ()
+    end
+
+    func increase_contribution_count_if_needed{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr,
+        contribution : Contribution,
+    }():
+        let (existing_contribution) = read(contribution.id)
+        if existing_contribution.id == 0:
+            let (contribution_count) = contribution_count_.read()
+            indexed_contribution_ids_.write(contribution_count, contribution.id)
+            contribution_count_.write(contribution_count + 1)
+            return ()
+        end
+
         return ()
     end
 

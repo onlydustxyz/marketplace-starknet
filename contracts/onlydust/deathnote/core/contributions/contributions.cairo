@@ -23,6 +23,13 @@ func contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_
     return contributions.contribution(contribution_id)
 end
 
+@view
+func all_contributions{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
+    contributions_len : felt, contributions : Contribution*
+):
+    return contributions.all_contributions()
+end
+
 #
 # Externals
 #

@@ -16,19 +16,20 @@ func test_new_contribution_can_be_added{
 }():
     fixture.initialize()
 
-    let contribution_id = 123
-    let project_id = 456
+    let contribution1 = Contribution(123, 456, Status.OPEN)
+    let contribution2 = Contribution(124, 456, Status.OPEN)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    contributions.new_contribution(Contribution(contribution_id, project_id, Status.OPEN))
+    contributions.new_contribution(contribution1)
+    contributions.new_contribution(contribution1)  # adding twice the same to test update
+    contributions.new_contribution(contribution2)
     %{ stop_prank() %}
 
-    let (contribution) = contributions.contribution(contribution_id)
-    with contribution:
-        assert_contribution_that.id_is(contribution_id)
-        assert_contribution_that.project_id_is(project_id)
-        assert_contribution_that.status_is(Status.OPEN)
-    end
+    let (count, contribs) = contributions.all_contributions()
+
+    assert 2 = count
+    assert contribution2 = contribs[0]
+    assert contribution1 = contribs[1]
 
     return ()
 end
