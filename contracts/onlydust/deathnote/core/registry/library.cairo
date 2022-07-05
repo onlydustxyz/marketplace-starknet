@@ -15,7 +15,7 @@ from onlydust.deathnote.library.accesscontrol import AccessControl  # TODO chang
 struct Role:
     # Keep ADMIN role first of this list as 0 is the default admin value to manage roles in AccessControl library
     member ADMIN : felt  # ADMIN role, can assign/revoke roles
-    member REGISTER : felt  # REGISTER role, can register/unregister users
+    member REGISTERER : felt  # REGISTERER role, can register/unregister users
 end
 
 #
@@ -85,19 +85,19 @@ namespace registry:
         return ()
     end
 
-    # Grant the REGISTER role to a given address
-    func grant_register_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    # Grant the REGISTERER role to a given address
+    func grant_registerer_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         address : felt
     ):
-        AccessControl.grant_role(Role.REGISTER, address)
+        AccessControl.grant_role(Role.REGISTERER, address)
         return ()
     end
 
-    # Revoke the REGISTER role from a given address
-    func revoke_register_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    # Revoke the REGISTERER role from a given address
+    func revoke_registerer_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         address : felt
     ):
-        AccessControl.revoke_role(Role.REGISTER, address)
+        AccessControl.revoke_role(Role.REGISTERER, address)
         return ()
     end
 
@@ -189,8 +189,8 @@ namespace internal:
     end
 
     func assert_only_register{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-        with_attr error_message("Registry: REGISTER role required"):
-            AccessControl._only_role(Role.REGISTER)
+        with_attr error_message("Registry: REGISTERER role required"):
+            AccessControl._only_role(Role.REGISTERER)
         end
 
         return ()

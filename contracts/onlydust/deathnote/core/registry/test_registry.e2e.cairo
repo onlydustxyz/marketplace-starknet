@@ -7,7 +7,7 @@ from onlydust.deathnote.interfaces.registry import IRegistry, UserInformation
 from onlydust.deathnote.test.libraries.user import assert_user_that
 
 const ADMIN = 'admin'
-const REGISTER = 'register'
+const REGISTERER = 'register'
 const PROFILE = 'profile'
 const CONTRIBUTOR = 'contributor'
 const GITHUB_ID = 'github_user'
@@ -24,7 +24,7 @@ func __setup__{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
         stop_prank = start_prank(ids.ADMIN, ids.registry)
     %}
     IRegistry.set_profile_contract(registry, PROFILE)
-    IRegistry.grant_register_role(registry, REGISTER)
+    IRegistry.grant_registerer_role(registry, REGISTERER)
     %{ stop_prank() %}
 
     return ()
@@ -71,7 +71,7 @@ namespace registry_access:
     func register_github_identifier{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, registry : felt
     }(contributor : felt, identifier : felt) -> (user : UserInformation):
-        %{ stop_prank = start_prank(ids.REGISTER, ids.registry) %}
+        %{ stop_prank = start_prank(ids.REGISTERER, ids.registry) %}
         IRegistry.register_github_identifier(registry, contributor, identifier)
         %{ stop_prank() %}
 
@@ -84,7 +84,7 @@ namespace registry_access:
     func unregister_github_identifier{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, registry : felt
     }(contributor : felt, identifier : felt) -> (user : UserInformation):
-        %{ stop_prank = start_prank(ids.REGISTER, ids.registry) %}
+        %{ stop_prank = start_prank(ids.REGISTERER, ids.registry) %}
         IRegistry.unregister_github_identifier(registry, contributor, identifier)
         %{ stop_prank() %}
 

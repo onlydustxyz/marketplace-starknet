@@ -13,10 +13,10 @@ namespace IRegistry:
     func revoke_admin_role(address : felt):
     end
 
-    func grant_register_role(address : felt):
+    func grant_registerer_role(address : felt):
     end
 
-    func revoke_register_role(address : felt):
+    func revoke_registerer_role(address : felt):
     end
 
     func register_github_identifier(user_address : felt, identifier : felt):
