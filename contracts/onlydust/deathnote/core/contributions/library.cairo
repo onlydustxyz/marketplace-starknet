@@ -137,6 +137,8 @@ namespace contributions:
     func assign_contributor_to_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
     }(contribution_id : felt, contributor_id : Uint256):
+        internal.only_feeder()
+
         let (contribution) = contribution_access.read(contribution_id)
         let contribution = Contribution(contribution.id, contribution.project_id, Status.ASSIGNED)
         with contribution:
