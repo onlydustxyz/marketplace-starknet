@@ -1,8 +1,8 @@
 %lang starknet
 
-from onlydust.deathnote.core.contributions.github.library import Contribution
+from onlydust.deathnote.core.contributions.library import Contribution
 
-namespace assert_github_contribution_that:
+namespace assert_contribution_that:
     func repo_owner_is{contribution : Contribution}(expected : felt):
         let actual = contribution.repo_owner
         with_attr error_message(

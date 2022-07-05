@@ -1,10 +1,10 @@
 %lang starknet
 
-from onlydust.deathnote.core.badge_registry.library import UserInformation
+from onlydust.deathnote.core.registry.library import UserInformation
 
 @contract_interface
-namespace IBadgeRegistry:
-    func set_badge_contract(badge_contract : felt):
+namespace IRegistry:
+    func set_profile_contract(profile_contract : felt):
     end
 
     func grant_admin_role(address : felt):
@@ -25,7 +25,7 @@ namespace IBadgeRegistry:
     func unregister_github_identifier(user_address : felt, identifier : felt):
     end
 
-    func badge_contract() -> (badge_contract : felt):
+    func profile_contract() -> (profile_contract : felt):
     end
 
     func get_user_information(user_address : felt) -> (user : UserInformation):

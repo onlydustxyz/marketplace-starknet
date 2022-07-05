@@ -15,7 +15,7 @@
     </a>
   </p>
   
-  <h3 align="center">Death Note starknet contracts to manage contributor badges</h3>
+  <h3 align="center">Death Note starknet contracts to manage contributors and contributions</h3>
 </div>
 
 > ## ⚠️ WARNING! ⚠️
@@ -26,9 +26,9 @@
 ## 🎟️ Description
 
 This repository contains the code for starknet smart contracts:
-* **badge registry**: To register the created badge for each user based on authentication data (github, ...)
-* **badge**: The non-transferrable NFT that will be used to identify contributions of a given user
-* **contributions**: The contracts that will track contributions
+* **registry**: To register a contributor into the platform (mint a profile and associate its different user ids like github)
+* **profile**: The non-transferrable NFT that will be used to identify contributions of a given contributor
+* **contributions**: The list of contributions
 
 ## 🎗️ Prerequisites
 

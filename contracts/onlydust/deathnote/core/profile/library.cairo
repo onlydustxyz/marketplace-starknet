@@ -49,12 +49,12 @@ end
 func metadata_contracts_(label : felt) -> (metadata_contract : felt):
 end
 
-namespace badge:
-    # Initialize the badge name and symbol
+namespace profile:
+    # Initialize the profile name and symbol
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         admin : felt
     ):
-        ERC721_initializer('Death Note Badge', 'DNB')
+        ERC721_initializer('Death Note Profile', 'DNP')
         AccessControl.constructor()
         AccessControl._grant_role(Role.ADMIN, admin)
         return ()
@@ -72,7 +72,7 @@ namespace badge:
     func revoke_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         address : felt
     ):
-        with_attr error_message("Badge: Cannot self renounce to ADMIN role"):
+        with_attr error_message("profile: Cannot self renounce to ADMIN role"):
             internal.assert_not_caller(address)
         end
         AccessControl.revoke_role(Role.ADMIN, address)
@@ -95,12 +95,12 @@ namespace badge:
         return ()
     end
 
-    # Get the badge name
+    # Get the profile name
     func name{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (name : felt):
         return ERC721_name()
     end
 
-    # Get the badge symbol
+    # Get the profile symbol
     func symbol{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
         symbol : felt
     ):
@@ -132,23 +132,6 @@ namespace badge:
     ) -> (owner : felt):
         return ERC721_ownerOf(tokenId)
     end
-
-    # Register a metadata contract
-    func register_metadata_contract{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-    }(label : felt, metadata_contract : felt):
-        internal.assert_only_admin()
-        metadata_contracts_.write(label, metadata_contract)
-        return ()
-    end
-
-    # Get a registered metadata contract
-    func metadata_contract{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        label : felt
-    ) -> (metadata_contract : felt):
-        let (metadata_contract) = metadata_contracts_.read(label)
-        return (metadata_contract)
-    end
 end
 
 namespace internal:
@@ -159,7 +142,7 @@ namespace internal:
     end
 
     func assert_only_admin{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-        with_attr error_message("Badge: ADMIN role required"):
+        with_attr error_message("profile: ADMIN role required"):
             AccessControl._only_role(Role.ADMIN)
         end
 
@@ -167,7 +150,7 @@ namespace internal:
     end
 
     func assert_only_minter{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-        with_attr error_message("Badge: MINTER role required"):
+        with_attr error_message("profile: MINTER role required"):
             AccessControl._only_role(Role.MINTER)
         end
 

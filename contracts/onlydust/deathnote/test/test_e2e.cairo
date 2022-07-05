@@ -3,17 +3,16 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from onlydust.deathnote.interfaces.badge_registry import IBadgeRegistry, UserInformation
-from onlydust.deathnote.interfaces.contributions.github import IGithub
-from onlydust.deathnote.interfaces.badge import IBadge
-from onlydust.deathnote.core.contributions.github.library import Contribution, Status
+from onlydust.deathnote.interfaces.registry import IRegistry, UserInformation
+from onlydust.deathnote.interfaces.contributions import IContributions
+from onlydust.deathnote.interfaces.profile import IProfile
+from onlydust.deathnote.core.contributions.library import Contribution, Status
 from onlydust.deathnote.test.libraries.user import assert_user_that
-from onlydust.deathnote.test.libraries.contributions.github import assert_github_contribution_that
+from onlydust.deathnote.test.libraries.contributions import assert_contribution_that
 
 const ADMIN = 'onlydust'
 const FEEDER = 'feeder'
 const REGISTER = 'register'
-const GITHUB = 'GITHUB'
 const CONTRIBUTOR = '0xdead'
 const GITHUB_ID = 'user123'
 
@@ -22,24 +21,23 @@ const GITHUB_ID = 'user123'
 #
 @view
 func __setup__{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-    tempvar badge_registry
-    tempvar badge_contract
-    tempvar github_contract
+    tempvar registry
+    tempvar profile_contract
+    tempvar contributions_contract
     %{
-        ids.badge_registry = deploy_contract("./contracts/onlydust/deathnote/core/badge_registry/badge_registry.cairo", [ids.ADMIN]).contract_address 
-        ids.badge_contract = deploy_contract("./contracts/onlydust/deathnote/core/badge/badge.cairo", [ids.ADMIN]).contract_address 
-        ids.github_contract = deploy_contract("./contracts/onlydust/deathnote/core/contributions/github/github.cairo", [ids.ADMIN]).contract_address 
+        ids.registry = deploy_contract("./contracts/onlydust/deathnote/core/registry/registry.cairo", [ids.ADMIN]).contract_address 
+        ids.profile_contract = deploy_contract("./contracts/onlydust/deathnote/core/profile/profile.cairo", [ids.ADMIN]).contract_address 
+        ids.contributions_contract = deploy_contract("./contracts/onlydust/deathnote/core/contributions/contributions.cairo", [ids.ADMIN]).contract_address 
 
-        context.badge_registry = ids.badge_registry
+        context.registry = ids.registry
+        context.contributions_contract = ids.contributions_contract
     %}
 
-    %{ stop_pranks = [start_prank(ids.ADMIN, contract) for contract in [ids.badge_registry, ids.badge_contract, ids.github_contract] ] %}
-    IBadgeRegistry.set_badge_contract(badge_registry, badge_contract)
-    IBadgeRegistry.grant_register_role(badge_registry, REGISTER)
-    IBadge.grant_minter_role(badge_contract, badge_registry)
-    IBadge.register_metadata_contract(badge_contract, GITHUB, github_contract)
-    IGithub.grant_feeder_role(github_contract, FEEDER)
-    IGithub.set_registry_contract(github_contract, badge_registry)
+    %{ stop_pranks = [start_prank(ids.ADMIN, contract) for contract in [ids.registry, ids.profile_contract, ids.contributions_contract] ] %}
+    IRegistry.set_profile_contract(registry, profile_contract)
+    IRegistry.grant_register_role(registry, REGISTER)
+    IProfile.grant_minter_role(profile_contract, registry)
+    IContributions.grant_feeder_role(contributions_contract, FEEDER)
     %{ [stop_prank() for stop_prank in stop_pranks] %}
 
     return ()
@@ -49,35 +47,35 @@ end
 func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
     alloc_locals
 
-    let (badge_registry) = badge_registry_access.deployed()
+    let (registry) = registry_access.deployed()
 
-    with badge_registry:
-        let (local user) = badge_registry_access.register_github_identifier(CONTRIBUTOR, GITHUB_ID)
+    with registry:
+        let (local user) = registry_access.register_github_identifier(CONTRIBUTOR, GITHUB_ID)
     end
 
     with user:
         assert_user_that.github_identifier_is(GITHUB_ID)
     end
 
-    let (github) = IBadge.metadata_contract(user.badge_contract, 'GITHUB')
-    with github:
-        github_access.add_contribution(
-            user.token_id, Contribution('onlydust', 'starklings', 23, Status.OPEN)
+    let (contributions) = contributions_access.deployed()
+    with contributions:
+        contributions_access.add_contribution(
+            user.contributor_id, Contribution('onlydust', 'starklings', 23, Status.OPEN)
         )
-        github_access.add_contribution_from_identifier(
-            GITHUB_ID, Contribution('onlydust', 'starklings', 24, Status.OPEN)
+        contributions_access.add_contribution(
+            user.contributor_id, Contribution('onlydust', 'starklings', 24, Status.OPEN)
         )
-        let (contribution_count) = github_access.contribution_count(user.token_id)
+        let (contribution_count) = contributions_access.contribution_count(user.contributor_id)
         assert contribution_count = 2
 
-        let (contribution) = github_access.contribution(user.token_id, 0)
+        let (contribution) = contributions_access.contribution(user.contributor_id, 0)
     end
 
     with contribution:
-        assert_github_contribution_that.repo_owner_is('onlydust')
-        assert_github_contribution_that.repo_name_is('starklings')
-        assert_github_contribution_that.pr_id_is(23)
-        assert_github_contribution_that.pr_status_is(Status.OPEN)
+        assert_contribution_that.repo_owner_is('onlydust')
+        assert_contribution_that.repo_name_is('starklings')
+        assert_contribution_that.pr_id_is(23)
+        assert_contribution_that.pr_status_is(Status.OPEN)
     end
 
     return ()
@@ -86,61 +84,52 @@ end
 #
 # Libraries
 #
-namespace badge_registry_access:
-    func deployed() -> (badge_registry : felt):
-        tempvar badge_registry
-        %{ ids.badge_registry = context.badge_registry %}
-        return (badge_registry)
+namespace registry_access:
+    func deployed() -> (registry : felt):
+        tempvar registry
+        %{ ids.registry = context.registry %}
+        return (registry)
     end
 
     func register_github_identifier{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, badge_registry : felt
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, registry : felt
     }(contributor : felt, identifier : felt) -> (user : UserInformation):
-        %{ stop_prank = start_prank(ids.REGISTER, ids.badge_registry) %}
-        IBadgeRegistry.register_github_identifier(badge_registry, contributor, identifier)
+        %{ stop_prank = start_prank(ids.REGISTER, ids.registry) %}
+        IRegistry.register_github_identifier(registry, contributor, identifier)
         %{ stop_prank() %}
 
-        let (user) = IBadgeRegistry.get_user_information(badge_registry, contributor)
+        let (user) = IRegistry.get_user_information(registry, contributor)
         return (user)
     end
 end
 
-namespace github_access:
-    func deployed() -> (github_contract : felt):
-        tempvar github_contract
-        %{ ids.github_contract = context.github_contract %}
-        return (github_contract)
+namespace contributions_access:
+    func deployed() -> (contributions_contract : felt):
+        tempvar contributions_contract
+        %{ ids.contributions_contract = context.contributions_contract %}
+        return (contributions_contract)
     end
 
     func add_contribution{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, github : felt
-    }(token_id : Uint256, contribution : Contribution):
-        %{ stop_prank = start_prank(ids.FEEDER, ids.github) %}
-        IGithub.add_contribution(github, token_id, contribution)
-        %{ stop_prank() %}
-        return ()
-    end
-
-    func add_contribution_from_identifier{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, github : felt
-    }(identifier : felt, contribution : Contribution):
-        %{ stop_prank = start_prank(ids.FEEDER, ids.github) %}
-        IGithub.add_contribution_from_identifier(github, identifier, contribution)
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
+    }(contributor_id : Uint256, contribution : Contribution):
+        %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
+        IContributions.add_contribution(contributions, contributor_id, contribution)
         %{ stop_prank() %}
         return ()
     end
 
     func contribution_count{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, github : felt
-    }(token_id : Uint256) -> (contribution_count : felt):
-        let (contribution_count) = IGithub.contribution_count(github, token_id)
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
+    }(contributor_id : Uint256) -> (contribution_count : felt):
+        let (contribution_count) = IContributions.contribution_count(contributions, contributor_id)
         return (contribution_count)
     end
 
     func contribution{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, github : felt
-    }(token_id : Uint256, contribution_id : felt) -> (contribution : Contribution):
-        let (contribution) = IGithub.contribution(github, token_id, contribution_id)
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
+    }(contributor_id : Uint256, contribution_id : felt) -> (contribution : Contribution):
+        let (contribution) = IContributions.contribution(contributions, contributor_id, contribution_id)
         return (contribution)
     end
 end
