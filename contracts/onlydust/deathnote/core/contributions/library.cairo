@@ -136,8 +136,10 @@ namespace contributions:
         alloc_locals
         let (local contribution_count) = contribution_count_.read()
         let (contributions : Contribution*) = alloc()
-        internal.fetch_contribution_loop(contribution_count, contributions)
-        return (contributions_len=contribution_count, contributions=contributions)
+        let (contributions_len) = internal.fetch_contribution_loop(
+            contribution_count, contributions
+        )
+        return (contributions_len, contributions)
     end
 
     # Retrieve all contributions in OPEN status
@@ -231,16 +233,22 @@ namespace internal:
 
     func fetch_contribution_loop{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         contribution_index : felt, contributions : Contribution*
-    ):
+    ) -> (contributions_len : felt):
+        alloc_locals
+
         if contribution_index == 0:
-            return ()
+            return (0)
         end
+
+        let (local contributions_len) = fetch_contribution_loop(
+            contribution_index - 1, contributions
+        )
 
         let (contribution_id) = indexed_contribution_ids_.read(contribution_index - 1)
         let (contribution) = contribution_access.read(contribution_id)
-        assert [contributions] = contribution
+        assert contributions[contributions_len] = contribution
 
-        return fetch_contribution_loop(contribution_index - 1, contributions + Contribution.SIZE)
+        return (contributions_len=contributions_len + 1)
     end
 end
 
