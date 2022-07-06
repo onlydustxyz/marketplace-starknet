@@ -41,6 +41,12 @@ end
 
 namespace contribution_access:
     func create(contribution_id : felt, project_id : felt) -> (contribution : Contribution):
-        return (Contribution(contribution_id, project_id, Status.OPEN, Uint256(0, 0)))
+        return (Contribution(contribution_id, project_id, Status.OPEN, Uint256(0, 0), 0))
+    end
+
+    func create_with_gate(contribution_id : felt, project_id : felt, threshold : felt) -> (
+        contribution : Contribution
+    ):
+        return (Contribution(contribution_id, project_id, Status.OPEN, Uint256(0, 0), threshold))
     end
 end
