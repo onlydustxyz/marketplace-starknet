@@ -229,6 +229,9 @@ namespace contributions:
             contribution_access.store()
         end
 
+        let (past_contributions) = past_contributions_.read(contribution.contributor_id)
+        past_contributions_.write(contribution.contributor_id, past_contributions + 1)
+
         return ()
     end
 end
