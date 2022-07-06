@@ -35,15 +35,15 @@ func test_new_contribution_can_be_added{
 
     let contribution = contribs[0]
     with contribution:
-        assert_contribution_that.id_is(contribution2.id)
-        assert_contribution_that.project_id_is(contribution2.project_id)
+        assert_contribution_that.id_is(contribution1.id)
+        assert_contribution_that.project_id_is(contribution1.project_id)
         assert_contribution_that.status_is(Status.OPEN)
     end
 
     let contribution = contribs[1]
     with contribution:
-        assert_contribution_that.id_is(contribution1.id)
-        assert_contribution_that.project_id_is(contribution1.project_id)
+        assert_contribution_that.id_is(contribution2.id)
+        assert_contribution_that.project_id_is(contribution2.project_id)
         assert_contribution_that.status_is(Status.OPEN)
     end
 

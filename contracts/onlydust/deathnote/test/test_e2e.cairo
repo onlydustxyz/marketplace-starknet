@@ -78,17 +78,17 @@ func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
 
     let contribution = contribs[0]
     with contribution:
-        assert_contribution_that.id_is(124)
-        assert_contribution_that.project_id_is(456)
-        assert_contribution_that.status_is(Status.OPEN)
-    end
-
-    let contribution = contribs[1]
-    with contribution:
         assert_contribution_that.id_is(123)
         assert_contribution_that.project_id_is(456)
         assert_contribution_that.status_is(Status.ASSIGNED)
         assert_contribution_that.contributor_is(contributor_id)
+    end
+
+    let contribution = contribs[1]
+    with contribution:
+        assert_contribution_that.id_is(124)
+        assert_contribution_that.project_id_is(456)
+        assert_contribution_that.status_is(Status.OPEN)
     end
 
     return ()
