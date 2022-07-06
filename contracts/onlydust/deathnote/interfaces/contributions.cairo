@@ -24,6 +24,9 @@ namespace IContributions:
     func unassign_contributor_from_contribution(contribution_id : felt):
     end
 
+    func validate_contribution(contribution_id : felt):
+    end
+
     func grant_admin_role(address : felt):
     end
 

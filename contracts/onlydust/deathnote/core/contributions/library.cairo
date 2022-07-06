@@ -204,6 +204,31 @@ namespace contributions:
 
         return ()
     end
+
+    # Validate a contribution, marking it as completed
+    func validate_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contribution_id : felt
+    ):
+        internal.only_feeder()
+
+        let (contribution) = contribution_access.read(contribution_id)
+        with contribution:
+            contribution_access.only_assigned()
+        end
+
+        let contribution = Contribution(
+            contribution.id,
+            contribution.project_id,
+            Status.COMPLETED,
+            contribution.contributor_id,
+            contribution.contribution_count_required,
+        )
+        with contribution:
+            contribution_access.store()
+        end
+
+        return ()
+    end
 end
 
 namespace internal:

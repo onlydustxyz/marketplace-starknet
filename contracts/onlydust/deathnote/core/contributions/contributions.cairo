@@ -88,3 +88,10 @@ func unassign_contributor_from_contribution{
 }(contribution_id : felt):
     return contributions.unassign_contributor_from_contribution(contribution_id)
 end
+
+@external
+func validate_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    contribution_id : felt
+):
+    return contributions.validate_contribution(contribution_id)
+end
