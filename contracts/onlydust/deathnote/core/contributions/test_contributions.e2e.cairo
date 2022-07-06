@@ -64,6 +64,19 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
         assert_contribution_that.contributor_is(CONTRIBUTOR_ID)
     end
 
+    with contributions:
+        let (contribs_len, contribs) = contributions_access.all_open_contributions()
+    end
+
+    assert 1 = contribs_len
+
+    let contribution = contribs[0]
+    with contribution:
+        assert_contribution_that.id_is(124)
+        assert_contribution_that.project_id_is(456)
+        assert_contribution_that.status_is(Status.OPEN)
+    end
+
     return ()
 end
 
@@ -118,6 +131,13 @@ namespace contributions_access:
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
     }() -> (contribs_len, contribs : Contribution*):
         let (contribs_len, contribs) = IContributions.all_contributions(contributions)
+        return (contribs_len, contribs)
+    end
+
+    func all_open_contributions{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
+    }() -> (contribs_len, contribs : Contribution*):
+        let (contribs_len, contribs) = IContributions.all_open_contributions(contributions)
         return (contribs_len, contribs)
     end
 end

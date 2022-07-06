@@ -9,6 +9,7 @@ from starkware.cairo.common.hash import hash2
 from starkware.starknet.common.syscalls import get_caller_address
 
 from onlydust.deathnote.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
+from onlydust.stream.default_implementation import stream
 
 #
 # Enums
@@ -137,6 +138,22 @@ namespace contributions:
         let (contributions : Contribution*) = alloc()
         internal.fetch_contribution_loop(contribution_count, contributions)
         return (contributions_len=contribution_count, contributions=contributions)
+    end
+
+    # Retrieve all contributions in OPEN status
+    func all_open_contributions{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        ) -> (contributions_len : felt, contributions : Contribution*):
+        alloc_locals
+
+        # Get all contributions
+        let (contributions_len, contributions) = all_contributions()
+
+        # Filter to keep only open ones
+        let (contributions_len : felt, contributions : Contribution*) = stream.filter_struct(
+            contribution_access.is_open, contributions_len, contributions, Contribution.SIZE
+        )
+
+        return (contributions_len, contributions)
     end
 
     # Assign a contributor to a contribution
@@ -339,6 +356,15 @@ namespace contribution_access:
             assert Status.OPEN = contribution.status
         end
         return ()
+    end
+
+    func is_open{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contribution : Contribution*
+    ) -> (is_open : felt):
+        if contribution.status == Status.OPEN:
+            return (is_open=1)
+        end
+        return (is_open=0)
     end
 
     func only_assigned{
