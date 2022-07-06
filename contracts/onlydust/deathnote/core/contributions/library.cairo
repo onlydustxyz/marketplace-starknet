@@ -1,10 +1,10 @@
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.uint256 import Uint256
+from starkware.cairo.common.uint256 import Uint256, uint256_eq
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.math import assert_nn, assert_lt, assert_not_zero
-from starkware.cairo.common.math_cmp import is_not_zero
+from starkware.cairo.common.math import assert_nn, assert_lt, assert_le, assert_not_zero
+from starkware.cairo.common.math_cmp import is_not_zero, is_le
 from starkware.cairo.common.hash import hash2
 from starkware.starknet.common.syscalls import get_caller_address
 
@@ -34,6 +34,7 @@ struct Contribution:
     member project_id : felt
     member status : felt
     member contributor_id : Uint256
+    member contribution_count_required : felt
 end
 
 #
@@ -49,6 +50,10 @@ end
 
 @storage_var
 func contribution_count_() -> (contribution_count : felt):
+end
+
+@storage_var
+func past_contributions_(contributor_id : Uint256) -> (contribution_count : felt):
 end
 
 #
@@ -144,8 +149,14 @@ namespace contributions:
         with contribution:
             contribution_access.only_open()
             let contribution = Contribution(
-                contribution.id, contribution.project_id, Status.ASSIGNED, contributor_id
+                contribution.id,
+                contribution.project_id,
+                Status.ASSIGNED,
+                contributor_id,
+                contribution.contribution_count_required,
             )
+
+            contribution_access.assert_assignee_is_eligible()
             contribution_access.store()
         end
 
@@ -164,7 +175,11 @@ namespace contributions:
         end
 
         let contribution = Contribution(
-            contribution.id, contribution.project_id, Status.OPEN, Uint256(0, 0)
+            contribution.id,
+            contribution.project_id,
+            Status.OPEN,
+            Uint256(0, 0),
+            contribution.contribution_count_required,
         )
         with contribution:
             contribution_access.store()
@@ -222,6 +237,9 @@ namespace contribution_access:
         assert_valid_status()
         assert_valid_id()
         assert_valid_project_id()
+        assert_valid_contributor_id()
+        assert_valid_contribution_count()
+
         return ()
     end
 
@@ -261,6 +279,52 @@ namespace contribution_access:
         with_attr error_message("Contributions: Invalid project ID ({contribution.project_id})"):
             assert_nn(contribution.project_id)
             assert_not_zero(contribution.project_id)
+        end
+        return ()
+    end
+
+    func assert_valid_contribution_count{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr,
+        contribution : Contribution,
+    }():
+        with_attr error_message(
+                "Contributions: Invalid contribution count required ({contribution.contribution_count_required})"):
+            assert_nn(contribution.contribution_count_required)
+        end
+        return ()
+    end
+
+    func assert_valid_contributor_id{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr,
+        contribution : Contribution,
+    }():
+        alloc_locals
+
+        with_attr error_message("Contributions: Invalid contributor ID"):
+            let (local is_zero) = uint256_eq(Uint256(0, 0), contribution.contributor_id)
+            let (is_not_open) = is_le(Status.OPEN + 1, contribution.status)
+            if is_zero == 1:
+                assert Status.OPEN = contribution.status
+            else:
+                assert 1 = is_not_open
+            end
+        end
+        return ()
+    end
+
+    func assert_assignee_is_eligible{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr,
+        contribution : Contribution,
+    }():
+        let (assignee_contribution_count) = past_contributions_.read(contribution.contributor_id)
+        with_attr error_message("Contributions: Contributor is not eligible"):
+            assert_le(contribution.contribution_count_required, assignee_contribution_count)
         end
         return ()
     end
