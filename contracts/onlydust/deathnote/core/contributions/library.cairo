@@ -158,6 +158,19 @@ namespace contributions:
         return (contributions_len, contributions)
     end
 
+    # Retrieve all contributions assigned to a given contributor
+    func assigned_contributions{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contributor_id : Uint256
+    ) -> (contributions_len : felt, contributions : Contribution*):
+        alloc_locals
+        let (local contribution_count) = contribution_count_.read()
+        let (contributions : Contribution*) = alloc()
+        let (contributions_len) = internal.fetch_contribution_assigned_to_loop(
+            contribution_count, contributions, contributor_id
+        )
+        return (contributions_len, contributions)
+    end
+
     # Assign a contributor to a contribution
     func assign_contributor_to_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
@@ -277,6 +290,34 @@ namespace internal:
         assert contributions[contributions_len] = contribution
 
         return (contributions_len=contributions_len + 1)
+    end
+
+    func fetch_contribution_assigned_to_loop{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(contribution_index : felt, contributions : Contribution*, contributor_id : Uint256) -> (
+        contributions_len : felt
+    ):
+        alloc_locals
+        if contribution_index == 0:
+            return (0)
+        end
+
+        let (contributions_len) = fetch_contribution_assigned_to_loop(
+            contribution_index - 1, contributions, contributor_id
+        )
+
+        let (contribution_id) = indexed_contribution_ids_.read(contribution_index - 1)
+        let (local contribution) = contribution_access.read(contribution_id)
+
+        let (same_contributor) = uint256_eq(contribution.contributor_id, contributor_id)
+        if same_contributor * (1 - contribution.status + Status.ASSIGNED) == 1:
+            assert contributions[contributions_len] = contribution
+            tempvar contributions_len = contributions_len + 1
+        else:
+            tempvar contributions_len = contributions_len
+        end
+
+        return (contributions_len)
     end
 end
 

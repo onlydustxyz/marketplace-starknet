@@ -18,6 +18,11 @@ namespace IContributions:
     func all_open_contributions() -> (contributions_len : felt, contributions : Contribution*):
     end
 
+    func assigned_contributions(contributor_id : Uint256) -> (
+        contributions_len : felt, contributions : Contribution*
+    ):
+    end
+
     func assign_contributor_to_contribution(contribution_id : felt, contributor_id : Uint256):
     end
 
