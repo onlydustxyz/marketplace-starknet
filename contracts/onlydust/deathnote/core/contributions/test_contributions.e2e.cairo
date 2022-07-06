@@ -78,6 +78,20 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
     end
 
     with contributions:
+        let (contribs_len, contribs) = contributions_access.assigned_contributions(CONTRIBUTOR_ID)
+    end
+
+    assert 1 = contribs_len
+
+    let contribution = contribs[0]
+    with contribution:
+        assert_contribution_that.id_is(123)
+        assert_contribution_that.project_id_is(456)
+        assert_contribution_that.status_is(Status.ASSIGNED)
+        assert_contribution_that.contributor_is(CONTRIBUTOR_ID)
+    end
+
+    with contributions:
         contributions_access.validate_contribution(123)
         let (contribution) = contributions_access.contribution(123)
     end
@@ -86,7 +100,6 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
         assert_contribution_that.id_is(123)
         assert_contribution_that.project_id_is(456)
         assert_contribution_that.status_is(Status.COMPLETED)
-        assert_contribution_that.contributor_is(CONTRIBUTOR_ID)
     end
 
     return ()
@@ -159,6 +172,15 @@ namespace contributions_access:
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
     }() -> (contribs_len, contribs : Contribution*):
         let (contribs_len, contribs) = IContributions.all_open_contributions(contributions)
+        return (contribs_len, contribs)
+    end
+
+    func assigned_contributions{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
+    }(contributor_id : Uint256) -> (contribs_len, contribs : Contribution*):
+        let (contribs_len, contribs) = IContributions.assigned_contributions(
+            contributions, contributor_id
+        )
         return (contribs_len, contribs)
     end
 end

@@ -599,6 +599,39 @@ func test_anyone_can_list_open_contributions{
     return ()
 end
 
+@view
+func test_anyone_can_list_assigned_contributions{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    alloc_locals
+    fixture.initialize()
+
+    let contributor_id = Uint256(1, 0)
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    const contribution1_id = 123
+    let (contribution1) = contribution_access.create(contribution1_id, 456)
+    contributions.new_contribution(contribution1)
+    contributions.assign_contributor_to_contribution(contribution1_id, contributor_id)
+
+    const contribution2_id = 124
+    let (local contribution2) = contribution_access.create(contribution2_id, 456)
+    contributions.new_contribution(contribution2)
+    %{ stop_prank() %}
+
+    let (contribs_len, contribs) = contributions.assigned_contributions(contributor_id)
+    assert 1 = contribs_len
+    let contribution = contribs[0]
+    with contribution:
+        assert_contribution_that.id_is(contribution1_id)
+        assert_contribution_that.project_id_is(456)
+        assert_contribution_that.status_is(Status.ASSIGNED)
+        assert_contribution_that.contributor_is(contributor_id)
+    end
+
+    return ()
+end
+
 namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         contributions.initialize(ADMIN)
