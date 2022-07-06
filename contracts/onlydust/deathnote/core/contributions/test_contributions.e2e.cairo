@@ -77,6 +77,18 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
         assert_contribution_that.status_is(Status.OPEN)
     end
 
+    with contributions:
+        contributions_access.validate_contribution(123)
+        let (contribution) = contributions_access.contribution(123)
+    end
+
+    with contribution:
+        assert_contribution_that.id_is(123)
+        assert_contribution_that.project_id_is(456)
+        assert_contribution_that.status_is(Status.COMPLETED)
+        assert_contribution_that.contributor_is(CONTRIBUTOR_ID)
+    end
+
     return ()
 end
 
@@ -116,6 +128,15 @@ namespace contributions_access:
     }(contribution_id : felt):
         %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
         IContributions.unassign_contributor_from_contribution(contributions, contribution_id)
+        %{ stop_prank() %}
+        return ()
+    end
+
+    func validate_contribution{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
+    }(contribution_id : felt):
+        %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
+        IContributions.validate_contribution(contributions, contribution_id)
         %{ stop_prank() %}
         return ()
     end

@@ -218,6 +218,7 @@ func test_contribution_creation_with_invalid_project_id_is_reverted{
 
     return ()
 end
+
 @view
 func test_contribution_creation_with_contributor_id_is_reverted{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
@@ -342,6 +343,88 @@ func test_cannot_unassign_contribution_if_not_assigned{
     contributions.new_contribution(contribution)
     %{ expect_revert(error_message="Contributions: Contribution is not ASSIGNED") %}
     contributions.unassign_contributor_from_contribution(contribution_id)
+    %{ stop_prank() %}
+
+    return ()
+end
+
+@view
+func test_feeder_can_validate_assigned_contribution{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const contribution_id = 123
+    let (contribution) = contribution_access.create(contribution_id, 456)
+    let contributor_id = Uint256(1, 0)
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    contributions.new_contribution(contribution)
+    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
+    contributions.validate_contribution(contribution_id)
+    %{ stop_prank() %}
+
+    let (contribution) = contributions.contribution(contribution_id)
+    with contribution:
+        assert_contribution_that.status_is(Status.COMPLETED)
+    end
+
+    return ()
+end
+
+@view
+func test_anyone_cannot_validate_contribution{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const contribution_id = 123
+    let (contribution) = contribution_access.create(contribution_id, 456)
+    let contributor_id = Uint256(1, 0)
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    contributions.new_contribution(contribution)
+    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
+    %{
+        stop_prank() 
+        expect_revert(error_message="Contributions: FEEDER role required")
+    %}
+    contributions.validate_contribution(contribution_id)
+
+    return ()
+end
+
+@view
+func test_cannot_validate_non_existent_contribution{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const contribution_id = 123
+
+    %{
+        stop_prank = start_prank(ids.FEEDER) 
+        expect_revert(error_message="Contributions: Contribution does not exist")
+    %}
+    contributions.validate_contribution(contribution_id)
+    %{ stop_prank() %}
+
+    return ()
+end
+
+@view
+func test_cannot_validate_contribution_if_not_assigned{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const contribution_id = 123
+    let (contribution) = contribution_access.create(contribution_id, 456)
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    contributions.new_contribution(contribution)
+    %{ expect_revert(error_message="Contributions: Contribution is not ASSIGNED") %}
+    contributions.validate_contribution(contribution_id)
     %{ stop_prank() %}
 
     return ()
