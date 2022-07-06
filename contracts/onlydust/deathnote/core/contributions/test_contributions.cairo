@@ -3,7 +3,13 @@
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 
-from onlydust.deathnote.core.contributions.library import contributions, Contribution, Status, Role
+from onlydust.deathnote.core.contributions.library import (
+    contributions,
+    Contribution,
+    Status,
+    Role,
+    past_contributions_,
+)  # TODO: Create a proper getter for past_contributions_
 from onlydust.deathnote.test.libraries.contributions import (
     assert_contribution_that,
     contribution_access,
@@ -149,6 +155,40 @@ func test_cannot_assign_contribution_to_non_eligible_contributor{
     %{ expect_revert(error_message="Contributions: Contributor is not eligible") %}
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{ stop_prank() %}
+
+    return ()
+end
+
+@view
+func test_can_assign_gated_contribution_eligible_contributor{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const contribution_id = 123
+    const gated_contribution_id = 124
+    let contributor_id = Uint256(1, 0)
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    # Create a non-gated contribution
+    let (contribution) = contribution_access.create(contribution_id, 456)
+    contributions.new_contribution(contribution)
+
+    # Create a gated contribution
+    let (contribution) = contribution_access.create_with_gate(gated_contribution_id, 456, 1)
+    contributions.new_contribution(contribution)
+
+    # Assign and validate the non-gated contribution
+    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
+    contributions.validate_contribution(contribution_id)
+
+    # Assign and validate the gated contribution
+    contributions.assign_contributor_to_contribution(gated_contribution_id, contributor_id)
+    contributions.validate_contribution(gated_contribution_id)
+    %{ stop_prank() %}
+
+    let (past_contributions) = past_contributions_.read(contributor_id)
+    assert 2 = past_contributions
 
     return ()
 end
