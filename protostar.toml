@@ -14,7 +14,7 @@ network="alpha-goerli"
 network="alpha-mainnet"
 
 ["protostar.shared_command_configs"]
-cairo_path = ["contracts", "lib/cairo_contracts/src"]
+cairo_path = ["contracts", "lib/cairo_contracts/src", "lib/cairo_streams/src"]
 
 ["protostar.test"]
 target = ["contracts"]

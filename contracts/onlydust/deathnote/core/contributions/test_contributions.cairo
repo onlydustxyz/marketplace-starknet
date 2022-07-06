@@ -451,6 +451,31 @@ func test_admin_can_grant_and_revoke_roles{
     return ()
 end
 
+@view
+func test_anyone_can_list_open_contributions{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    alloc_locals
+    fixture.initialize()
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    const contribution1_id = 123
+    let (contribution1) = contribution_access.create(contribution1_id, 456)
+    contributions.new_contribution(contribution1)
+    contributions.assign_contributor_to_contribution(contribution1_id, Uint256(1, 0))
+
+    const contribution2_id = 124
+    let (local contribution2) = contribution_access.create(contribution2_id, 456)
+    contributions.new_contribution(contribution2)
+    %{ stop_prank() %}
+
+    let (contribs_len, contribs) = contributions.all_open_contributions()
+    assert 1 = contribs_len
+    assert contribution2 = contribs[0]
+
+    return ()
+end
+
 namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         contributions.initialize(ADMIN)
