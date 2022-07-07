@@ -84,9 +84,9 @@ end
 
 @external
 func new_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    contribution : Contribution
-):
-    return contributions.new_contribution(contribution)
+    id : felt, project_id : felt, contribution_count_required : felt
+) -> (contribution : Contribution):
+    return contributions.new_contribution(id, project_id, contribution_count_required)
 end
 
 @external
