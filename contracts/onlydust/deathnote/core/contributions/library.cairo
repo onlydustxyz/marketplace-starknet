@@ -3,7 +3,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.uint256 import Uint256, uint256_eq
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.math import assert_nn, assert_lt, assert_le, assert_not_zero
+from starkware.cairo.common.math import assert_nn, assert_lt, assert_le, assert_not_zero, sign
 from starkware.cairo.common.math_cmp import is_not_zero, is_le
 from starkware.cairo.common.hash import hash2
 from starkware.starknet.common.syscalls import get_caller_address
@@ -106,19 +106,22 @@ namespace contributions:
 
     # Add a contribution for a given token id
     func new_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        contribution : Contribution
-    ):
+        id : felt, project_id : felt, contribution_count_required : felt
+    ) -> (contribution : Contribution):
         alloc_locals
 
         internal.only_feeder()
 
+        let contribution = Contribution(
+            id, project_id, Status.OPEN, Uint256(0, 0), contribution_count_required
+        )
+
         with contribution:
             contribution_access.assert_valid()
-            contribution_access.only_open()
             contribution_access.store()
         end
 
-        return ()
+        return (contribution)
     end
 
     # Get the contribution details
@@ -427,8 +430,9 @@ namespace contribution_access:
         range_check_ptr,
         contribution : Contribution,
     }():
-        with_attr error_message(
-                "Contributions: Invalid contribution count required ({contribution.contribution_count_required})"):
+        with_attr error_message("Contributions: Invalid contribution count required"):
+            let (count_sign) = sign(contribution.contribution_count_required)
+            assert 0 = count_sign * (1 - count_sign)
             assert_nn(contribution.contribution_count_required)
         end
         return ()

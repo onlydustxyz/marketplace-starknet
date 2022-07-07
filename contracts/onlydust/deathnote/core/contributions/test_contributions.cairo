@@ -26,13 +26,10 @@ func test_new_contribution_can_be_added{
     alloc_locals
     fixture.initialize()
 
-    let (local contribution1) = contribution_access.create(123, 456)
-    let (contribution2) = contribution_access.create(124, 456)
-
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    contributions.new_contribution(contribution1)
-    contributions.new_contribution(contribution1)  # adding twice the same to test update
-    contributions.new_contribution(contribution2)
+    let (local contribution1) = contributions.new_contribution(123, 456, 0)
+    let (contribution1) = contributions.new_contribution(123, 456, 0)  # adding twice the same to test update
+    let (contribution2) = contributions.new_contribution(124, 456, 0)
     %{ stop_prank() %}
 
     let (count, contribs) = contributions.all_contributions()
@@ -63,11 +60,10 @@ func test_feeder_can_assign_contribution_to_contributor{
     fixture.initialize()
 
     const contribution_id = 123
-    let (contribution) = contribution_access.create(contribution_id, 456)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    contributions.new_contribution(contribution)
+    let (contribution) = contributions.new_contribution(contribution_id, 456, 0)
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{ stop_prank() %}
 
@@ -87,11 +83,10 @@ func test_anyone_cannot_assign_contribution_to_contributor{
     fixture.initialize()
 
     const contribution_id = 123
-    let (contribution) = contribution_access.create(contribution_id, 456)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    contributions.new_contribution(contribution)
+    let (_) = contributions.new_contribution(123, 456, 0)
     %{
         stop_prank() 
         expect_revert(error_message="Contributions: FEEDER role required")
@@ -127,11 +122,10 @@ func test_cannot_assign_twice_a_contribution{
     fixture.initialize()
 
     const contribution_id = 123
-    let (contribution) = contribution_access.create(contribution_id, 456)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    contributions.new_contribution(contribution)
+    let (_) = contributions.new_contribution(contribution_id, 456, 0)
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{ expect_revert(error_message="Contributions: Contribution is not OPEN") %}
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
@@ -147,11 +141,10 @@ func test_cannot_assign_contribution_to_non_eligible_contributor{
     fixture.initialize()
 
     const contribution_id = 123
-    let (contribution) = contribution_access.create_with_gate(contribution_id, 456, 3)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    contributions.new_contribution(contribution)
+    let (_) = contributions.new_contribution(contribution_id, 456, 3)
     %{ expect_revert(error_message="Contributions: Contributor is not eligible") %}
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{ stop_prank() %}
@@ -171,12 +164,10 @@ func test_can_assign_gated_contribution_eligible_contributor{
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
     # Create a non-gated contribution
-    let (contribution) = contribution_access.create(contribution_id, 456)
-    contributions.new_contribution(contribution)
+    let (_) = contributions.new_contribution(contribution_id, 456, 0)
 
     # Create a gated contribution
-    let (contribution) = contribution_access.create_with_gate(gated_contribution_id, 456, 1)
-    contributions.new_contribution(contribution)
+    let (_) = contributions.new_contribution(gated_contribution_id, 456, 1)
 
     # Assign and validate the non-gated contribution
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
@@ -194,38 +185,6 @@ func test_can_assign_gated_contribution_eligible_contributor{
 end
 
 @view
-func test_contribution_creation_with_invalid_status_is_reverted{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    %{
-        stop_prank = start_prank(ids.FEEDER)
-        expect_revert(error_message="Contributions: Invalid contribution status")
-    %}
-    contributions.new_contribution(Contribution(123, 456, 10, Uint256(0, 0), 1))
-    %{ stop_prank() %}
-
-    return ()
-end
-
-@view
-func test_contribution_creation_with_status_not_open_is_reverted{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    %{
-        stop_prank = start_prank(ids.FEEDER)
-        expect_revert(error_message="Contributions: Contribution is not OPEN")
-    %}
-    contributions.new_contribution(Contribution(123, 456, Status.COMPLETED, Uint256(1, 0), 1))
-    %{ stop_prank() %}
-
-    return ()
-end
-
-@view
 func test_contribution_creation_with_invalid_id_is_reverted{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
@@ -235,8 +194,7 @@ func test_contribution_creation_with_invalid_id_is_reverted{
         stop_prank = start_prank(ids.FEEDER)
         expect_revert(error_message="Contributions: Invalid contribution ID")
     %}
-    let (contribution) = contribution_access.create(0, 456)
-    contributions.new_contribution(contribution)
+    let (_) = contributions.new_contribution(0, 456, 0)
     %{ stop_prank() %}
 
     return ()
@@ -252,24 +210,7 @@ func test_contribution_creation_with_invalid_project_id_is_reverted{
         stop_prank = start_prank(ids.FEEDER)
         expect_revert(error_message="Contributions: Invalid project ID")
     %}
-    let (contribution) = contribution_access.create(123, 0)
-    contributions.new_contribution(contribution)
-    %{ stop_prank() %}
-
-    return ()
-end
-
-@view
-func test_contribution_creation_with_contributor_id_is_reverted{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    %{
-        stop_prank = start_prank(ids.FEEDER)
-        expect_revert(error_message="Contributions: Invalid contributor ID")
-    %}
-    contributions.new_contribution(Contribution(123, 456, Status.OPEN, Uint256(1, 0), 1))
+    let (_) = contributions.new_contribution(123, 0, 0)
     %{ stop_prank() %}
 
     return ()
@@ -283,9 +224,9 @@ func test_contribution_creation_with_invalid_contribution_count_is_reverted{
 
     %{
         stop_prank = start_prank(ids.FEEDER)
-        expect_revert(error_message="Contributions: Contribution is not OPEN")
+        expect_revert(error_message="Contributions: Invalid contribution count required")
     %}
-    contributions.new_contribution(Contribution(123, 456, Status.COMPLETED, Uint256(1, 0), 1))
+    let (_) = contributions.new_contribution(123, 456, -1)
     %{ stop_prank() %}
 
     return ()
@@ -298,8 +239,7 @@ func test_anyone_cannot_add_contribution{
     fixture.initialize()
 
     %{ expect_revert(error_message="Contributions: FEEDER role required") %}
-    let (contribution) = contribution_access.create(123, 456)
-    contributions.new_contribution(contribution)
+    let (_) = contributions.new_contribution(123, 456, 0)
 
     return ()
 end
@@ -311,11 +251,10 @@ func test_feeder_can_unassign_contribution_from_contributor{
     fixture.initialize()
 
     const contribution_id = 123
-    let (contribution) = contribution_access.create(contribution_id, 456)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    contributions.new_contribution(contribution)
+    let (_) = contributions.new_contribution(contribution_id, 456, 0)
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     contributions.unassign_contributor_from_contribution(contribution_id)
     %{ stop_prank() %}
@@ -336,11 +275,10 @@ func test_anyone_cannot_unassign_contribution_from_contributor{
     fixture.initialize()
 
     const contribution_id = 123
-    let (contribution) = contribution_access.create(contribution_id, 456)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    contributions.new_contribution(contribution)
+    let (_) = contributions.new_contribution(contribution_id, 456, 0)
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{
         stop_prank() 
@@ -377,10 +315,9 @@ func test_cannot_unassign_contribution_if_not_assigned{
     fixture.initialize()
 
     const contribution_id = 123
-    let (contribution) = contribution_access.create(contribution_id, 456)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    contributions.new_contribution(contribution)
+    let (_) = contributions.new_contribution(contribution_id, 456, 0)
     %{ expect_revert(error_message="Contributions: Contribution is not ASSIGNED") %}
     contributions.unassign_contributor_from_contribution(contribution_id)
     %{ stop_prank() %}
@@ -395,11 +332,10 @@ func test_feeder_can_validate_assigned_contribution{
     fixture.initialize()
 
     const contribution_id = 123
-    let (contribution) = contribution_access.create(contribution_id, 456)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    contributions.new_contribution(contribution)
+    let (_) = contributions.new_contribution(contribution_id, 456, 0)
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     contributions.validate_contribution(contribution_id)
     %{ stop_prank() %}
@@ -419,11 +355,10 @@ func test_anyone_cannot_validate_contribution{
     fixture.initialize()
 
     const contribution_id = 123
-    let (contribution) = contribution_access.create(contribution_id, 456)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    contributions.new_contribution(contribution)
+    let (_) = contributions.new_contribution(contribution_id, 456, 0)
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{
         stop_prank() 
@@ -459,10 +394,9 @@ func test_cannot_validate_contribution_if_not_assigned{
     fixture.initialize()
 
     const contribution_id = 123
-    let (contribution) = contribution_access.create(contribution_id, 456)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    contributions.new_contribution(contribution)
+    let (_) = contributions.new_contribution(contribution_id, 456, 0)
     %{ expect_revert(error_message="Contributions: Contribution is not ASSIGNED") %}
     contributions.validate_contribution(contribution_id)
     %{ stop_prank() %}
@@ -550,8 +484,7 @@ func test_admin_can_grant_and_revoke_roles{
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.RANDOM_ADDRESS) %}
-    let (local contribution) = contribution_access.create(123, 456)
-    contributions.new_contribution(contribution)
+    let (local contribution) = contributions.new_contribution(123, 456, 0)
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
@@ -568,7 +501,7 @@ func test_admin_can_grant_and_revoke_roles{
         stop_prank = start_prank(ids.RANDOM_ADDRESS) 
         expect_revert(error_message='Contributions: FEEDER role required')
     %}
-    contributions.new_contribution(contribution)
+    contributions.new_contribution(123, 456, 0)
     %{ stop_prank() %}
 
     return ()
@@ -583,13 +516,11 @@ func test_anyone_can_list_open_contributions{
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
     const contribution1_id = 123
-    let (contribution1) = contribution_access.create(contribution1_id, 456)
-    contributions.new_contribution(contribution1)
+    let (contribution1) = contributions.new_contribution(contribution1_id, 456, 0)
     contributions.assign_contributor_to_contribution(contribution1_id, Uint256(1, 0))
 
     const contribution2_id = 124
-    let (local contribution2) = contribution_access.create(contribution2_id, 456)
-    contributions.new_contribution(contribution2)
+    let (local contribution2) = contributions.new_contribution(contribution2_id, 456, 0)
     %{ stop_prank() %}
 
     let (contribs_len, contribs) = contributions.all_open_contributions()
@@ -610,13 +541,11 @@ func test_anyone_can_list_assigned_contributions{
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
     const contribution1_id = 123
-    let (contribution1) = contribution_access.create(contribution1_id, 456)
-    contributions.new_contribution(contribution1)
+    let (contribution1) = contributions.new_contribution(contribution1_id, 456, 0)
     contributions.assign_contributor_to_contribution(contribution1_id, contributor_id)
 
     const contribution2_id = 124
-    let (local contribution2) = contribution_access.create(contribution2_id, 456)
-    contributions.new_contribution(contribution2)
+    let (local contribution2) = contributions.new_contribution(contribution2_id, 456, 0)
     %{ stop_prank() %}
 
     let (contribs_len, contribs) = contributions.assigned_contributions(contributor_id)
@@ -647,21 +576,17 @@ func test_anyone_can_list_contributions_eligible_to_contributor{
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
     let contribution_id = 1  # 'open non-gated'
-    let (contribution1) = contribution_access.create(contribution_id, 'OnlyDust')
-    contributions.new_contribution(contribution1)
+    let (contribution1) = contributions.new_contribution(contribution_id, 'OnlyDust', 0)
 
     let contribution_id = 2  # 'assigned non-gated'
-    let (local contribution2) = contribution_access.create(contribution_id, 'Briq')
-    contributions.new_contribution(contribution2)
+    let (local contribution2) = contributions.new_contribution(contribution_id, 'Briq', 0)
     contributions.assign_contributor_to_contribution(contribution_id, Uint256(1, 0))
 
     let contribution_id = 3  # 'open gated'
-    let (local contribution3) = contribution_access.create_with_gate(contribution_id, 'Briq', 1)
-    contributions.new_contribution(contribution3)
+    let (local contribution3) = contributions.new_contribution(contribution_id, 'Briq', 1)
 
     let contribution_id = 4  # 'open gated too_high'
-    let (local contribution5) = contribution_access.create_with_gate(contribution_id, 'Briq', 3)
-    contributions.new_contribution(contribution5)
+    let (local contribution5) = contributions.new_contribution(contribution_id, 'Briq', 3)
 
     %{ stop_prank() %}
 
@@ -702,12 +627,10 @@ namespace fixture:
 
         %{ stop_prank = start_prank(ids.FEEDER) %}
         # Create a non-gated contribution
-        let (contribution) = contribution_access.create(contribution_id, 'OnlyDust')
-        contributions.new_contribution(contribution)
+        let (contribution) = contributions.new_contribution(contribution_id, 'OnlyDust', 0)
 
         # Create a gated contribution
-        let (contribution) = contribution_access.create_with_gate(gated_contribution_id, 'Briq', 1)
-        contributions.new_contribution(contribution)
+        let (contribution) = contributions.new_contribution(gated_contribution_id, 'Briq', 1)
 
         # Assign and validate the non-gated contribution
         contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
