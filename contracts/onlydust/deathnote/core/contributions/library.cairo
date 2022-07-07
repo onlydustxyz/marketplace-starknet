@@ -171,6 +171,19 @@ namespace contributions:
         return (contributions_len, contributions)
     end
 
+    # Retrieve all contributions a given contributor is eligible to
+    func eligible_contributions{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contributor_id : Uint256
+    ) -> (contributions_len : felt, contributions : Contribution*):
+        alloc_locals
+        let (local contribution_count) = contribution_count_.read()
+        let (contributions : Contribution*) = alloc()
+        let (contributions_len) = internal.fetch_contribution_eligible_to_loop(
+            contribution_count, contributions, contributor_id
+        )
+        return (contributions_len, contributions)
+    end
+
     # Assign a contributor to a contribution
     func assign_contributor_to_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
@@ -319,6 +332,37 @@ namespace internal:
 
         return (contributions_len)
     end
+
+    func fetch_contribution_eligible_to_loop{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(contribution_index : felt, contributions : Contribution*, contributor_id : Uint256) -> (
+        contributions_len : felt
+    ):
+        alloc_locals
+        if contribution_index == 0:
+            return (0)
+        end
+
+        let (contributions_len) = fetch_contribution_eligible_to_loop(
+            contribution_index - 1, contributions, contributor_id
+        )
+
+        let (contribution_id) = indexed_contribution_ids_.read(contribution_index - 1)
+        let (local contribution) = contribution_access.read(contribution_id)
+
+        let (contributor_eligible) = contribution_access.is_contributor_eligible(
+            contribution, contributor_id
+        )
+
+        if contributor_eligible == 1:
+            assert contributions[contributions_len] = contribution
+            tempvar contributions_len = contributions_len + 1
+        else:
+            tempvar contributions_len = contributions_len
+        end
+
+        return (contributions_len)
+    end
 end
 
 namespace contribution_access:
@@ -410,15 +454,24 @@ namespace contribution_access:
         return ()
     end
 
+    func is_contributor_eligible{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contribution : Contribution, contributor_id : Uint256
+    ) -> (result : felt):
+        alloc_locals
+        let (past_contribution_count) = past_contributions_.read(contributor_id)
+        let (result) = is_le(contribution.contribution_count_required, past_contribution_count)
+        return (result=result)
+    end
+
     func assert_assignee_is_eligible{
         syscall_ptr : felt*,
         pedersen_ptr : HashBuiltin*,
         range_check_ptr,
         contribution : Contribution,
     }():
-        let (assignee_contribution_count) = past_contributions_.read(contribution.contributor_id)
+        let (is_eligible) = is_contributor_eligible(contribution, contribution.contributor_id)
         with_attr error_message("Contributions: Contributor is not eligible"):
-            assert_le(contribution.contribution_count_required, assignee_contribution_count)
+            assert 1 = is_eligible
         end
         return ()
     end
