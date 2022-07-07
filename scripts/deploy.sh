@@ -141,10 +141,10 @@ deploy_all_contracts() {
     send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $PROFILE_ADDRESS --abi ./build/profile_abi.json --function grant_minter_role --inputs $REGISTRY_ADDRESS"
 
     log_info "Granting 'REGISTERER' role to the signer back-ends"
-    SIGNER_BACKEND_ADDRESS=0x04c620011ded41a7ba708a5773fdec2aa63c20585b3517d24d48d2c4b5a2936a
+    SIGNER_BACKEND_ADDRESS=0x05267c02fd9fccfa811947f36b4568290766c33b581996a53c7a538669a8b0e3
     send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $SIGNER_BACKEND_ADDRESS"
 
-    SIGNER_BACKEND_ADDRESS=0x06a3fb29f61aee5592aae3803cd2b0e28c735cfbef992fea0dac4cacdae5eb90
+    SIGNER_BACKEND_ADDRESS=0x00644a7e910ff66e0cbe4b3796007b69154bfc4b04f94dc86c8d94831be882bf
     send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $SIGNER_BACKEND_ADDRESS"
 
     log_info "Granting 'FEEDER' role to the feeder back-ends"
