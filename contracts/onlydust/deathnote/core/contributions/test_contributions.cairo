@@ -632,12 +632,95 @@ func test_anyone_can_list_assigned_contributions{
     return ()
 end
 
+@view
+func test_anyone_can_list_contributions_eligible_to_contributor{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    alloc_locals
+    fixture.initialize()
+
+    let contributor_id = Uint256('greg', '@onlydust')
+
+    fixture.validate_two_contributions(contributor_id)
+
+    # Create different contributions
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    let contribution_id = 1  # 'open non-gated'
+    let (contribution1) = contribution_access.create(contribution_id, 'OnlyDust')
+    contributions.new_contribution(contribution1)
+
+    let contribution_id = 2  # 'assigned non-gated'
+    let (local contribution2) = contribution_access.create(contribution_id, 'Briq')
+    contributions.new_contribution(contribution2)
+    contributions.assign_contributor_to_contribution(contribution_id, Uint256(1, 0))
+
+    let contribution_id = 3  # 'open gated'
+    let (local contribution3) = contribution_access.create_with_gate(contribution_id, 'Briq', 1)
+    contributions.new_contribution(contribution3)
+
+    let contribution_id = 4  # 'open gated too_high'
+    let (local contribution5) = contribution_access.create_with_gate(contribution_id, 'Briq', 3)
+    contributions.new_contribution(contribution5)
+
+    %{ stop_prank() %}
+
+    let (contribs_len, contribs) = contributions.eligible_contributions(contributor_id)
+    assert 5 = contribs_len
+
+    let contribution = contribs[0]
+    with contribution:
+        assert_contribution_that.id_is('exercise')
+        assert_contribution_that.project_id_is('OnlyDust')
+        assert_contribution_that.contributor_is(contributor_id)
+    end
+
+    let contribution = contribs[2]
+    with contribution:
+        assert_contribution_that.id_is(1)
+        assert_contribution_that.project_id_is('OnlyDust')
+        assert_contribution_that.contributor_is(Uint256(0, 0))
+    end
+
+    return ()
+end
+
 namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         contributions.initialize(ADMIN)
         %{ stop_prank = start_prank(ids.ADMIN) %}
         contributions.grant_feeder_role(FEEDER)
         %{ stop_prank() %}
+        return ()
+    end
+
+    func validate_two_contributions{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(contributor_id : Uint256):
+        const contribution_id = 'exercise'
+        const gated_contribution_id = 'briqgame'
+
+        %{ stop_prank = start_prank(ids.FEEDER) %}
+        # Create a non-gated contribution
+        let (contribution) = contribution_access.create(contribution_id, 'OnlyDust')
+        contributions.new_contribution(contribution)
+
+        # Create a gated contribution
+        let (contribution) = contribution_access.create_with_gate(gated_contribution_id, 'Briq', 1)
+        contributions.new_contribution(contribution)
+
+        # Assign and validate the non-gated contribution
+        contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
+        contributions.validate_contribution(contribution_id)
+
+        # Assign and validate the gated contribution
+        contributions.assign_contributor_to_contribution(gated_contribution_id, contributor_id)
+        contributions.validate_contribution(gated_contribution_id)
+        %{ stop_prank() %}
+
+        let (past_contributions) = past_contributions_.read(contributor_id)
+        assert 2 = past_contributions
+
         return ()
     end
 end
