@@ -134,6 +134,17 @@ deploy_all_contracts() {
 
     [ ! -z $ACCOUNT ] && ACCOUNT_OPT="--account $ACCOUNT"
 
+    ADMIN=0x071CE7E8c126EA3085fDf2cd01C7d4B7ec12AA9930CE835BfdC8Fb1562e3Baa4
+
+    log_info "Granting 'ADMIN' roles for admin account on the profile"
+    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $PROFILE_ADDRESS --abi ./build/profile_abi.json --function grant_admin_role --inputs $ADMIN"
+
+    log_info "Granting 'ADMIN' roles for admin account on the profile"
+    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_admin_role --inputs $ADMIN"
+
+    log_info "Granting 'ADMIN' roles for admin account on the profile"
+    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $CONTRIBUTIONS_ADDRESS --abi ./build/contributions_abi.json --function grant_admin_role --inputs $ADMIN"
+
     log_info "Setting profile contract inside registry"
     send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function set_profile_contract --inputs $PROFILE_ADDRESS"
 
@@ -145,6 +156,9 @@ deploy_all_contracts() {
     send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $SIGNER_BACKEND_ADDRESS"
 
     SIGNER_BACKEND_ADDRESS=0x00644a7e910ff66e0cbe4b3796007b69154bfc4b04f94dc86c8d94831be882bf
+    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $SIGNER_BACKEND_ADDRESS"
+
+    SIGNER_BACKEND_ADDRESS=0x05F5ae3aD947d52abA4034F8491357d98c91fA2b59FfC5A4F66Cf4a9dc568153
     send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $SIGNER_BACKEND_ADDRESS"
 
     log_info "Granting 'FEEDER' role to the feeder back-ends"
