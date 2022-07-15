@@ -3,13 +3,7 @@
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 
-from onlydust.deathnote.core.contributions.library import (
-    contributions,
-    Contribution,
-    Status,
-    Role,
-    past_contributions_,
-)  # TODO: Create a proper getter for past_contributions_
+from onlydust.deathnote.core.contributions.library import contributions, Contribution, Status, Role
 from onlydust.deathnote.test.libraries.contributions import (
     assert_contribution_that,
     contribution_access,
@@ -178,7 +172,7 @@ func test_can_assign_gated_contribution_eligible_contributor{
     contributions.validate_contribution(gated_contribution_id)
     %{ stop_prank() %}
 
-    let (past_contributions) = past_contributions_.read(contributor_id)
+    let (past_contributions) = contributions.past_contributions(contributor_id)
     assert 2 = past_contributions
 
     return ()
@@ -508,6 +502,20 @@ func test_admin_can_grant_and_revoke_roles{
 end
 
 @view
+func test_anyone_can_get_past_contributions_count{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+    let contributor_id = Uint256('greg', '@onlydust')
+    fixture.validate_two_contributions(contributor_id)
+
+    let (past_contribution_count) = contributions.past_contributions(contributor_id)
+    assert 2 = past_contribution_count
+
+    return ()
+end
+
+@view
 func test_anyone_can_list_open_contributions{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
@@ -641,7 +649,7 @@ namespace fixture:
         contributions.validate_contribution(gated_contribution_id)
         %{ stop_prank() %}
 
-        let (past_contributions) = past_contributions_.read(contributor_id)
+        let (past_contributions) = contributions.past_contributions(contributor_id)
         assert 2 = past_contributions
 
         return ()

@@ -132,6 +132,14 @@ namespace contributions:
         return (contribution)
     end
 
+    # Get the number of past contributions for a given contributor
+    func past_contributions{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contributor_id : Uint256
+    ) -> (num_contributions : felt):
+        let (num_contributions) = past_contributions_.read(contributor_id)
+        return (num_contributions)
+    end
+
     # Retrieve all contributions
     func all_contributions{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
         contributions_len : felt, contributions : Contribution*

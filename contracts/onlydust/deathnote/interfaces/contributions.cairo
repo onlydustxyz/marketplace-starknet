@@ -14,6 +14,9 @@ namespace IContributions:
     func contribution(contribution_id : felt) -> (contribution : Contribution):
     end
 
+    func past_contributions(contributor_id : Uint256) -> (num_contributions : felt):
+    end
+
     func all_contributions() -> (contributions_len : felt, contributions : Contribution*):
     end
 
