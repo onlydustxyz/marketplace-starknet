@@ -2,6 +2,7 @@
 
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_builtins import HashBuiltin
+from openzeppelin.upgrades.library import Proxy
 
 from onlydust.deathnote.core.contributions.library import contributions, Contribution
 
@@ -11,6 +12,53 @@ from onlydust.deathnote.core.contributions.library import contributions, Contrib
 @constructor
 func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(admin : felt):
     return contributions.initialize(admin)
+end
+
+@external
+func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    proxy_admin : felt
+):
+    Proxy.initializer(proxy_admin)
+    constructor(proxy_admin)
+    return ()
+end
+
+#
+# Proxy / Upgrades
+#
+
+@view
+func implementation{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
+    address : felt
+):
+    let (address) = Proxy.get_implementation_hash()
+    return (address)
+end
+
+@view
+func proxy_admin{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
+    admin : felt
+):
+    let (admin) = Proxy.get_admin()
+    return (admin)
+end
+
+@external
+func set_implementation{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    new_implementation_hash : felt
+):
+    Proxy.assert_only_admin()
+    Proxy._set_implementation_hash(new_implementation_hash)
+    return ()
+end
+
+@external
+func set_proxy_admin{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    new_admin : felt
+):
+    Proxy.assert_only_admin()
+    Proxy._set_admin(new_admin)
+    return ()
 end
 
 #
