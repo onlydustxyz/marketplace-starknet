@@ -351,6 +351,33 @@ func test_feeder_can_validate_assigned_contribution{
 end
 
 @view
+func test_validator_can_validate_assigned_contribution{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const contribution_id = 123
+    let contributor_id = Uint256(1, 0)
+    let validator_account = 'validator'
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, validator_account)
+    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
+    %{ stop_prank() %}
+
+    %{ stop_prank = start_prank(ids.validator_account) %}
+    contributions.validate_contribution(contribution_id)
+    %{ stop_prank() %}
+
+    let (contribution) = contributions.contribution(contribution_id)
+    with contribution:
+        assert_contribution_that.status_is(Status.COMPLETED)
+    end
+
+    return ()
+end
+
+@view
 func test_anyone_cannot_validate_contribution{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
@@ -364,7 +391,7 @@ func test_anyone_cannot_validate_contribution{
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{
         stop_prank() 
-        expect_revert(error_message="Contributions: FEEDER role required")
+        expect_revert(error_message="Contributions: caller cannot validate this contribution")
     %}
     contributions.validate_contribution(contribution_id)
 
