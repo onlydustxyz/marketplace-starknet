@@ -93,6 +93,45 @@ send_transaction() {
     echo $contract_address
 }
 
+# send a transaction that declares a contract class
+# $* - command line to execute
+# return The contract address
+send_declare_contract_transaction() {
+    transaction=$*
+
+    while true
+    do
+        execute $transaction || exit_error "Error when sending transaction"
+        
+        contract_class_hash=`sed -n 's@Contract class hash: \(.*\)@\1@p' logs.json`
+        tx_hash=`sed -n 's@Transaction hash: \(.*\)@\1@p' logs.json`
+
+        wait_for_acceptance $tx_hash
+
+        case $? in
+            0) log_success "\nTransaction accepted!"; break;;
+            1) log_warning "\nTransaction rejected!"; ask "Do you want to retry";;
+        esac
+    done || exit_error
+
+    echo $contract_class_hash
+}
+
+deploy_proxified_contract() {
+    path_to_implementation=$*
+
+    # declare implementation contract
+    IMPLEMENTATION_CLASS_HASH=`send_declare_contract_transaction "starknet declare $path_to_implementation"` || exit_error
+
+    # deploy proxy
+    PROXY_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/proxy.json --inputs $IMPLEMENTATION_CLASS_HASH"` || exit_error
+
+    # initialize contract and set admin
+    `send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $PROXY_ADDRESS --abi ./build/proxy.json --function initializer --inputs $ADMIN_ADDRESS"` || exit_error
+
+    echo $PROXY_ADDRESS
+}
+
 # Deploy all contracts and log the deployed addresses in the cache file
 deploy_all_contracts() {
     [ -f $CACHE_FILE ] && {
@@ -121,9 +160,9 @@ deploy_all_contracts() {
         REGISTRY_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/registry.json --inputs $ADMIN_ADDRESS"` || exit_error
     fi
 
-    if [ -z $METADATA_ADDRESS ]; then
+    if [ -z $CONTRIBUTIONS_ADDRESS ]; then
         log_info "Deploying contributions contract..."
-        CONTRIBUTIONS_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/contributions.json --inputs $ADMIN_ADDRESS"` || exit_error
+        CONTRIBUTIONS_ADDRESS=`deploy_proxified_contract ./build/contributions.json` || exit_error
     fi
 
     (

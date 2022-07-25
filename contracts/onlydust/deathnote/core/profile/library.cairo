@@ -5,13 +5,7 @@ from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.math import assert_not_zero
 from starkware.starknet.common.syscalls import get_caller_address
 
-from openzeppelin.token.erc721.library import (
-    ERC721_initializer,
-    ERC721_name,
-    ERC721_symbol,
-    ERC721_mint,
-    ERC721_ownerOf,
-)
+from openzeppelin.token.erc721.library import ERC721
 
 from onlydust.deathnote.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
 
@@ -54,7 +48,7 @@ namespace profile:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         admin : felt
     ):
-        ERC721_initializer('Death Note Profile', 'DNP')
+        ERC721.initializer('Death Note Profile', 'DNP')
         AccessControl.constructor()
         AccessControl._grant_role(Role.ADMIN, admin)
         return ()
@@ -97,14 +91,14 @@ namespace profile:
 
     # Get the profile name
     func name{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (name : felt):
-        return ERC721_name()
+        return ERC721.name()
     end
 
     # Get the profile symbol
     func symbol{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
         symbol : felt
     ):
-        return ERC721_symbol()
+        return ERC721.symbol()
     end
 
     # Mint a new token
@@ -130,7 +124,7 @@ namespace profile:
     func ownerOf{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         tokenId : Uint256
     ) -> (owner : felt):
-        return ERC721_ownerOf(tokenId)
+        return ERC721.owner_of(tokenId)
     end
 end
 
@@ -163,7 +157,7 @@ namespace internal:
         alloc_locals
 
         let (local tokenId : Uint256) = total_supply_.read()
-        ERC721_mint(to, tokenId)
+        ERC721._mint(to, tokenId)
 
         let (new_supply) = SafeUint256.add(tokenId, Uint256(1, 0))
         total_supply_.write(new_supply)
