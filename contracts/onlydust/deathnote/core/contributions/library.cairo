@@ -256,10 +256,9 @@ namespace contributions:
     func validate_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         contribution_id : felt
     ):
-        internal.only_feeder()
-
         let (contribution) = contribution_access.read(contribution_id)
         with contribution:
+            contribution_access.caller_can_validate()
             contribution_access.only_assigned()
         end
 
@@ -518,6 +517,28 @@ namespace contribution_access:
     }():
         with_attr error_message("Contributions: Contribution is not OPEN"):
             assert Status.OPEN = contribution.status
+        end
+        return ()
+    end
+
+    func caller_can_validate{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr,
+        contribution : Contribution,
+    }():
+        let (caller) = get_caller_address()
+        let (has_feeder_role) = AccessControl.has_role(Role.FEEDER, caller)
+        # is Zero when caller has feeder role
+        let doesnt_have_feeder_role = 1 - has_feeder_role
+        # is Zero when caller is validator
+        let is_not_validator = contribution.validator_account - caller
+
+        # has feeder role or is validator
+        with_attr error_message("Contributions: caller cannot validate this contribution"):
+            # safe because `doesnt_have_feeder_role` is either 0 or 1
+            # so the product will never overflow
+            assert doesnt_have_feeder_role * is_not_validator = 0
         end
         return ()
     end

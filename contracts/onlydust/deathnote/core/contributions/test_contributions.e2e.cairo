@@ -32,23 +32,86 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
 
     let CONTRIBUTOR_ID = Uint256(12, 0)
 
+    let UNASSIGNED_CONTRIBUTION_ID = 1
+    let FEEDER_VALIDATED_CONTRIBUTION_ID = 2
+    let VALIDATOR_VALIDATED_CONTRIBUTION_ID = 3
+
+    # Create two contributions and assign them a contibutor
     with contributions:
-        contributions_access.new_contribution(123, 'MyProject', 0, 'validator')
-        contributions_access.new_contribution(124, 'MyProject', 0, 'validator')
+        contributions_access.new_contribution(
+            UNASSIGNED_CONTRIBUTION_ID, 'MyProject', 0, 'validator'
+        )
+        contributions_access.new_contribution(
+            FEEDER_VALIDATED_CONTRIBUTION_ID, 'MyProject', 0, 'validator'
+        )
+        contributions_access.new_contribution(
+            VALIDATOR_VALIDATED_CONTRIBUTION_ID, 'MyProject', 0, 'validator'
+        )
 
-        contributions_access.assign_contributor_to_contribution(123, CONTRIBUTOR_ID)
+        contributions_access.assign_contributor_to_contribution(
+            UNASSIGNED_CONTRIBUTION_ID, CONTRIBUTOR_ID
+        )
+        contributions_access.unassign_contributor_from_contribution(UNASSIGNED_CONTRIBUTION_ID)
 
-        contributions_access.assign_contributor_to_contribution(124, CONTRIBUTOR_ID)
-        contributions_access.unassign_contributor_from_contribution(124)
+        contributions_access.assign_contributor_to_contribution(
+            FEEDER_VALIDATED_CONTRIBUTION_ID, CONTRIBUTOR_ID
+        )
+        contributions_access.assign_contributor_to_contribution(
+            VALIDATOR_VALIDATED_CONTRIBUTION_ID, CONTRIBUTOR_ID
+        )
 
         let (contribs_len, contribs) = contributions_access.all_contributions()
+    end
+
+    assert 3 = contribs_len
+
+    # Check unassigned contribution state
+    let contribution = contribs[0]
+    with contribution:
+        assert_contribution_that.id_is(UNASSIGNED_CONTRIBUTION_ID)
+        assert_contribution_that.project_id_is('MyProject')
+        assert_contribution_that.status_is(Status.OPEN)
+    end
+
+    # Check assigned contributions state
+    let contribution = contribs[1]
+    with contribution:
+        assert_contribution_that.id_is(FEEDER_VALIDATED_CONTRIBUTION_ID)
+        assert_contribution_that.project_id_is('MyProject')
+        assert_contribution_that.status_is(Status.ASSIGNED)
+        assert_contribution_that.contributor_is(CONTRIBUTOR_ID)
+    end
+    let contribution = contribs[2]
+    with contribution:
+        assert_contribution_that.id_is(VALIDATOR_VALIDATED_CONTRIBUTION_ID)
+        assert_contribution_that.project_id_is('MyProject')
+        assert_contribution_that.status_is(Status.ASSIGNED)
+        assert_contribution_that.contributor_is(CONTRIBUTOR_ID)
+    end
+
+    # Check the open contribution listing only returns the unassigned ones
+    with contributions:
+        let (contribs_len, contribs) = contributions_access.all_open_contributions()
+    end
+    assert 1 = contribs_len
+
+    let contribution = contribs[0]
+    with contribution:
+        assert_contribution_that.id_is(UNASSIGNED_CONTRIBUTION_ID)
+        assert_contribution_that.project_id_is('MyProject')
+        assert_contribution_that.status_is(Status.OPEN)
+    end
+
+    # Check assigned contribution state
+    with contributions:
+        let (contribs_len, contribs) = contributions_access.assigned_contributions(CONTRIBUTOR_ID)
     end
 
     assert 2 = contribs_len
 
     let contribution = contribs[0]
     with contribution:
-        assert_contribution_that.id_is(123)
+        assert_contribution_that.id_is(FEEDER_VALIDATED_CONTRIBUTION_ID)
         assert_contribution_that.project_id_is('MyProject')
         assert_contribution_that.status_is(Status.ASSIGNED)
         assert_contribution_that.contributor_is(CONTRIBUTOR_ID)
@@ -56,45 +119,34 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
 
     let contribution = contribs[1]
     with contribution:
-        assert_contribution_that.id_is(124)
-        assert_contribution_that.project_id_is('MyProject')
-        assert_contribution_that.status_is(Status.OPEN)
-    end
-
-    with contributions:
-        let (contribs_len, contribs) = contributions_access.all_open_contributions()
-    end
-
-    assert 1 = contribs_len
-
-    let contribution = contribs[0]
-    with contribution:
-        assert_contribution_that.id_is(124)
-        assert_contribution_that.project_id_is('MyProject')
-        assert_contribution_that.status_is(Status.OPEN)
-    end
-
-    with contributions:
-        let (contribs_len, contribs) = contributions_access.assigned_contributions(CONTRIBUTOR_ID)
-    end
-
-    assert 1 = contribs_len
-
-    let contribution = contribs[0]
-    with contribution:
-        assert_contribution_that.id_is(123)
+        assert_contribution_that.id_is(VALIDATOR_VALIDATED_CONTRIBUTION_ID)
         assert_contribution_that.project_id_is('MyProject')
         assert_contribution_that.status_is(Status.ASSIGNED)
         assert_contribution_that.contributor_is(CONTRIBUTOR_ID)
     end
 
+    # Check validate contribution by feeder works
     with contributions:
-        contributions_access.validate_contribution(123)
-        let (contribution) = contributions_access.contribution(123)
+        contributions_access.validate_contribution_as(FEEDER_VALIDATED_CONTRIBUTION_ID, FEEDER)
+        let (contribution) = contributions_access.contribution(FEEDER_VALIDATED_CONTRIBUTION_ID)
     end
 
     with contribution:
-        assert_contribution_that.id_is(123)
+        assert_contribution_that.id_is(FEEDER_VALIDATED_CONTRIBUTION_ID)
+        assert_contribution_that.project_id_is('MyProject')
+        assert_contribution_that.status_is(Status.COMPLETED)
+    end
+
+    # Check validate contribution by validator works
+    with contributions:
+        contributions_access.validate_contribution_as(
+            VALIDATOR_VALIDATED_CONTRIBUTION_ID, 'validator'
+        )
+        let (contribution) = contributions_access.contribution(VALIDATOR_VALIDATED_CONTRIBUTION_ID)
+    end
+
+    with contribution:
+        assert_contribution_that.id_is(VALIDATOR_VALIDATED_CONTRIBUTION_ID)
         assert_contribution_that.project_id_is('MyProject')
         assert_contribution_that.status_is(Status.COMPLETED)
     end
@@ -152,10 +204,10 @@ namespace contributions_access:
         return ()
     end
 
-    func validate_contribution{
+    func validate_contribution_as{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(contribution_id : felt):
-        %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
+    }(contribution_id : felt, caller : felt):
+        %{ stop_prank = start_prank(ids.caller, ids.contributions) %}
         IContributions.validate_contribution(contributions, contribution_id)
         %{ stop_prank() %}
         return ()
