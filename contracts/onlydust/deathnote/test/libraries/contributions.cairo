@@ -37,16 +37,12 @@ namespace assert_contribution_that:
         end
         return ()
     end
-end
 
-namespace contribution_access:
-    func create(contribution_id : felt, project_id : felt) -> (contribution : Contribution):
-        return (Contribution(contribution_id, project_id, Status.OPEN, Uint256(0, 0), 0))
-    end
-
-    func create_with_gate(contribution_id : felt, project_id : felt, threshold : felt) -> (
-        contribution : Contribution
-    ):
-        return (Contribution(contribution_id, project_id, Status.OPEN, Uint256(0, 0), threshold))
+    func validator_is{contribution : Contribution}(expected : felt):
+        let actual = contribution.validator_account
+        with_attr error_message("Invalid validator: expected {expected}, actual {actual}"):
+            assert expected = actual
+        end
+        return ()
     end
 end
