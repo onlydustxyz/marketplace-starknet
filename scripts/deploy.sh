@@ -6,7 +6,6 @@ ROOT=`readlink -f $SCRIPT_DIR/..`
 CACHE_FILE=$ROOT/build/deployed_contracts.txt
 STARKNET_ACCOUNTS_FILE=$HOME/.starknet_accounts/starknet_open_zeppelin_accounts.json
 PROTOSTAR_TOML_FILE=$ROOT/protostar.toml
-NETWORK=
 WALLET=$STARKNET_WALLET
 
 ### FUNCTIONS
@@ -15,7 +14,7 @@ WALLET=$STARKNET_WALLET
 
 # print the script usage
 usage() {
-    print "$0 [-a ACCOUNT_ADDRESS] [-p PROFILE] [-n NETWORK] [-x ADMIN_ADDRESS] [-w WALLET]"
+    print "$0 [-a ACCOUNT_ADDRESS] [-p PROFILE] [-x ADMIN_ADDRESS] [-w WALLET]"
 }
 
 # build the protostar project
@@ -32,11 +31,11 @@ get_account_address() {
     grep $account $STARKNET_ACCOUNTS_FILE -A3 -m1 | sed -n 's@^.*"address": "\(.*\)".*$@\1@p'
 }
 
-# get the network from the profile in protostar config file
+# get the network option from the profile in protostar config file
 # $1 - profile
-get_network() {
+get_network_opt() {
     profile=$1
-    grep profile.$profile $PROTOSTAR_TOML_FILE -A3 -m1 | sed -n 's@^.*network="\(.*\)".*$@\1@p'
+    grep profile.$profile $PROTOSTAR_TOML_FILE -A3 -m1 | sed -n 's@^.*network_opt="\(.*\)".*$@\1@p'
 }
 
 # check starknet binary presence
@@ -57,7 +56,7 @@ wait_for_acceptance() {
     print -n $(magenta "Waiting for transaction to be accepted")
     while true 
     do
-        tx_status=`starknet tx_status --hash $tx_hash --network $NETWORK | sed -n 's@^.*"tx_status": "\(.*\)".*$@\1@p'`
+        tx_status=`starknet tx_status --hash $tx_hash $NETWORK_OPT | sed -n 's@^.*"tx_status": "\(.*\)".*$@\1@p'`
         case "$tx_status"
             in
                 NOT_RECEIVED|RECEIVED|PENDING) print -n  $(magenta .);;
@@ -118,18 +117,26 @@ send_declare_contract_transaction() {
 }
 
 deploy_proxified_contract() {
-    path_to_implementation=$*
-
-    # declare implementation contract
-    IMPLEMENTATION_CLASS_HASH=`send_declare_contract_transaction "starknet declare $path_to_implementation"` || exit_error
+    path_to_implementation=$1
+    implementation_class_hash=$2
+    admin_address=$3
 
     # deploy proxy
-    PROXY_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/proxy.json --inputs $IMPLEMENTATION_CLASS_HASH"` || exit_error
+    PROXY_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/proxy.json --inputs $implementation_class_hash"` || exit_error
 
     # initialize contract and set admin
-    `send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $PROXY_ADDRESS --abi ./build/proxy.json --function initializer --inputs $ADMIN_ADDRESS"` || exit_error
+    RESULT=`send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $PROXY_ADDRESS --abi $path_to_implementation --function initializer --inputs $admin_address"` || exit_error
 
     echo $PROXY_ADDRESS
+}
+
+upgrade_proxified_contract() {
+    path_to_implementation=$1
+    implementation_class_hash=$2
+    proxy_address=$3
+
+    # initialize contract and set admin
+    RESULT=`send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $proxy_address --abi $path_to_implementation --function set_implementation --inputs $implementation_class_hash"` || exit_error
 }
 
 # Deploy all contracts and log the deployed addresses in the cache file
@@ -144,11 +151,12 @@ deploy_all_contracts() {
     print Profile: $PROFILE
     print Account alias: $ACCOUNT
     print Admin address: $ADMIN_ADDRESS
-    print Network: $NETWORK
+    print Network option: $NETWORK_OPT
 
     ask "Are you OK to deploy with those parameters" || return 
 
     [ ! -z $PROFILE ] && PROFILE_OPT="--profile $PROFILE"
+    [ ! -z $ACCOUNT ] && ACCOUNT_OPT="--account $ACCOUNT"
 
     if [ -z $PROFILE_ADDRESS ]; then
         log_info "Deploying profile contract..."
@@ -160,52 +168,64 @@ deploy_all_contracts() {
         REGISTRY_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/registry.json --inputs $ADMIN_ADDRESS"` || exit_error
     fi
 
-    if [ -z $CONTRIBUTIONS_ADDRESS ]; then
-        log_info "Deploying contributions contract..."
-        CONTRIBUTIONS_ADDRESS=`deploy_proxified_contract ./build/contributions.json` || exit_error
+    if [ -z $CONTRIBUTIONS_CLASS_HASH ]; then
+        log_info "Declaring contributions contract class..."
+        CONTRIBUTIONS_CLASS_HASH=`send_declare_contract_transaction "starknet declare $NETWORK_OPT --contract ./build/contributions.json"` || exit_error
+
+        if [ -z $CONTRIBUTIONS_ADDRESS ]; then
+            log_info "Deploying contributions proxy contract..."
+            CONTRIBUTIONS_ADDRESS=`deploy_proxified_contract ./build/contributions_abi.json $CONTRIBUTIONS_CLASS_HASH $ADMIN_ADDRESS` || exit_error
+        else
+            log_info "Updating contributions proxy contract..."
+            `upgrade_proxified_contract ./build/contributions_abi.json $CONTRIBUTIONS_CLASS_HASH $CONTRIBUTIONS_ADDRESS` || exit_error
+        fi
+    else
+        if [ -z $CONTRIBUTIONS_ADDRESS ]; then
+                log_info "Deploying contributions proxy contract..."
+                CONTRIBUTIONS_ADDRESS=`deploy_proxified_contract ./build/contributions_abi.json $CONTRIBUTIONS_CLASS_HASH $ADMIN_ADDRESS` || exit_error
+        fi
     fi
 
     (
         echo "PROFILE_ADDRESS=$PROFILE_ADDRESS"
         echo "REGISTRY_ADDRESS=$REGISTRY_ADDRESS"
         echo "CONTRIBUTIONS_ADDRESS=$CONTRIBUTIONS_ADDRESS"
+        echo "CONTRIBUTIONS_CLASS_HASH=$CONTRIBUTIONS_CLASS_HASH"
     ) | tee >&2 $CACHE_FILE
-
-    [ ! -z $ACCOUNT ] && ACCOUNT_OPT="--account $ACCOUNT"
 
     ADMIN=0x071CE7E8c126EA3085fDf2cd01C7d4B7ec12AA9930CE835BfdC8Fb1562e3Baa4
 
     log_info "Granting 'ADMIN' roles for admin account on the profile"
-    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $PROFILE_ADDRESS --abi ./build/profile_abi.json --function grant_admin_role --inputs $ADMIN"
+    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $PROFILE_ADDRESS --abi ./build/profile_abi.json --function grant_admin_role --inputs $ADMIN"
 
     log_info "Granting 'ADMIN' roles for admin account on the profile"
-    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_admin_role --inputs $ADMIN"
+    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_admin_role --inputs $ADMIN"
 
     log_info "Granting 'ADMIN' roles for admin account on the profile"
-    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $CONTRIBUTIONS_ADDRESS --abi ./build/contributions_abi.json --function grant_admin_role --inputs $ADMIN"
+    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $CONTRIBUTIONS_ADDRESS --abi ./build/contributions_abi.json --function grant_admin_role --inputs $ADMIN"
 
     log_info "Setting profile contract inside registry"
-    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function set_profile_contract --inputs $PROFILE_ADDRESS"
+    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function set_profile_contract --inputs $PROFILE_ADDRESS"
 
     log_info "Granting 'MINTER' role to the registry"
-    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $PROFILE_ADDRESS --abi ./build/profile_abi.json --function grant_minter_role --inputs $REGISTRY_ADDRESS"
+    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $PROFILE_ADDRESS --abi ./build/profile_abi.json --function grant_minter_role --inputs $REGISTRY_ADDRESS"
 
     log_info "Granting 'REGISTERER' role to the signer back-ends"
     SIGNER_BACKEND_ADDRESS=0x05267c02fd9fccfa811947f36b4568290766c33b581996a53c7a538669a8b0e3
-    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $SIGNER_BACKEND_ADDRESS"
+    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $SIGNER_BACKEND_ADDRESS"
 
     SIGNER_BACKEND_ADDRESS=0x00644a7e910ff66e0cbe4b3796007b69154bfc4b04f94dc86c8d94831be882bf
-    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $SIGNER_BACKEND_ADDRESS"
+    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $SIGNER_BACKEND_ADDRESS"
 
     SIGNER_BACKEND_ADDRESS=0x05F5ae3aD947d52abA4034F8491357d98c91fA2b59FfC5A4F66Cf4a9dc568153
-    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $SIGNER_BACKEND_ADDRESS"
+    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $SIGNER_BACKEND_ADDRESS"
 
     log_info "Granting 'FEEDER' role to the feeder back-ends"
     FEEDER_BACKEND_ADDRESS=0x01f882ba4a552ae0DF87f33ae4c2f8Bfb99A1fa401C8976f92225B011CBBe0e1
-    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $CONTRIBUTIONS_ADDRESS --abi ./build/contributions_abi.json --function grant_feeder_role --inputs $FEEDER_BACKEND_ADDRESS"
+    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $CONTRIBUTIONS_ADDRESS --abi ./build/contributions_abi.json --function grant_feeder_role --inputs $FEEDER_BACKEND_ADDRESS"
 
     FEEDER_BACKEND_ADDRESS=0x07eba18A6C8aF86F6A34C24f21A1684D50Aa451091E72026942eCa20D3d15EbA
-    send_transaction "starknet invoke $ACCOUNT_OPT --network $NETWORK --address $CONTRIBUTIONS_ADDRESS --abi ./build/contributions_abi.json --function grant_feeder_role --inputs $FEEDER_BACKEND_ADDRESS"
+    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $CONTRIBUTIONS_ADDRESS --abi ./build/contributions_abi.json --function grant_feeder_role --inputs $FEEDER_BACKEND_ADDRESS"
 }
 
 ### ARGUMENT PARSING
@@ -216,7 +236,6 @@ do
         a) ACCOUNT=${OPTARG};;
         x) ADMIN_ADDRESS=${OPTARG};;
         p) PROFILE=${OPTARG};;
-        n) NETWORK=${OPTARG};;
         w) WALLET=${OPTARG};;
         h) usage; exit_success;;
         \?) usage; exit_error;;
@@ -226,8 +245,8 @@ done
 [ -z $ADMIN_ADDRESS ] && ADMIN_ADDRESS=`get_account_address $ACCOUNT`
 [ -z $ADMIN_ADDRESS ] && exit_error "Unable to determine account address"
 
-[[ -z $NETWORK && ! -z $PROFILE ]] && NETWORK=`get_network $PROFILE`
-[ -z $NETWORK ] && exit_error "Unable to determine network"
+NETWORK_OPT=`get_network_opt $PROFILE`
+[ -z $NETWORK_OPT ] && exit_error "Unable to determine network option"
 
 ### PRE_CONDITIONS
 check_starknet
