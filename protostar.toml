@@ -1,5 +1,5 @@
 ["protostar.config"]
-protostar_version = "0.2.3"
+protostar_version = "0.2.6"
 
 ["protostar.project"]
 libs_path = "lib"
@@ -23,3 +23,4 @@ target = ["contracts"]
 registry = [ "./contracts/onlydust/deathnote/core/registry/registry.cairo" ]
 profile = [ "./contracts/onlydust/deathnote/core/profile/profile.cairo" ]
 contributions = [ "./contracts/onlydust/deathnote/core/contributions/contributions.cairo" ]
+proxy = [ "./lib/cairo_contracts/src/openzeppelin/upgrades/Proxy.cairo" ]
