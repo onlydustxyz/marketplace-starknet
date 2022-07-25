@@ -26,6 +26,7 @@
 ## 🎟️ Description
 
 This repository contains the code for starknet smart contracts:
+
 * **registry**: To register a contributor into the platform (mint a profile and associate its different user ids like github)
 * **profile**: The non-transferrable NFT that will be used to identify contributions of a given contributor
 * **contributions**: The list of contributions
@@ -33,6 +34,7 @@ This repository contains the code for starknet smart contracts:
 ## 🎗️ Prerequisites
 
 Install [protostar](https://docs.swmansion.com/protostar/) version 0.2.1 or above.
+
 ```bash
 curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash
 ```
@@ -48,6 +50,23 @@ protostar test
 ```
 
 or use [Protostar Test Explorer](https://marketplace.visualstudio.com/items?itemName=abuisset.vscode-protostar-test-adapter) vscode extension.
+
+## 🚀 Deploy
+
+First, you need to have an OpenZeppelin-compatible account deployed on the target network.
+[This can be done with Braavos](https://braavos.notion.site/Using-StarkNet-CLI-with-your-Braavos-Private-Key-c4e1acc0425e4a0089bd9aaa4b1aee3e).
+
+Then, just execute the deploy script:
+
+```bash
+./scripts/deploy.sh -a my_account_alias -p testnet
+```
+
+This script will look for a build/deployed_contracts.txt file to get what is already deployed.
+
+Once the deployments are done, the build/deployed_contracts.txt file is created/updated accordingly.
+
+If you want to re-deploy something, just remove the corresponding line from build/deployed_contracts.txt and run the script again.
 
 ## 🏗 Contributing
 
