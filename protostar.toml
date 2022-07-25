@@ -7,11 +7,18 @@ libs_path = "lib"
 [profile.ci.protostar.shared_command_configs]
 no_color=true
 
+[profile.devnet.protostar.deploy]
+gateway_url="http://127.0.0.1:5050/"
+feeder_gateway_url="http://127.0.0.1:5050/"
+network_opt="--gateway_url http://127.0.0.1:5050 --feeder_gateway_url http://127.0.0.1:5050"
+
 [profile.testnet.protostar.deploy]
 network="alpha-goerli"
+network_opt="--network alpha-goerli"
 
 [profile.mainnet.protostar.deploy]
 network="alpha-mainnet"
+network_opt="--network alpha-mainnet"
 
 ["protostar.shared_command_configs"]
 cairo_path = ["contracts", "lib/cairo_contracts/src", "lib/cairo_streams/src"]
