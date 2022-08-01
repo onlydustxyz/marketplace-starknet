@@ -54,6 +54,33 @@ func test_new_contribution_can_be_added{
 end
 
 @view
+func test_new_contribution_with_0x0_validator_can_be_added{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    alloc_locals
+
+    fixture.initialize()
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    let (local contribution) = contributions.new_contribution(123, 'MyProject', 0, 0x0)
+    %{ stop_prank() %}
+
+    let (count, contribs) = contributions.all_contributions()
+
+    assert 1 = count
+
+    let contribution = contribs[0]
+    with contribution:
+        assert_contribution_that.id_is(contribution.id)
+        assert_contribution_that.project_id_is(contribution.project_id)
+        assert_contribution_that.status_is(Status.OPEN)
+        assert_contribution_that.validator_is(0x0)
+    end
+
+    return ()
+end
+
+@view
 func test_feeder_can_assign_contribution_to_contributor{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
@@ -351,6 +378,29 @@ func test_feeder_can_validate_assigned_contribution{
 end
 
 @view
+func test_feeder_can_validate_assigned_contribution_when_validator_is_0x0{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const contribution_id = 123
+    let contributor_id = Uint256(1, 0)
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 0x0)
+    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
+    contributions.validate_contribution(contribution_id)
+    %{ stop_prank() %}
+
+    let (contribution) = contributions.contribution(contribution_id)
+    with contribution:
+        assert_contribution_that.status_is(Status.COMPLETED)
+    end
+
+    return ()
+end
+
+@view
 func test_validator_can_validate_assigned_contribution{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
@@ -378,6 +428,30 @@ func test_validator_can_validate_assigned_contribution{
 end
 
 @view
+func test_validator_cannot_validate_assigned_contribution_when_validator_account_is_0x0{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const contribution_id = 123
+    let contributor_id = Uint256(1, 0)
+    let validator_account = 'validator'
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 0x0)
+    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
+    %{
+        stop_prank() 
+        stop_prank = start_prank(ids.validator_account)
+        expect_revert(error_message="Contributions: caller cannot validate this contribution")
+    %}
+    contributions.validate_contribution(contribution_id)
+    %{ stop_prank() %}
+
+    return ()
+end
+
+@view
 func test_anyone_cannot_validate_contribution{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
@@ -388,6 +462,27 @@ func test_anyone_cannot_validate_contribution{
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
     let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
+    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
+    %{
+        stop_prank() 
+        expect_revert(error_message="Contributions: caller cannot validate this contribution")
+    %}
+    contributions.validate_contribution(contribution_id)
+
+    return ()
+end
+
+@view
+func test_anyone_cannot_validate_contribution_with_0x0_validator{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    const contribution_id = 123
+    let contributor_id = Uint256(1, 0)
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 0x0)
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{
         stop_prank() 
