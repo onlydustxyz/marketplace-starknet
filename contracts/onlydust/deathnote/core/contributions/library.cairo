@@ -396,7 +396,6 @@ namespace contribution_access:
         assert_valid_project_id()
         assert_valid_contributor_id()
         assert_valid_contribution_count()
-        assert_valid_validator_account()
 
         return ()
     end
@@ -451,18 +450,6 @@ namespace contribution_access:
             let (count_sign) = sign(contribution.contribution_count_required)
             assert 0 = count_sign * (1 - count_sign)
             assert_nn(contribution.contribution_count_required)
-        end
-        return ()
-    end
-
-    func assert_valid_validator_account{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-        contribution : Contribution,
-    }():
-        with_attr error_message("Contributions: validator_account must set"):
-            assert_not_zero(contribution.validator_account)
         end
         return ()
     end
@@ -536,6 +523,7 @@ namespace contribution_access:
 
         # has feeder role or is validator
         with_attr error_message("Contributions: caller cannot validate this contribution"):
+            assert_not_zero(caller)
             # safe because `doesnt_have_feeder_role` is either 0 or 1
             # so the product will never overflow
             assert doesnt_have_feeder_role * is_not_validator = 0
