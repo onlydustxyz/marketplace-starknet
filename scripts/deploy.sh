@@ -16,6 +16,13 @@ usage() {
     print "$0 [-a ADMIN_ACCOUNT] [-p PROFILE]"
 }
 
+# clean the protostar project
+clean() {
+    log_info "Cleaning..."
+    rm -f ./build/*_migration.json
+    if [ $? -ne 0 ]; then exit_error "Problem during clean"; fi
+}
+
 # build the protostar project
 build() {
     log_info "Building project to generate latest version of the ABI"
@@ -110,7 +117,7 @@ send_declare_contract_transaction() {
     echo $contract_class_hash
 }
 
-deploy_proxified_contract() {
+deploy_proxy() {
     path_to_implementation=$1
     implementation_class_hash=$2
     admin_address=$3
@@ -124,13 +131,58 @@ deploy_proxified_contract() {
     echo $PROXY_ADDRESS
 }
 
-upgrade_proxified_contract() {
+update_proxified_contract() {
     path_to_implementation=$1
     implementation_class_hash=$2
     proxy_address=$3
 
     # initialize contract and set admin
     RESULT=`send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $proxy_address --abi $path_to_implementation --function set_implementation --inputs $implementation_class_hash"` || exit_error
+}
+
+update_proxified_contract_with_migration() {
+    path_to_implementation=$1
+    implementation_class_hash=$2
+    migration_class_hash=$3
+    proxy_address=$4
+
+    # initialize contract and set admin
+    RESULT=`send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $proxy_address --abi $path_to_implementation --function set_implementation_with_migration --inputs $implementation_class_hash $migration_class_hash"` || exit_error
+}
+
+deploy_proxified_contract() {
+    contract=$1
+    proxy_address=$2
+
+    log_info "Declaring contract class..."
+    implementation_class_hash=`send_declare_contract_transaction "starknet declare $NETWORK_OPT --contract ./build/${contract}.json"` || exit_error
+
+    if [ -z $proxy_address ]; then
+        log_info "Deploying proxy contract..."
+        proxy_address=`deploy_proxy ./build/${contract}_abi.json $implementation_class_hash $ADMIN_ADDRESS` || exit_error
+    else
+
+        migration_file_path="./build/${contract}_migration.json"
+
+        if [ -f $migration_file_path ]; then
+            ask "Do you want to update the implementation of ${contract} and run the migration ${contract}_migration?"
+            if [ $? -eq 0 ]; then
+                log_info "Declaring migration class..."
+                migration_class_hash=`send_declare_contract_transaction "starknet declare $NETWORK_OPT --contract $migration_file_path"` || exit_error
+
+                log_info "Updating proxy contract implementation and running migration..."
+                `update_proxified_contract_with_migration ./build/${contract}_abi.json $implementation_class_hash $migration_class_hash $proxy_address` || exit_error
+            fi
+        else
+            ask "Do you want to update the implementation of ${contract}?"
+            if [ $? -eq 0 ]; then
+                log_info "Updating proxy contract implementation..."
+                `update_proxified_contract ./build/${contract}_abi.json $implementation_class_hash $proxy_address` || exit_error
+            fi
+        fi
+    fi
+
+    echo $proxy_address
 }
 
 # Deploy all contracts and log the deployed addresses in the cache file
@@ -165,29 +217,12 @@ deploy_all_contracts() {
         REGISTRY_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/registry.json --inputs $ADMIN_ADDRESS"` || exit_error
     fi
 
-    if [ -z $CONTRIBUTIONS_CLASS_HASH ]; then
-        log_info "Declaring contributions contract class..."
-        CONTRIBUTIONS_CLASS_HASH=`send_declare_contract_transaction "starknet declare $NETWORK_OPT --contract ./build/contributions.json"` || exit_error
-
-        if [ -z $CONTRIBUTIONS_ADDRESS ]; then
-            log_info "Deploying contributions proxy contract..."
-            CONTRIBUTIONS_ADDRESS=`deploy_proxified_contract ./build/contributions_abi.json $CONTRIBUTIONS_CLASS_HASH $ADMIN_ADDRESS` || exit_error
-        else
-            log_info "Updating contributions proxy contract..."
-            `upgrade_proxified_contract ./build/contributions_abi.json $CONTRIBUTIONS_CLASS_HASH $CONTRIBUTIONS_ADDRESS` || exit_error
-        fi
-    else
-        if [ -z $CONTRIBUTIONS_ADDRESS ]; then
-                log_info "Deploying contributions proxy contract..."
-                CONTRIBUTIONS_ADDRESS=`deploy_proxified_contract ./build/contributions_abi.json $CONTRIBUTIONS_CLASS_HASH $ADMIN_ADDRESS` || exit_error
-        fi
-    fi
+    CONTRIBUTIONS_ADDRESS=`deploy_proxified_contract "contributions" "$CONTRIBUTIONS_ADDRESS"` || exit_error
 
     (
         echo "PROFILE_ADDRESS=$PROFILE_ADDRESS"
         echo "REGISTRY_ADDRESS=$REGISTRY_ADDRESS"
         echo "CONTRIBUTIONS_ADDRESS=$CONTRIBUTIONS_ADDRESS"
-        echo "CONTRIBUTIONS_CLASS_HASH=$CONTRIBUTIONS_CLASS_HASH"
     ) | tee >&2 $CACHE_FILE
 
     log_info "Setting profile contract inside registry"
@@ -245,6 +280,7 @@ check_starknet
 
 ### BUSINESS LOGIC
 
+clean # Need to remove ABI and compiled contracts that may not exist anymore (eg. migrations)
 build # Need to generate ABI and compiled contracts
 deploy_all_contracts
 
