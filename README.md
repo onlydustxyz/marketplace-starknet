@@ -78,3 +78,16 @@ Pull requests are welcome, please check our [contribution guidelines](./CONTRIBU
 ## 📄 License
 
 **deathnote-contributions-starknet** is released under the [MIT](LICENSE).
+
+## PROD
+
+### MEP1
+
+* supprimer le CONTRIBUTION_CLASS_HASH du fichier deployed_contracts_prod.txt
+* verifier que contributions.cairo importe bien les nouvelles fonctions de migration
+* verifier qu'il n'y a PAS de script de migration (contributions_migration.cairo)
+* executer le script de deploiement afin de MAJ l'implem du proxy de contributions
+
+### MEP2
+
+* tester une migration qui revert
