@@ -3,7 +3,7 @@
 ### CONSTANTS
 SCRIPT_DIR=`readlink -f $0 | xargs dirname`
 ROOT=`readlink -f $SCRIPT_DIR/..`
-CACHE_FILE=$ROOT/build/deployed_contracts.txt
+CACHE_FILE_BASE=$ROOT/build/deployed_contracts
 STARKNET_ACCOUNTS_FILE=$HOME/.starknet_accounts/starknet_open_zeppelin_accounts.json
 PROTOSTAR_TOML_FILE=$ROOT/protostar.toml
 WALLET=$STARKNET_WALLET
@@ -242,11 +242,14 @@ do
     esac
 done
 
+[ -z "$PROFILE" ] && exit_error "Profile is mandatory (use -p option)"
+CACHE_FILE="${CACHE_FILE_BASE}_$PROFILE.txt"
+
 [ -z $ADMIN_ADDRESS ] && ADMIN_ADDRESS=`get_account_address $ACCOUNT`
 [ -z $ADMIN_ADDRESS ] && exit_error "Unable to determine account address"
 
 NETWORK_OPT=`get_network_opt $PROFILE`
-[ -z $NETWORK_OPT ] && exit_error "Unable to determine network option"
+[ -z "$NETWORK_OPT" ] && exit_error "Unable to determine network option"
 
 ### PRE_CONDITIONS
 check_starknet
