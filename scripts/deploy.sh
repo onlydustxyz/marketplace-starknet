@@ -20,6 +20,7 @@ usage() {
 clean() {
     log_info "Cleaning..."
     rm -f ./build/*_migration.json
+    rm -f ./build/*_migration_abi.json
     if [ $? -ne 0 ]; then exit_error "Problem during clean"; fi
 }
 
@@ -172,6 +173,12 @@ deploy_proxified_contract() {
 
                 log_info "Updating proxy contract implementation and running migration..."
                 `update_proxified_contract_with_migration ./build/${contract}_abi.json $implementation_class_hash $migration_class_hash $proxy_address` || exit_error
+            else
+                ask "Do you want to update the implementation of ${contract}?"
+                if [ $? -eq 0 ]; then
+                    log_info "Updating proxy contract implementation..."
+                    `update_proxified_contract ./build/${contract}_abi.json $implementation_class_hash $proxy_address` || exit_error
+                fi
             fi
         else
             ask "Do you want to update the implementation of ${contract}?"
