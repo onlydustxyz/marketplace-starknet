@@ -56,10 +56,13 @@ or use [Protostar Test Explorer](https://marketplace.visualstudio.com/items?item
 First, you need to have an OpenZeppelin-compatible account deployed on the target network.
 [This can be done with Braavos](https://braavos.notion.site/Using-StarkNet-CLI-with-your-Braavos-Private-Key-c4e1acc0425e4a0089bd9aaa4b1aee3e).
 
+Add the account address, public key and private key to the `~/.starknet_accounts/starknet_open_zeppelin_accounts.json` file,
+under an alias of your choice (eg. `local_admin` or `staging_admin`).
+
 Then, just execute the deploy script:
 
 ```bash
-./scripts/deploy.sh -a my_account_alias -p testnet
+./scripts/deploy.sh -a local_admin -p local
 ```
 
 This script will look for a build/deployed_contracts.txt file to get what is already deployed.

@@ -6,7 +6,6 @@ ROOT=`readlink -f $SCRIPT_DIR/..`
 CACHE_FILE_BASE=$ROOT/build/deployed_contracts
 STARKNET_ACCOUNTS_FILE=$HOME/.starknet_accounts/starknet_open_zeppelin_accounts.json
 PROTOSTAR_TOML_FILE=$ROOT/protostar.toml
-WALLET=$STARKNET_WALLET
 
 ### FUNCTIONS
 . $SCRIPT_DIR/logging.sh # Logging utilities
@@ -14,7 +13,7 @@ WALLET=$STARKNET_WALLET
 
 # print the script usage
 usage() {
-    print "$0 [-a ACCOUNT_ADDRESS] [-p PROFILE] [-x ADMIN_ADDRESS] [-w WALLET]"
+    print "$0 [-a ADMIN_ACCOUNT] [-p PROFILE]"
 }
 
 # build the protostar project
@@ -42,11 +41,6 @@ get_network_opt() {
 check_starknet() {
     which starknet &> /dev/null
     [ $? -ne 0 ] && exit_error "Unable to locate starknet binary. Did you activate your virtual env ?"
-}
-
-# make sure wallet variable is set
-check_wallet() {
-    [ -z $WALLET ] && exit_error "Please provide the wallet to use (option -w or environment variable STARKNET_WALLET)"
 }
 
 # wait for a transaction to be received
@@ -149,14 +143,17 @@ deploy_all_contracts() {
     }
 
     print Profile: $PROFILE
-    print Account alias: $ACCOUNT
-    print Admin address: $ADMIN_ADDRESS
+    print Admin account alias: $ADMIN_ACCOUNT
+    print Admin account address: $ADMIN_ADDRESS
     print Network option: $NETWORK_OPT
 
-    ask "Are you OK to deploy with those parameters" || return 
+    registerers=$(echo $REGISTERER_ACCOUNTS | tr "," "\n")
+    print Registerer accounts: $registerers
 
-    [ ! -z $PROFILE ] && PROFILE_OPT="--profile $PROFILE"
-    [ ! -z $ACCOUNT ] && ACCOUNT_OPT="--account $ACCOUNT"
+    feeders=$(echo $FEEDER_ACCOUNTS | tr "," "\n")
+    print Feeder accounts: $feeders
+
+    ask "Are you OK to deploy with those parameters" || return 
 
     if [ -z $PROFILE_ADDRESS ]; then
         log_info "Deploying profile contract..."
@@ -193,39 +190,24 @@ deploy_all_contracts() {
         echo "CONTRIBUTIONS_CLASS_HASH=$CONTRIBUTIONS_CLASS_HASH"
     ) | tee >&2 $CACHE_FILE
 
-    ADMIN=0x071CE7E8c126EA3085fDf2cd01C7d4B7ec12AA9930CE835BfdC8Fb1562e3Baa4
-
-    log_info "Granting 'ADMIN' roles for admin account on the profile"
-    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $PROFILE_ADDRESS --abi ./build/profile_abi.json --function grant_admin_role --inputs $ADMIN"
-
-    log_info "Granting 'ADMIN' roles for admin account on the profile"
-    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_admin_role --inputs $ADMIN"
-
-    log_info "Granting 'ADMIN' roles for admin account on the profile"
-    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $CONTRIBUTIONS_ADDRESS --abi ./build/contributions_abi.json --function grant_admin_role --inputs $ADMIN"
-
     log_info "Setting profile contract inside registry"
     send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function set_profile_contract --inputs $PROFILE_ADDRESS"
 
     log_info "Granting 'MINTER' role to the registry"
     send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $PROFILE_ADDRESS --abi ./build/profile_abi.json --function grant_minter_role --inputs $REGISTRY_ADDRESS"
 
-    log_info "Granting 'REGISTERER' role to the signer back-ends"
-    SIGNER_BACKEND_ADDRESS=0x05267c02fd9fccfa811947f36b4568290766c33b581996a53c7a538669a8b0e3
-    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $SIGNER_BACKEND_ADDRESS"
+    for registerer in $registerers
+    do
+        log_info "Granting 'REGISTERER' role to $registerer"
+        send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $registerer"
+    done
 
-    SIGNER_BACKEND_ADDRESS=0x00644a7e910ff66e0cbe4b3796007b69154bfc4b04f94dc86c8d94831be882bf
-    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $SIGNER_BACKEND_ADDRESS"
+    for feeder in $feeders
+    do
+        log_info "Granting 'FEEDER' role to $feeder"
+        send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $CONTRIBUTIONS_ADDRESS --abi ./build/contributions_abi.json --function grant_feeder_role --inputs $feeder"
+    done
 
-    SIGNER_BACKEND_ADDRESS=0x05F5ae3aD947d52abA4034F8491357d98c91fA2b59FfC5A4F66Cf4a9dc568153
-    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $SIGNER_BACKEND_ADDRESS"
-
-    log_info "Granting 'FEEDER' role to the feeder back-ends"
-    FEEDER_BACKEND_ADDRESS=0x01f882ba4a552ae0DF87f33ae4c2f8Bfb99A1fa401C8976f92225B011CBBe0e1
-    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $CONTRIBUTIONS_ADDRESS --abi ./build/contributions_abi.json --function grant_feeder_role --inputs $FEEDER_BACKEND_ADDRESS"
-
-    FEEDER_BACKEND_ADDRESS=0x07eba18A6C8aF86F6A34C24f21A1684D50Aa451091E72026942eCa20D3d15EbA
-    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $CONTRIBUTIONS_ADDRESS --abi ./build/contributions_abi.json --function grant_feeder_role --inputs $FEEDER_BACKEND_ADDRESS"
 }
 
 ### ARGUMENT PARSING
@@ -233,27 +215,33 @@ while getopts a:p:h option
 do
     case "${option}"
     in
-        a) ACCOUNT=${OPTARG};;
-        x) ADMIN_ADDRESS=${OPTARG};;
+        a) ADMIN_ACCOUNT=${OPTARG};;
         p) PROFILE=${OPTARG};;
-        w) WALLET=${OPTARG};;
         h) usage; exit_success;;
         \?) usage; exit_error;;
     esac
 done
 
-[ -z "$PROFILE" ] && exit_error "Profile is mandatory (use -p option)"
-CACHE_FILE="${CACHE_FILE_BASE}_$PROFILE.txt"
+STARKNET_WALLET=starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount
 
-[ -z $ADMIN_ADDRESS ] && ADMIN_ADDRESS=`get_account_address $ACCOUNT`
+[ -z "$ADMIN_ACCOUNT" ] && exit_error "Admin account is mandatory (use -a option) and must be set to the alias of the admin account"
+
+[ -z "$PROFILE" ] && exit_error "Profile is mandatory (use -p option)"
+
+CACHE_FILE="${CACHE_FILE_BASE}_$PROFILE.txt"
+source "./scripts/.env.$PROFILE"
+
+ADMIN_ADDRESS=`get_account_address $ADMIN_ACCOUNT`
 [ -z $ADMIN_ADDRESS ] && exit_error "Unable to determine account address"
 
 NETWORK_OPT=`get_network_opt $PROFILE`
 [ -z "$NETWORK_OPT" ] && exit_error "Unable to determine network option"
 
+PROFILE_OPT="--profile $PROFILE"
+ACCOUNT_OPT="--account $ADMIN_ACCOUNT"
+
 ### PRE_CONDITIONS
 check_starknet
-check_wallet
 
 ### BUSINESS LOGIC
 
