@@ -20,6 +20,11 @@ from onlydust.deathnote.library.migration_library import (
 #
 # Constructor
 #
+@constructor
+func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(admin : felt):
+    contributions.initialize(admin)
+    return ()
+end
 
 @external
 func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
