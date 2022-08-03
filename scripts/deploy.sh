@@ -41,7 +41,7 @@ get_account_address() {
 # $1 - profile
 get_network_opt() {
     profile=$1
-    grep profile.$profile $PROTOSTAR_TOML_FILE -A3 -m1 | sed -n 's@^.*network_opt="\(.*\)".*$@\1@p'
+    grep profile.$profile $PROTOSTAR_TOML_FILE -A5 -m1 | sed -n 's@^.*network_opt="\(.*\)".*$@\1@p'
 }
 
 # check starknet binary presence
@@ -263,7 +263,7 @@ do
     esac
 done
 
-STARKNET_WALLET=starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount
+export STARKNET_WALLET=starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount
 
 [ -z "$ADMIN_ACCOUNT" ] && exit_error "Admin account is mandatory (use -a option) and must be set to the alias of the admin account"
 
