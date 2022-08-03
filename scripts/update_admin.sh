@@ -21,7 +21,7 @@ wait_for_acceptance() {
     print -n $(magenta "Waiting for transaction to be accepted")
     while true 
     do
-        tx_status=`starknet tx_status --hash $tx_hash $NETWORK_OPT | sed -n 's@^.*"tx_status": "\(.*\)".*$@\1@p'`
+        tx_status=`starknet tx_status --hash $tx_hash --network alpha-goerli | sed -n 's@^.*"tx_status": "\(.*\)".*$@\1@p'`
         case "$tx_status"
             in
                 NOT_RECEIVED|RECEIVED|PENDING) print -n  $(magenta .);;
