@@ -19,8 +19,7 @@ usage() {
 # clean the protostar project
 clean() {
     log_info "Cleaning..."
-    rm -f ./build/*_migration.json
-    rm -f ./build/*_migration_abi.json
+    rm -f ./build/*_migration{,_abi}.json
     if [ $? -ne 0 ]; then exit_error "Problem during clean"; fi
 }
 
