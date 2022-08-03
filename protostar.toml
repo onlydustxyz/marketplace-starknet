@@ -10,7 +10,8 @@ no_color=true
 [profile.local.protostar.deploy]
 gateway_url="http://127.0.0.1:5050/"
 feeder_gateway_url="http://127.0.0.1:5050/"
-network_opt="--gateway_url http://127.0.0.1:5050 --feeder_gateway_url http://127.0.0.1:5050"
+network="alpha-goerli"
+network_opt="--network alpha-goerli --gateway_url http://127.0.0.1:5050 --feeder_gateway_url http://127.0.0.1:5050"
 
 [profile.staging.protostar.deploy]
 network="alpha-goerli"
