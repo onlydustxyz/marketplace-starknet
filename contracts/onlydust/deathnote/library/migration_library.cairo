@@ -17,14 +17,6 @@ end
 # Methods to import in the migratable/upgradable contract
 ###########################################################################################
 
-@external
-func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    proxy_admin : felt
-):
-    migratable_proxy.initializer(proxy_admin)
-    return ()
-end
-
 @view
 func implementation{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
     hash : felt
