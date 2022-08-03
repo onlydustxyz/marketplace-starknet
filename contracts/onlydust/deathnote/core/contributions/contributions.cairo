@@ -9,7 +9,7 @@ from onlydust.deathnote.core.contributions.library import contributions, Contrib
 # DO NOT REMOVE THOSE IMPORTS
 # They are mandatory to make this contract upgradable and migratable
 from onlydust.deathnote.library.migration_library import (
-    initializer,
+    migratable_proxy,
     implementation,
     proxy_admin,
     set_implementation,
@@ -20,9 +20,14 @@ from onlydust.deathnote.library.migration_library import (
 #
 # Constructor
 #
-@constructor
-func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(admin : felt):
-    return contributions.initialize(admin)
+
+@external
+func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    proxy_admin : felt
+):
+    migratable_proxy.initializer(proxy_admin)
+    contributions.initialize(proxy_admin)
+    return ()
 end
 
 #
