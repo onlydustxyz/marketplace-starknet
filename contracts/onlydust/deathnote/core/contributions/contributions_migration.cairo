@@ -10,7 +10,7 @@ end
 
 @external
 func migrate{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-    const CONTRIBUTION_ID = 481932781000051
+    const CONTRIBUTION_ID = 481932781000061
 
     let (contribution) = contributions_.read(CONTRIBUTION_ID)
 
