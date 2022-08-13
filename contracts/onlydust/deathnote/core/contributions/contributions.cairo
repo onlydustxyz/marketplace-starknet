@@ -140,3 +140,10 @@ func validate_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ran
 ):
     return contributions.validate_contribution(contribution_id)
 end
+
+@external
+func modify_contribution_count_required{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    contribution_id : felt, contribution_count_required : felt
+):
+    return contributions.modify_contribution_count_required(contribution_id, contribution_count_required)
+end
