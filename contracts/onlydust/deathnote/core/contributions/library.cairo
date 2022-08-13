@@ -279,6 +279,32 @@ namespace contributions:
 
         return ()
     end
+
+    # Modify a contribution count required
+    func modify_contribution_count_required{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contribution_id : felt, contribution_count_required : felt
+    ):
+        internal.only_feeder()
+        
+        let (contribution) = contribution_access.read(contribution_id)
+        with contribution:
+            contribution_access.caller_can_validate()
+        end
+
+        let contribution = Contribution(
+            contribution.id,
+            contribution.project_id,
+            Status.OPEN,
+            contribution.contributor_id,
+            contribution_count_required,
+            contribution.validator_account,
+        )
+        with contribution:
+            contribution_access.store()
+        end
+        
+        return ()
+    end
 end
 
 namespace internal:
