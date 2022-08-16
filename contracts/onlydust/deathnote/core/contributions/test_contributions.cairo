@@ -563,7 +563,6 @@ func test_validator_can_modify_contribution_count_required{
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
     let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.validator_account) %}
