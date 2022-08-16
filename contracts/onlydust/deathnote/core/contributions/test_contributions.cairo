@@ -539,14 +539,13 @@ func test_feeder_can_modify_contribution_count_required{
     let validator_account = 'validator'
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
+    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, validator_account)
     contributions.modify_contribution_count_required(contribution_id, 3)
     %{ stop_prank() %}
 
     let (contribution) = contributions.contribution(contribution_id)
     with contribution:
-        assert_contribution_that.count_is(3)
+        assert_contribution_that.gate_is(3)
     end
 
     return ()
@@ -573,7 +572,7 @@ func test_validator_can_modify_contribution_count_required{
 
     let (contribution) = contributions.contribution(contribution_id)
     with contribution:
-        assert_contribution_that.count_is(3)
+        assert_contribution_that.gate_is(3)
     end
 
     return ()

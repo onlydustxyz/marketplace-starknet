@@ -38,7 +38,7 @@ namespace assert_contribution_that:
         return ()
     end
 
-    func count_is{contribution : Contribution}(expected : felt):
+    func gate_is{contribution : Contribution}(expected : felt):
         let actual = contribution.contribution_count_required
         with_attr error_message("Invalid contributor: expected {expected}, actual {actual}"):
             assert expected = actual
