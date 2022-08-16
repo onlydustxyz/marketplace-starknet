@@ -37,6 +37,9 @@ namespace IContributions:
     func validate_contribution(contribution_id : felt):
     end
 
+    func modify_contribution_count_required(contribution_id : felt, contribution_count_required : felt):
+    end
+
     func grant_admin_role(address : felt):
     end
 
