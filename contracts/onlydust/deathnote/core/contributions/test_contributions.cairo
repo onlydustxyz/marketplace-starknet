@@ -443,7 +443,7 @@ func test_validator_cannot_validate_assigned_contribution_when_validator_account
     %{
         stop_prank() 
         stop_prank = start_prank(ids.validator_account)
-        expect_revert(error_message="Contributions: caller cannot validate this contribution")
+        expect_revert(error_message="Contributions: caller is not feeder or validator")
     %}
     contributions.validate_contribution(contribution_id)
     %{ stop_prank() %}
@@ -465,7 +465,7 @@ func test_anyone_cannot_validate_contribution{
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{
         stop_prank() 
-        expect_revert(error_message="Contributions: caller cannot validate this contribution")
+        expect_revert(error_message="Contributions: caller is not feeder or validator")
     %}
     contributions.validate_contribution(contribution_id)
 
@@ -486,7 +486,7 @@ func test_anyone_cannot_validate_contribution_with_0x0_validator{
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{
         stop_prank() 
-        expect_revert(error_message="Contributions: caller cannot validate this contribution")
+        expect_revert(error_message="Contributions: caller is not feeder or validator")
     %}
     contributions.validate_contribution(contribution_id)
 
@@ -592,7 +592,7 @@ func test_anyone_cannot_modify_contribution_count_required{
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{ 
         stop_prank ()
-        expect_revert(error_message="Contributions: caller cannot validate this contribution")
+        expect_revert(error_message="Contributions: caller is not feeder or validator")
     %}
     contributions.modify_contribution_count_required(contribution_id, 3)
 

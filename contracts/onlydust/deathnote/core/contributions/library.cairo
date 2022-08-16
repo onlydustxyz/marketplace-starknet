@@ -258,7 +258,7 @@ namespace contributions:
     ):
         let (contribution) = contribution_access.read(contribution_id)
         with contribution:
-            contribution_access.caller_can_validate()
+            contribution_access.caller_is_feeder_or_validator()
             contribution_access.only_assigned()
         end
 
@@ -286,7 +286,7 @@ namespace contributions:
     ):
         let (contribution) = contribution_access.read(contribution_id)
         with contribution:
-            contribution_access.caller_can_validate()
+            contribution_access.caller_is_feeder_or_validator()
             contribution_access.only_open()
         end
 
@@ -533,7 +533,7 @@ namespace contribution_access:
         return ()
     end
 
-    func caller_can_validate{
+    func caller_is_feeder_or_validator{
         syscall_ptr : felt*,
         pedersen_ptr : HashBuiltin*,
         range_check_ptr,
@@ -547,7 +547,7 @@ namespace contribution_access:
         let is_not_validator = contribution.validator_account - caller
 
         # has feeder role or is validator
-        with_attr error_message("Contributions: caller cannot validate this contribution"):
+        with_attr error_message("Contributions: caller is not feeder or validator"):
             assert_not_zero(caller)
             # safe because `doesnt_have_feeder_role` is either 0 or 1
             # so the product will never overflow
