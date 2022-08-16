@@ -284,7 +284,7 @@ namespace contributions:
     func modify_contribution_count_required{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         contribution_id : felt, contribution_count_required : felt
     ):
-        internal.only_feeder()
+        # internal.only_feeder()
         
         let (contribution) = contribution_access.read(contribution_id)
         with contribution:
