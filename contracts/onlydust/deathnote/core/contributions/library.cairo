@@ -287,12 +287,13 @@ namespace contributions:
         let (contribution) = contribution_access.read(contribution_id)
         with contribution:
             contribution_access.caller_can_validate()
+            contribution_access.only_open()
         end
 
         let contribution = Contribution(
             contribution.id,
             contribution.project_id,
-            Status.OPEN,
+            contribution.status,
             contribution.contributor_id,
             contribution_count_required,
             contribution.validator_account,
