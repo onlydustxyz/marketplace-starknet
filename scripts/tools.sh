@@ -21,6 +21,7 @@ exit_success() {
 # Returns 0 (success) if answer is yes, 1 (error) if answer is no
 ask() {
     msg=$1
+    [[ $AUTO_YES == "true" ]] && return 0
     while true; do
         question=$(magenta "$msg ? [yn] ")
         read -p "$question" yn

@@ -13,7 +13,7 @@ PROTOSTAR_TOML_FILE=$ROOT/protostar.toml
 
 # print the script usage
 usage() {
-    print "$0 [-a ADMIN_ACCOUNT] [-p PROFILE]"
+    print "$0 [-a ADMIN_ACCOUNT] [-p PROFILE] [-y]"
 }
 
 # clean the protostar project
@@ -252,12 +252,13 @@ deploy_all_contracts() {
 }
 
 ### ARGUMENT PARSING
-while getopts a:p:h option
+while getopts a:p:yh option
 do
     case "${option}"
     in
         a) ADMIN_ACCOUNT=${OPTARG};;
         p) PROFILE=${OPTARG};;
+        y) AUTO_YES="true";;
         h) usage; exit_success;;
         \?) usage; exit_error;;
     esac
