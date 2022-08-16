@@ -127,7 +127,7 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
 
     # Check modify contribution count on unassigned works
     with contributions:
-        contributions_access.modify_contribution_count_required_as(UNASSIGNED_CONTRIBUTION_ID, 10)
+        contributions_access.modify_contribution_count(UNASSIGNED_CONTRIBUTION_ID, 10)
         let (contribution) = contributions_access.contribution(UNASSIGNED_CONTRIBUTION_ID)
     end
 
@@ -227,7 +227,7 @@ namespace contributions_access:
         return ()
     end
 
-    func modify_contribution_count_required_as{
+    func modify_contribution_count{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
     }(contribution_id : felt, count : felt):
         %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
