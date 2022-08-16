@@ -125,6 +125,20 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
         assert_contribution_that.contributor_is(CONTRIBUTOR_ID)
     end
 
+    # Check modify contribution count on unassigned works
+    with contributions:
+        contributions_access.modify_contribution_count_required_as(UNASSIGNED_CONTRIBUTION_ID, 10)
+        let (contribution) = contributions_access.contribution(UNASSIGNED_CONTRIBUTION_ID)
+    end
+
+    with contribution:
+        assert_contribution_that.id_is(UNASSIGNED_CONTRIBUTION_ID)
+        assert_contribution_that.project_id_is('MyProject')
+        assert_contribution_that.gate_is(10)
+        assert_contribution_that.status_is(Status.OPEN)
+    end
+
+
     # Check validate contribution by feeder works
     with contributions:
         contributions_access.validate_contribution_as(FEEDER_VALIDATED_CONTRIBUTION_ID, FEEDER)
@@ -209,6 +223,15 @@ namespace contributions_access:
     }(contribution_id : felt, caller : felt):
         %{ stop_prank = start_prank(ids.caller, ids.contributions) %}
         IContributions.validate_contribution(contributions, contribution_id)
+        %{ stop_prank() %}
+        return ()
+    end
+
+    func modify_contribution_count_required_as{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
+    }(contribution_id : felt, count : felt):
+        %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
+        IContributions.modify_contribution_count_required(contributions, contribution_id, count)
         %{ stop_prank() %}
         return ()
     end
