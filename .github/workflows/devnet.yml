@@ -18,7 +18,7 @@ jobs:
       - name: Checkout starknet-accounts
         uses: actions/checkout@v3
         with:
-          repository: ofux/starknet-accounts
+          repository: onlydustxyz/starknet-accounts
           path: onlydust-starknet-accounts
 
       - name: Install python
