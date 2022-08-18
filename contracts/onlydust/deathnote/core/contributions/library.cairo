@@ -130,6 +130,31 @@ namespace contributions:
         return (contribution)
     end
 
+    # Remove a contribution for a given token id
+    func remove_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        id : felt
+    ) -> (contribution : Contribution):
+        alloc_locals
+
+        internal.only_feeder()
+
+        let contribution = Contribution(
+            0,
+            0,
+            0,
+            Uint256(0, 0),
+            0,
+            0
+        )
+
+        with contribution:
+            contribution_access.assert_valid()
+            contribution_access.delete(id)
+        end
+
+        return (contribution)
+    end
+
     # Get the contribution details
     func contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         contribution_id : felt
@@ -560,6 +585,16 @@ namespace contribution_access:
     }():
         increase_contribution_count_if_needed()
         contributions_.write(contribution.id, contribution)
+        return ()
+    end
+
+    func delete{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr,
+        contribution : Contribution,
+    }(id : felt):
+        contributions_.write(id, contribution)
         return ()
     end
 
