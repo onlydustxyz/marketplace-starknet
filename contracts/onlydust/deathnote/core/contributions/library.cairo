@@ -283,7 +283,7 @@ namespace contributions:
     ):
         let (contribution) = contribution_access.read(contribution_id)
         with contribution:
-            contribution_access.caller_can_validate()
+            contribution_access.caller_is_feeder_or_validator()
             contribution_access.only_assigned()
         end
 
@@ -302,6 +302,31 @@ namespace contributions:
         let (past_contributions) = past_contributions_.read(contribution.contributor_id)
         past_contributions_.write(contribution.contributor_id, past_contributions + 1)
 
+        return ()
+    end
+
+    # Modify a contribution count required
+    func modify_contribution_count_required{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contribution_id : felt, contribution_count_required : felt
+    ):
+        let (contribution) = contribution_access.read(contribution_id)
+        with contribution:
+            contribution_access.caller_is_feeder_or_validator()
+            contribution_access.only_open()
+        end
+
+        let contribution = Contribution(
+            contribution.id,
+            contribution.project_id,
+            contribution.status,
+            contribution.contributor_id,
+            contribution_count_required,
+            contribution.validator_account,
+        )
+        with contribution:
+            contribution_access.store()
+        end
+        
         return ()
     end
 end
@@ -533,7 +558,7 @@ namespace contribution_access:
         return ()
     end
 
-    func caller_can_validate{
+    func caller_is_feeder_or_validator{
         syscall_ptr : felt*,
         pedersen_ptr : HashBuiltin*,
         range_check_ptr,
@@ -547,7 +572,7 @@ namespace contribution_access:
         let is_not_validator = contribution.validator_account - caller
 
         # has feeder role or is validator
-        with_attr error_message("Contributions: caller cannot validate this contribution"):
+        with_attr error_message("Contributions: caller is not feeder or validator"):
             assert_not_zero(caller)
             # safe because `doesnt_have_feeder_role` is either 0 or 1
             # so the product will never overflow

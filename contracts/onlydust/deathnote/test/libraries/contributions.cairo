@@ -38,6 +38,14 @@ namespace assert_contribution_that:
         return ()
     end
 
+    func gate_is{contribution : Contribution}(expected : felt):
+        let actual = contribution.contribution_count_required
+        with_attr error_message("Invalid contributor: expected {expected}, actual {actual}"):
+            assert expected = actual
+        end
+        return ()
+    end
+
     func validator_is{contribution : Contribution}(expected : felt):
         let actual = contribution.validator_account
         with_attr error_message("Invalid validator: expected {expected}, actual {actual}"):

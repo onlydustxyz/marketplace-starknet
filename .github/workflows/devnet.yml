@@ -1,0 +1,83 @@
+name: Build devnet dump for end-to-end tests
+
+on:
+  push:
+    branches:
+      - "main"
+    tags:
+      - "*"
+
+jobs:
+  build-devnet-dump:
+    runs-on: ubuntu-latest
+    name: Build devenet dump
+    steps:
+      - name: Checkout smart-contracts
+        uses: actions/checkout@v3
+
+      - name: Checkout starknet-accounts
+        uses: actions/checkout@v3
+        with:
+          repository: onlydustxyz/starknet-accounts
+          path: onlydust-starknet-accounts
+
+      - name: Install python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.9"
+
+      - name: Install starknet
+        run: pip install cairo-lang==0.9.1
+
+      - name: Install protostar
+        run: |
+          curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash
+          echo "/home/runner/.protostar/dist/protostar" >> $GITHUB_PATH
+
+      - name: Install smart-contracts dependencies
+        run: protostar install
+
+      - name: Install starknet-accounts dependencies
+        working-directory: onlydust-starknet-accounts
+        run: protostar install
+
+      - name: Start devnet
+        run: |
+          DUMP_PATH=$GITHUB_WORKSPACE/devnet-dump BASE_TAG=latest docker-compose -f ./scripts/docker/docker-compose.yml up --build -d
+          mkdir $HOME/.starknet_accounts
+          cp ./.github/workflows/devnet-dump-assets/starknet_open_zeppelin_accounts.json $HOME/.starknet_accounts/starknet_open_zeppelin_accounts.json
+
+      - name: Deploy accounts
+        working-directory: onlydust-starknet-accounts
+        run: |
+          ./scripts/deploy-e2e-tests-devnet.sh
+          [ -f $GITHUB_WORKSPACE/scripts/.env.local ] && rm $GITHUB_WORKSPACE/scripts/.env.local
+          cp ./build/deployed_accounts.txt $GITHUB_WORKSPACE/scripts/.env.local
+          cat $GITHUB_WORKSPACE/scripts/.env.local
+
+      - name: Deploy smart contracts
+        run: |
+          [ -f ./build/deployed_contracts_local.txt ] && rm ./build/deployed_contracts_local.txt
+          ./scripts/deploy.sh -a local_admin -p local -y
+
+      - name: Create devnet dump
+        run: |
+          curl -X POST http://localhost:5050/dump -d '{ "path": "/tmp/dump.pkl" }' -H "Content-Type: application/json"
+
+      - name: Upload dump
+        uses: actions/upload-artifact@v3
+        with:
+          name: devnet-dump-artifact
+          path: ./devnet-dump/dump.pkl
+
+      - name: Upload deployed account addresses
+        uses: actions/upload-artifact@v3
+        with:
+          name: devnet-accounts-artifact
+          path: ./onlydust-starknet-accounts/build/deployed_accounts.txt
+
+      - name: Upload deployed smart contract addresses
+        uses: actions/upload-artifact@v3
+        with:
+          name: devnet-contracts-artifact
+          path: ./build/deployed_contracts_local.txt
