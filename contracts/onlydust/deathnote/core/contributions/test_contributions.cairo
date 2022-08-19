@@ -54,6 +54,33 @@ func test_new_contribution_can_be_added{
 end
 
 @view
+func test_contribution_can_be_removed{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    alloc_locals
+
+    fixture.initialize()
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    let (local contribution1) = contributions.new_contribution(123, 'MyProject', 0, 'validator')
+    let (contribution2) = contributions.new_contribution(124, 'MyProject', 0, 'validator')
+    %{ stop_prank() %}
+
+    let (count, contribs) = contributions.all_contributions()
+
+    assert 2 = count
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    let (local contribution1) = contributions.remove_contribution(123)
+    %{ stop_prank() %}
+
+    let (count, contribs) = contributions.all_contributions()
+
+    assert 1 = count
+    return ()
+end
+
+@view
 func test_new_contribution_with_0x0_validator_can_be_added{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
