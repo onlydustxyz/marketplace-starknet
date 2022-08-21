@@ -2,7 +2,9 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math import assert_not_zero
 
-from onlydust.deathnote.core.contributions.library import contributions, Contribution
+from onlydust.deathnote.core.contributions.library import contributions, Contribution, ContributionCreated, Status, ContributionAssigned, ContributionValidated
+from onlydust.stream.default_implementation import stream
+
 
 @storage_var
 func contributions_(contribution_id : felt) -> (contribution : Contribution):
@@ -10,28 +12,29 @@ end
 
 @external
 func migrate{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-    const CONTRIBUTION_ID = 481932781000061
+        let (contributions_len, contribs) = contributions.all_contributions()
+        
+        stream.foreach_struct(emit_contribution_events, contributions_len, contribs, Contribution.SIZE)
+        
+        return ()
+end
 
-    let (contribution) = contributions_.read(CONTRIBUTION_ID)
+func emit_contribution_events{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(_index: felt, el : Contribution*):
+    ContributionCreated.emit(el[0].project_id, el[0].id, el[0].contribution_count_required)
 
-    assert CONTRIBUTION_ID = contribution.id
-    assert 2 = contribution.contribution_count_required
+    if el[0].status == Status.OPEN:
+        return ()        
+    end
+    
+    ContributionAssigned.emit(el[0].id, el[0].contributor_id)
+    
+    if el[0].status == Status.ASSIGNED:
+        return ()        
+    end
+    
+    ContributionValidated.emit(el[0].id)
 
-    let new_contribution = Contribution(
-        id=contribution.id,
-        project_id=contribution.project_id,
-        status=contribution.status,
-        contributor_id=contribution.contributor_id,
-        contribution_count_required=0,
-        validator_account=contribution.validator_account,
-    )
-
-    contributions_.write(contribution.id, new_contribution)
-
-    let (new_contribution) = contributions_.read(contribution.id)
-
-    assert CONTRIBUTION_ID = new_contribution.id
-    assert 0 = new_contribution.contribution_count_required
+    # Status.ABANDONED is not used atm so no need to handle it
 
     return ()
 end
