@@ -123,8 +123,7 @@ deploy_proxy() {
     admin_address=$3
 
     # deploy proxy
-    implementation_class_hash_int=`python3 -c "print(int(\"$implementation_class_hash\", 16))"`
-    PROXY_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/proxy.json --inputs $implementation_class_hash_int"` || exit_error
+    PROXY_ADDRESS=`send_transaction "starknet $NETWORK_OPT deploy --no_wallet --contract ./build/proxy.json --inputs $implementation_class_hash"` || exit_error
 
     # initialize contract and set admin
     RESULT=`send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $PROXY_ADDRESS --abi $path_to_implementation --function initializer --inputs $admin_address"` || exit_error
@@ -216,14 +215,12 @@ deploy_all_contracts() {
 
     if [ -z $PROFILE_ADDRESS ]; then
         log_info "Deploying profile contract..."
-        ADMIN_ADDRESS_INT=`python3 -c "print(int(\"$ADMIN_ADDRESS\", 16))"`
-        PROFILE_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/profile.json --inputs $ADMIN_ADDRESS_INT"` || exit_error
+        PROFILE_ADDRESS=`send_transaction "starknet $NETWORK_OPT deploy --no_wallet --contract ./build/profile.json --inputs $ADMIN_ADDRESS"` || exit_error
     fi
 
     if [ -z $REGISTRY_ADDRESS ]; then
         log_info "Deploying registry contract..."
-        ADMIN_ADDRESS_INT=`python3 -c "print(int(\"$ADMIN_ADDRESS\", 16))"`
-        REGISTRY_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/registry.json --inputs $ADMIN_ADDRESS_INT"` || exit_error
+        REGISTRY_ADDRESS=`send_transaction "starknet $NETWORK_OPT deploy --no_wallet --contract ./build/registry.json --inputs $ADMIN_ADDRESS"` || exit_error
     fi
 
     CONTRIBUTIONS_ADDRESS=`deploy_proxified_contract "contributions" "$CONTRIBUTIONS_ADDRESS"` || exit_error
