@@ -165,6 +165,13 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
         assert_contribution_that.status_is(Status.COMPLETED)
     end
 
+    # Check remove contribution works 
+    with contributions:
+        contributions_access.remove_contribution(UNASSIGNED_CONTRIBUTION_ID)
+        let (contribs_len, contribs) = contributions_access.all_contributions()
+    end
+
+    assert 2 = contribs_len
     return ()
 end
 
@@ -193,6 +200,19 @@ namespace contributions_access:
             project_id,
             contribution_count_required,
             validator_account,
+        )
+        %{ stop_prank() %}
+        return ()
+    end
+    
+    func remove_contribution{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
+    }(
+        contribution_id : felt
+    ):
+        %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
+        IContributions.remove_contribution(
+            contributions, contribution_id
         )
         %{ stop_prank() %}
         return ()

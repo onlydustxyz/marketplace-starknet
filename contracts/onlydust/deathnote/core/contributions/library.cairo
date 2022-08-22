@@ -367,10 +367,15 @@ namespace internal:
         )
 
         let (contribution_id) = indexed_contribution_ids_.read(contribution_index - 1)
-        let (contribution) = contribution_access.read(contribution_id)
-        assert contributions[contributions_len] = contribution
+        let (contribution) = contributions_.read(contribution_id)
+        if contribution.id == 0:
+            return (contributions_len)
+        else:
+            let (contribution) = contribution_access.read(contribution_id)
+            assert contributions[contributions_len] = contribution
 
-        return (contributions_len=contributions_len + 1)
+            return (contributions_len=contributions_len + 1)
+        end
     end
 
     func fetch_contribution_assigned_to_loop{
