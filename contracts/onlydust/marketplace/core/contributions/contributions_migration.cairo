@@ -2,7 +2,7 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math import assert_not_zero
 
-from onlydust.deathnote.core.contributions.library import contributions, Contribution, ContributionCreated, Status, ContributionAssigned, ContributionValidated
+from onlydust.marketplace.core.contributions.library import contributions, Contribution, ContributionCreated, Status, ContributionAssigned, ContributionValidated
 from onlydust.stream.default_implementation import stream
 
 

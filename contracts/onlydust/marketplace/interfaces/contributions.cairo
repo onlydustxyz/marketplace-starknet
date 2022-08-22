@@ -2,7 +2,7 @@
 
 from starkware.cairo.common.uint256 import Uint256
 
-from onlydust.deathnote.core.contributions.library import Contribution
+from onlydust.marketplace.core.contributions.library import Contribution
 
 @contract_interface
 namespace IContributions:

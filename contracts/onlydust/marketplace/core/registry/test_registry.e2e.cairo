@@ -3,8 +3,8 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from onlydust.deathnote.interfaces.registry import IRegistry, UserInformation
-from onlydust.deathnote.test.libraries.user import assert_user_that
+from onlydust.marketplace.interfaces.registry import IRegistry, UserInformation
+from onlydust.marketplace.test.libraries.user import assert_user_that
 
 const ADMIN = 'admin'
 const REGISTERER = 'register'
@@ -19,7 +19,7 @@ const GITHUB_ID = 'github_user'
 func __setup__{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
     tempvar registry
     %{
-        context.registry = deploy_contract("./contracts/onlydust/deathnote/core/registry/registry.cairo", [ids.ADMIN]).contract_address 
+        context.registry = deploy_contract("./contracts/onlydust/marketplace/core/registry/registry.cairo", [ids.ADMIN]).contract_address 
         ids.registry = context.registry
         stop_prank = start_prank(ids.ADMIN, ids.registry)
     %}

@@ -4,11 +4,11 @@ from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from openzeppelin.upgrades.library import Proxy
 
-from onlydust.deathnote.core.contributions.library import contributions, Contribution
+from onlydust.marketplace.core.contributions.library import contributions, Contribution
 
 # DO NOT REMOVE THOSE IMPORTS
 # They are mandatory to make this contract upgradable and migratable
-from onlydust.deathnote.library.migration_library import (
+from onlydust.marketplace.library.migration_library import (
     migratable_proxy,
     implementation,
     proxy_admin,
