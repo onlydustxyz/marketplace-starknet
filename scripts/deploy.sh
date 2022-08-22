@@ -6,6 +6,7 @@ ROOT=`readlink -f $SCRIPT_DIR/..`
 CACHE_FILE_BASE=$ROOT/build/deployed_contracts
 STARKNET_ACCOUNTS_FILE=$HOME/.starknet_accounts/starknet_open_zeppelin_accounts.json
 PROTOSTAR_TOML_FILE=$ROOT/protostar.toml
+STARKNET_VERSION="0.9.1"
 
 ### FUNCTIONS
 . $SCRIPT_DIR/logging.sh # Logging utilities
@@ -48,6 +49,10 @@ get_network_opt() {
 check_starknet() {
     which starknet &> /dev/null
     [ $? -ne 0 ] && exit_error "Unable to locate starknet binary. Did you activate your virtual env ?"
+    version=$(starknet -v)
+    if [ "$version" != "starknet $STARKNET_VERSION" ]; then
+        exit_error "Invalid starknet version: $version. Version $STARKNET_VERSION is required"
+    fi
 }
 
 # wait for a transaction to be received
@@ -197,7 +202,7 @@ deploy_all_contracts() {
         . $CACHE_FILE
         log_info "Found those deployed accounts:"
         cat $CACHE_FILE
-        ask "Do you want to deploy missing contracts and initialize them" || return 
+        ask "\nDo you want to deploy missing contracts and initialize them" || return 
     }
 
     print Profile: $PROFILE
