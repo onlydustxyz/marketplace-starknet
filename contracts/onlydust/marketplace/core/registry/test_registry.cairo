@@ -3,10 +3,10 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from onlydust.deathnote.core.registry.library import registry, Role
-from onlydust.deathnote.test.libraries.user import assert_user_that
+from onlydust.marketplace.core.registry.library import registry, Role
+from onlydust.marketplace.test.libraries.user import assert_user_that
 
-const PROFILE = 'deathnote profile'
+const PROFILE = 'marketplace profile'
 const REGISTERER = 'register'
 const CONTRIBUTOR = 'Antho'
 const GITHUB_USER = 'github_user'

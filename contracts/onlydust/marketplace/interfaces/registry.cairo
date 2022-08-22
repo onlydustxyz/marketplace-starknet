@@ -1,6 +1,6 @@
 %lang starknet
 
-from onlydust.deathnote.core.registry.library import UserInformation
+from onlydust.marketplace.core.registry.library import UserInformation
 
 @contract_interface
 namespace IRegistry:

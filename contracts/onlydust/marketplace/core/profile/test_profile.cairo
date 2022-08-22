@@ -3,7 +3,7 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from onlydust.deathnote.core.profile.library import profile, Role
+from onlydust.marketplace.core.profile.library import profile, Role
 
 const ADMIN = 'onlydust_admin'
 const REGISTRY = 'registry'

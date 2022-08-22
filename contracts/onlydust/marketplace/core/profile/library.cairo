@@ -7,7 +7,7 @@ from starkware.starknet.common.syscalls import get_caller_address
 
 from openzeppelin.token.erc721.library import ERC721
 
-from onlydust.deathnote.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
+from onlydust.marketplace.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
 
 from openzeppelin.security.safemath import SafeUint256
 

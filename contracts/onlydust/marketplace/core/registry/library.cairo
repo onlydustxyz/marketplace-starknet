@@ -5,9 +5,9 @@ from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.math import assert_not_zero
 from starkware.starknet.common.syscalls import get_caller_address
 
-from onlydust.deathnote.interfaces.profile import IProfile
+from onlydust.marketplace.interfaces.profile import IProfile
 
-from onlydust.deathnote.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
+from onlydust.marketplace.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
 
 #
 # Enums

@@ -8,7 +8,7 @@ from starkware.cairo.common.math_cmp import is_not_zero, is_le
 from starkware.cairo.common.hash import hash2
 from starkware.starknet.common.syscalls import get_caller_address
 
-from onlydust.deathnote.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
+from onlydust.marketplace.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
 from onlydust.stream.default_implementation import stream
 
 #

@@ -2,7 +2,7 @@
 
 from starkware.cairo.common.uint256 import Uint256
 
-from onlydust.deathnote.core.registry.library import UserInformation
+from onlydust.marketplace.core.registry.library import UserInformation
 
 namespace assert_user_that:
     func profile_contract_is{user : UserInformation}(expected : felt):

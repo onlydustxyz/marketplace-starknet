@@ -3,14 +3,14 @@
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 
-from onlydust.deathnote.core.contributions.library import (
+from onlydust.marketplace.core.contributions.library import (
     contributions,
     Contribution,
     Status,
     Role,
     past_contributions_,
 )
-from onlydust.deathnote.test.libraries.contributions import assert_contribution_that
+from onlydust.marketplace.test.libraries.contributions import assert_contribution_that
 
 const ADMIN = 'admin'
 const FEEDER = 'feeder'

@@ -3,7 +3,7 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from onlydust.deathnote.interfaces.profile import IProfile
+from onlydust.marketplace.interfaces.profile import IProfile
 
 const ADMIN = 'admin'
 const REGISTRY = 'registry'
@@ -16,7 +16,7 @@ const CONTRIBUTOR = 'contributor'
 func __setup__{syscall_ptr : felt*, range_check_ptr}():
     tempvar profile_contract
     %{
-        context.profile_contract = deploy_contract("./contracts/onlydust/deathnote/core/profile/profile.cairo", [ids.ADMIN]).contract_address
+        context.profile_contract = deploy_contract("./contracts/onlydust/marketplace/core/profile/profile.cairo", [ids.ADMIN]).contract_address
         ids.profile_contract = context.profile_contract
         stop_prank = start_prank(ids.ADMIN, ids.profile_contract)
     %}
