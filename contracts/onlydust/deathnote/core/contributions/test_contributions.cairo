@@ -61,22 +61,22 @@ func test_contribution_can_be_removed{
 
     fixture.initialize()
 
+    const contribution_id = 123
+    let contributor_id = Uint256(1, 0)
+
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (local contribution1) = contributions.new_contribution(123, 'MyProject', 0, 'validator')
+    let (local contribution1) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
     let (contribution2) = contributions.new_contribution(124, 'MyProject', 0, 'validator')
+    let (local contribution1) = contributions.remove_contribution(contribution_id)
     %{ stop_prank() %}
 
-    let (count, contribs) = contributions.all_contributions()
-
-    assert 2 = count
-
-    %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (local contribution1) = contributions.remove_contribution(123)
+    %{
+        stop_prank = start_prank(ids.FEEDER) 
+        expect_revert(error_message="Contributions: Contribution does not exist")
+    %}
+        let (contribution) = contributions.contribution(contribution_id)
     %{ stop_prank() %}
 
-    let (count, contribs) = contributions.all_contributions()
-
-    assert 1 = count
     return ()
 end
 

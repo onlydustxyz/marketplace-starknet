@@ -148,7 +148,6 @@ namespace contributions:
         )
 
         with contribution:
-          #  contribution_access.assert_valid()
             contribution_access.delete(id)
         end
 
