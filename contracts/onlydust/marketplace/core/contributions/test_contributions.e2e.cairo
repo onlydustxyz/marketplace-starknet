@@ -3,9 +3,9 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from onlydust.deathnote.interfaces.contributions import IContributions
-from onlydust.deathnote.core.contributions.library import Contribution, Status
-from onlydust.deathnote.test.libraries.contributions import assert_contribution_that
+from onlydust.marketplace.interfaces.contributions import IContributions
+from onlydust.marketplace.core.contributions.library import Contribution, Status
+from onlydust.marketplace.test.libraries.contributions import assert_contribution_that
 
 const ADMIN = 'admin'
 const FEEDER = 'feeder'
@@ -17,7 +17,7 @@ const FEEDER = 'feeder'
 func __setup__{syscall_ptr : felt*, range_check_ptr}():
     tempvar contributions_contract
     %{
-        context.contributions_contract = deploy_contract("./contracts/onlydust/deathnote/core/contributions/contributions.cairo", [ids.ADMIN]).contract_address
+        context.contributions_contract = deploy_contract("./contracts/onlydust/marketplace/core/contributions/contributions.cairo", [ids.ADMIN]).contract_address
         ids.contributions_contract = context.contributions_contract
         stop_prank = start_prank(ids.ADMIN, ids.contributions_contract)
     %}

@@ -3,14 +3,14 @@
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 
-from onlydust.deathnote.core.contributions.library import (
+from onlydust.marketplace.core.contributions.library import (
     contributions,
     Contribution,
     Status,
     Role,
     past_contributions_,
 )
-from onlydust.deathnote.test.libraries.contributions import assert_contribution_that
+from onlydust.marketplace.test.libraries.contributions import assert_contribution_that
 
 const ADMIN = 'admin'
 const FEEDER = 'feeder'
@@ -50,6 +50,11 @@ func test_new_contribution_can_be_added{
         assert_contribution_that.validator_is('validator')
     end
 
+    %{ expect_events(
+        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
+        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
+        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 124, "gate": 0}},
+    )%}
     return ()
 end
 
@@ -104,6 +109,10 @@ func test_new_contribution_with_0x0_validator_can_be_added{
         assert_contribution_that.validator_is(0x0)
     end
 
+    %{ expect_events(
+        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
+    )%}
+
     return ()
 end
 
@@ -129,6 +138,10 @@ func test_feeder_can_assign_contribution_to_contributor{
         assert_contribution_that.contributor_is(contributor_id)
     end
 
+    %{ expect_events(
+        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
+        {"name": "ContributionAssigned", "data": {"contribution_id": 123, "contributor_id": {"low": 1, "high": 0}}},
+    )%}
     return ()
 end
 
@@ -321,6 +334,12 @@ func test_feeder_can_unassign_contribution_from_contributor{
         assert_contribution_that.contributor_is(Uint256(0, 0))
     end
 
+    %{ expect_events(
+        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
+        {"name": "ContributionAssigned", "data": {"contribution_id": 123, "contributor_id": {"low": 1, "high": 0}}},
+        {"name": "ContributionUnassigned", "data": {"contribution_id": 123}},
+    )%}
+
     return ()
 end
 
@@ -401,6 +420,12 @@ func test_feeder_can_validate_assigned_contribution{
         assert_contribution_that.status_is(Status.COMPLETED)
     end
 
+    %{ expect_events(
+        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
+        {"name": "ContributionAssigned", "data": {"contribution_id": 123, "contributor_id": {"low": 1, "high": 0}}},
+        {"name": "ContributionValidated", "data": {"contribution_id": 123}},
+    )%}
+
     return ()
 end
 
@@ -423,6 +448,12 @@ func test_feeder_can_validate_assigned_contribution_when_validator_is_0x0{
     with contribution:
         assert_contribution_that.status_is(Status.COMPLETED)
     end
+
+    %{ expect_events(
+        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
+        {"name": "ContributionAssigned", "data": {"contribution_id": 123, "contributor_id": {"low": 1, "high": 0}}},
+        {"name": "ContributionValidated", "data": {"contribution_id": 123}},
+    )%}
 
     return ()
 end
@@ -450,6 +481,12 @@ func test_validator_can_validate_assigned_contribution{
     with contribution:
         assert_contribution_that.status_is(Status.COMPLETED)
     end
+
+    %{ expect_events(
+        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
+        {"name": "ContributionAssigned", "data": {"contribution_id": 123, "contributor_id": {"low": 1, "high": 0}}},
+        {"name": "ContributionValidated", "data": {"contribution_id": 123}},
+    )%}
 
     return ()
 end
@@ -575,6 +612,11 @@ func test_feeder_can_modify_contribution_count_required{
         assert_contribution_that.gate_is(3)
     end
 
+    %{ expect_events(
+        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
+        {"name": "ContributionGateChanged", "data": {"contribution_id": 123, "gate": 3}},
+    )%}
+
     return ()
 end
 
@@ -600,6 +642,11 @@ func test_validator_can_modify_contribution_count_required{
     with contribution:
         assert_contribution_that.gate_is(3)
     end
+
+    %{ expect_events(
+        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
+        {"name": "ContributionGateChanged", "data": {"contribution_id": 123, "gate": 3}},
+    )%}
 
     return ()
 end

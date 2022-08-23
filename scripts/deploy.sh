@@ -6,6 +6,7 @@ ROOT=`readlink -f $SCRIPT_DIR/..`
 CACHE_FILE_BASE=$ROOT/build/deployed_contracts
 STARKNET_ACCOUNTS_FILE=$HOME/.starknet_accounts/starknet_open_zeppelin_accounts.json
 PROTOSTAR_TOML_FILE=$ROOT/protostar.toml
+STARKNET_VERSION="0.9.1"
 
 ### FUNCTIONS
 . $SCRIPT_DIR/logging.sh # Logging utilities
@@ -41,13 +42,17 @@ get_account_address() {
 # $1 - profile
 get_network_opt() {
     profile=$1
-    grep profile.$profile $PROTOSTAR_TOML_FILE -A5 -m1 | sed -n 's@^.*network_opt="\(.*\)".*$@\1@p'
+    grep profile.$profile $PROTOSTAR_TOML_FILE -A5 -m1 | sed -n 's@^.*network_opt = "\(.*\)".*$@\1@p'
 }
 
 # check starknet binary presence
 check_starknet() {
     which starknet &> /dev/null
     [ $? -ne 0 ] && exit_error "Unable to locate starknet binary. Did you activate your virtual env ?"
+    version=$(starknet -v)
+    if [ "$version" != "starknet $STARKNET_VERSION" ]; then
+        exit_error "Invalid starknet version: $version. Version $STARKNET_VERSION is required"
+    fi
 }
 
 # wait for a transaction to be received
@@ -123,7 +128,7 @@ deploy_proxy() {
     admin_address=$3
 
     # deploy proxy
-    PROXY_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/proxy.json --inputs $implementation_class_hash"` || exit_error
+    PROXY_ADDRESS=`send_transaction "starknet $NETWORK_OPT deploy --no_wallet --contract ./build/proxy.json --inputs $implementation_class_hash"` || exit_error
 
     # initialize contract and set admin
     RESULT=`send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $PROXY_ADDRESS --abi $path_to_implementation --function initializer --inputs $admin_address"` || exit_error
@@ -197,7 +202,7 @@ deploy_all_contracts() {
         . $CACHE_FILE
         log_info "Found those deployed accounts:"
         cat $CACHE_FILE
-        ask "Do you want to deploy missing contracts and initialize them" || return 
+        ask "\nDo you want to deploy missing contracts and initialize them" || return 
     }
 
     print Profile: $PROFILE
@@ -215,12 +220,12 @@ deploy_all_contracts() {
 
     if [ -z $PROFILE_ADDRESS ]; then
         log_info "Deploying profile contract..."
-        PROFILE_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/profile.json --inputs $ADMIN_ADDRESS"` || exit_error
+        PROFILE_ADDRESS=`send_transaction "starknet $NETWORK_OPT deploy --no_wallet --contract ./build/profile.json --inputs $ADMIN_ADDRESS"` || exit_error
     fi
 
     if [ -z $REGISTRY_ADDRESS ]; then
         log_info "Deploying registry contract..."
-        REGISTRY_ADDRESS=`send_transaction "protostar $PROFILE_OPT deploy ./build/registry.json --inputs $ADMIN_ADDRESS"` || exit_error
+        REGISTRY_ADDRESS=`send_transaction "starknet $NETWORK_OPT deploy --no_wallet --contract ./build/registry.json --inputs $ADMIN_ADDRESS"` || exit_error
     fi
 
     CONTRIBUTIONS_ADDRESS=`deploy_proxified_contract "contributions" "$CONTRIBUTIONS_ADDRESS"` || exit_error

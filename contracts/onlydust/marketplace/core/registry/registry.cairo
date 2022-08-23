@@ -2,7 +2,7 @@
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 
-from onlydust.deathnote.core.registry.library import registry, UserInformation
+from onlydust.marketplace.core.registry.library import registry, UserInformation
 
 #
 # Constructor

@@ -8,7 +8,7 @@ from starkware.cairo.common.math_cmp import is_not_zero, is_le
 from starkware.cairo.common.hash import hash2
 from starkware.starknet.common.syscalls import get_caller_address
 
-from onlydust.deathnote.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
+from onlydust.marketplace.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
 from onlydust.stream.default_implementation import stream
 
 #
@@ -40,6 +40,29 @@ struct Contribution:
 end
 
 #
+# Events
+#
+@event
+func ContributionCreated(project_id: felt, contribution_id: felt, gate: felt):
+end
+
+@event
+func ContributionAssigned(contribution_id: felt, contributor_id: Uint256):
+end
+
+@event
+func ContributionUnassigned(contribution_id: felt):
+end
+
+@event
+func ContributionValidated(contribution_id: felt):
+end
+
+@event
+func ContributionGateChanged(contribution_id: felt, gate: felt):
+end
+
+#
 # Storage
 #
 @storage_var
@@ -62,6 +85,10 @@ end
 # Functions
 #
 namespace contributions:
+    #
+    # Access Control
+    #
+
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         admin : felt
     ):
@@ -105,6 +132,10 @@ namespace contributions:
         return ()
     end
 
+    #
+    # Write
+    #
+
     # Add a contribution for a given token id
     func new_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         id : felt, project_id : felt, contribution_count_required : felt, validator_account : felt
@@ -126,6 +157,8 @@ namespace contributions:
             contribution_access.assert_valid()
             contribution_access.store()
         end
+        
+        ContributionCreated.emit(project_id, id, contribution_count_required)
 
         return (contribution)
     end
@@ -153,6 +186,122 @@ namespace contributions:
 
         return (contribution)
     end
+
+    # Assign a contributor to a contribution
+    func assign_contributor_to_contribution{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(contribution_id : felt, contributor_id : Uint256):
+        internal.only_feeder()
+
+        let (contribution) = contribution_access.read(contribution_id)
+        with contribution:
+            contribution_access.only_open()
+            let contribution = Contribution(
+                contribution.id,
+                contribution.project_id,
+                Status.ASSIGNED,
+                contributor_id,
+                contribution.contribution_count_required,
+                contribution.validator_account,
+            )
+            
+            contribution_access.assert_assignee_is_eligible()
+            contribution_access.store()
+        end
+
+        ContributionAssigned.emit(contribution_id, contributor_id)
+
+        return ()
+    end
+
+    # Unassign a contributor from a contribution
+    func unassign_contributor_from_contribution{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(contribution_id : felt):
+        internal.only_feeder()
+
+        let (contribution) = contribution_access.read(contribution_id)
+        with contribution:
+            contribution_access.only_assigned()
+        end
+
+        let contribution = Contribution(
+            contribution.id,
+            contribution.project_id,
+            Status.OPEN,
+            Uint256(0, 0),
+            contribution.contribution_count_required,
+            contribution.validator_account,
+        )
+        with contribution:
+            contribution_access.store()
+        end
+        
+        ContributionUnassigned.emit(contribution_id)
+
+        return ()
+    end
+
+    # Validate a contribution, marking it as completed
+    func validate_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contribution_id : felt
+    ):
+        let (contribution) = contribution_access.read(contribution_id)
+        with contribution:
+            contribution_access.caller_is_feeder_or_validator()
+            contribution_access.only_assigned()
+        end
+
+        let contribution = Contribution(
+            contribution.id,
+            contribution.project_id,
+            Status.COMPLETED,
+            contribution.contributor_id,
+            contribution.contribution_count_required,
+            contribution.validator_account,
+        )
+        with contribution:
+            contribution_access.store()
+        end
+
+        let (past_contributions) = past_contributions_.read(contribution.contributor_id)
+        past_contributions_.write(contribution.contributor_id, past_contributions + 1)
+
+        ContributionValidated.emit(contribution_id)
+
+        return ()
+    end
+
+    # Modify a contribution count required
+    func modify_contribution_count_required{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contribution_id : felt, contribution_count_required : felt
+    ):
+        let (contribution) = contribution_access.read(contribution_id)
+        with contribution:
+            contribution_access.caller_is_feeder_or_validator()
+            contribution_access.only_open()
+        end
+
+        let contribution = Contribution(
+            contribution.id,
+            contribution.project_id,
+            contribution.status,
+            contribution.contributor_id,
+            contribution_count_required,
+            contribution.validator_account,
+        )
+        with contribution:
+            contribution_access.store()
+        end
+
+        ContributionGateChanged.emit(contribution_id, contribution_count_required)
+        
+        return ()
+    end
+
+    #
+    # Read Only
+    #
 
     # Get the contribution details
     func contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
@@ -225,109 +374,6 @@ namespace contributions:
         return (contributions_len, contributions)
     end
 
-    # Assign a contributor to a contribution
-    func assign_contributor_to_contribution{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-    }(contribution_id : felt, contributor_id : Uint256):
-        internal.only_feeder()
-
-        let (contribution) = contribution_access.read(contribution_id)
-        with contribution:
-            contribution_access.only_open()
-            let contribution = Contribution(
-                contribution.id,
-                contribution.project_id,
-                Status.ASSIGNED,
-                contributor_id,
-                contribution.contribution_count_required,
-                contribution.validator_account,
-            )
-
-            contribution_access.assert_assignee_is_eligible()
-            contribution_access.store()
-        end
-
-        return ()
-    end
-
-    # Unassign a contributor from a contribution
-    func unassign_contributor_from_contribution{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-    }(contribution_id : felt):
-        internal.only_feeder()
-
-        let (contribution) = contribution_access.read(contribution_id)
-        with contribution:
-            contribution_access.only_assigned()
-        end
-
-        let contribution = Contribution(
-            contribution.id,
-            contribution.project_id,
-            Status.OPEN,
-            Uint256(0, 0),
-            contribution.contribution_count_required,
-            contribution.validator_account,
-        )
-        with contribution:
-            contribution_access.store()
-        end
-
-        return ()
-    end
-
-    # Validate a contribution, marking it as completed
-    func validate_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        contribution_id : felt
-    ):
-        let (contribution) = contribution_access.read(contribution_id)
-        with contribution:
-            contribution_access.caller_is_feeder_or_validator()
-            contribution_access.only_assigned()
-        end
-
-        let contribution = Contribution(
-            contribution.id,
-            contribution.project_id,
-            Status.COMPLETED,
-            contribution.contributor_id,
-            contribution.contribution_count_required,
-            contribution.validator_account,
-        )
-        with contribution:
-            contribution_access.store()
-        end
-
-        let (past_contributions) = past_contributions_.read(contribution.contributor_id)
-        past_contributions_.write(contribution.contributor_id, past_contributions + 1)
-
-        return ()
-    end
-
-    # Modify a contribution count required
-    func modify_contribution_count_required{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        contribution_id : felt, contribution_count_required : felt
-    ):
-        let (contribution) = contribution_access.read(contribution_id)
-        with contribution:
-            contribution_access.caller_is_feeder_or_validator()
-            contribution_access.only_open()
-        end
-
-        let contribution = Contribution(
-            contribution.id,
-            contribution.project_id,
-            contribution.status,
-            contribution.contributor_id,
-            contribution_count_required,
-            contribution.validator_account,
-        )
-        with contribution:
-            contribution_access.store()
-        end
-        
-        return ()
-    end
 end
 
 namespace internal:

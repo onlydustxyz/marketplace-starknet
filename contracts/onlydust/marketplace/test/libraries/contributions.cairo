@@ -2,7 +2,7 @@
 
 from starkware.cairo.common.uint256 import Uint256
 
-from onlydust.deathnote.core.contributions.library import Contribution, Status
+from onlydust.marketplace.core.contributions.library import Contribution, Status
 
 namespace assert_contribution_that:
     func id_is{contribution : Contribution}(expected : felt):
