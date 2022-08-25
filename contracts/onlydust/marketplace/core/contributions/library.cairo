@@ -20,7 +20,15 @@ struct Role:
     member FEEDER : felt  # FEEDER role, can add a contribution
 end
 
+struct DeprecatedStatus:
+    member OPEN : felt
+    member ASSIGNED : felt
+    member COMPLETED : felt
+    member ABANDONED : felt
+end
+
 struct Status:
+    member NONE: felt
     member OPEN : felt
     member ASSIGNED : felt
     member COMPLETED : felt
@@ -30,7 +38,7 @@ end
 #
 # Structs
 #
-struct Contribution:
+struct DeprecatedContribution:
     member id : felt
     member project_id : felt
     member status : felt
@@ -39,11 +47,23 @@ struct Contribution:
     member validator_account : felt
 end
 
+struct ContributionId:
+    member inner: felt
+end
+
+struct Contribution:
+    member id: ContributionId
+    member project_id : felt
+    member status: felt
+    member gate: felt
+    member contributor_id: Uint256
+end
+
 #
 # Events
 #
 @event
-func ContributionCreated(project_id: felt, contribution_id: felt, gate: felt):
+func ContributionCreated(contribution_id: felt, project_id: felt, issue_number: felt, gate: felt):
 end
 
 @event
@@ -66,11 +86,19 @@ end
 # Storage
 #
 @storage_var
-func contributions_(contribution_id : felt) -> (contribution : Contribution):
+func contribution_project_id(contribution_id : ContributionId) -> (project_id: felt):
 end
 
 @storage_var
-func indexed_contribution_ids_(contribution_index : felt) -> (contribution_id : felt):
+func contribution_status_(contribution_id : ContributionId) -> (status : felt):
+end
+
+@storage_var
+func contribution_contributor_(contribution_id : ContributionId) -> (contributor_id: Uint256):
+end
+
+@storage_var
+func contribution_gate_(contribution_id : ContributionId) -> (gate: felt):
 end
 
 @storage_var
@@ -80,6 +108,11 @@ end
 @storage_var
 func past_contributions_(contributor_id : Uint256) -> (contribution_count : felt):
 end
+
+@storage_var
+func github_ids_to_contribution_id(project_id : felt, issue_numer: felt) -> (contribution_id: ContributionId):
+end
+
 
 #
 # Functions
@@ -138,27 +171,50 @@ namespace contributions:
 
     # Add a contribution for a given token id
     func new_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        id : felt, project_id : felt, contribution_count_required : felt, validator_account : felt
+        old_composite_id : felt, project_id : felt, contribution_count_required : felt, _unused: felt
     ) -> (contribution : Contribution):
         alloc_locals
 
         internal.only_feeder()
+        
+        with_attr error_message("Contributions: Invalid project ID ({project_id})"):
+            assert_nn(project_id)
+            assert_not_zero(project_id)
+        end
 
+        with_attr error_message("Contributions: Invalid contribution count required"):
+            let (count_sign) = sign(contribution_count_required)
+            assert 0 = count_sign * (1 - count_sign)
+            assert_nn(contribution_count_required)
+        end
+        
+        let issue_number = old_composite_id - project_id * 1000000
+        with_attr error_message("Contributions: invalid id {old_composite_id}, must be project_id * 1000000 + issue_number"):
+            assert_nn(issue_number)
+            assert_not_zero(issue_number)
+        end
+        github_access.only_new(project_id, issue_number)
+
+        let (contribution_count) = contribution_count_.read()
+        let new_count = contribution_count + 1
+        let id = ContributionId(new_count)
+
+        # Update storage
+        contribution_status_.write(id, Status.OPEN)
+        contribution_gate_.write(id, contribution_count_required)
+        contribution_project_id.write(id, project_id)
+        contribution_count_.write(new_count)
+        github_ids_to_contribution_id.write(project_id, issue_number, id)
+        
+        ContributionCreated.emit(new_count, project_id, issue_number, contribution_count_required)
+        
         let contribution = Contribution(
             id,
             project_id,
             Status.OPEN,
-            Uint256(0, 0),
             contribution_count_required,
-            validator_account,
+            Uint256(0, 0),
         )
-
-        with contribution:
-            contribution_access.assert_valid()
-            contribution_access.store()
-        end
-        
-        ContributionCreated.emit(project_id, id, contribution_count_required)
 
         return (contribution)
     end
@@ -166,26 +222,18 @@ namespace contributions:
     # Assign a contributor to a contribution
     func assign_contributor_to_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-    }(contribution_id : felt, contributor_id : Uint256):
+    }(contribution_id : ContributionId, contributor_id : Uint256):
         internal.only_feeder()
+        
+        status_access.only_open(contribution_id)
+        gating.assert_contributor_is_eligible(contribution_id, contributor_id)
+        
+        # Update storage
+        contribution_status_.write(contribution_id, Status.ASSIGNED)
+        contribution_contributor_.write(contribution_id, contributor_id)
 
-        let (contribution) = contribution_access.read(contribution_id)
-        with contribution:
-            contribution_access.only_open()
-            let contribution = Contribution(
-                contribution.id,
-                contribution.project_id,
-                Status.ASSIGNED,
-                contributor_id,
-                contribution.contribution_count_required,
-                contribution.validator_account,
-            )
-            
-            contribution_access.assert_assignee_is_eligible()
-            contribution_access.store()
-        end
-
-        ContributionAssigned.emit(contribution_id, contributor_id)
+        # Emit event
+        ContributionAssigned.emit(contribution_id.inner, contributor_id)
 
         return ()
     end
@@ -193,84 +241,56 @@ namespace contributions:
     # Unassign a contributor from a contribution
     func unassign_contributor_from_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-    }(contribution_id : felt):
+    }(contribution_id : ContributionId):
         internal.only_feeder()
 
-        let (contribution) = contribution_access.read(contribution_id)
-        with contribution:
-            contribution_access.only_assigned()
-        end
+       status_access.only_assigned(contribution_id) 
 
-        let contribution = Contribution(
-            contribution.id,
-            contribution.project_id,
-            Status.OPEN,
-            Uint256(0, 0),
-            contribution.contribution_count_required,
-            contribution.validator_account,
-        )
-        with contribution:
-            contribution_access.store()
-        end
-        
-        ContributionUnassigned.emit(contribution_id)
+        # Update storage
+        contribution_contributor_.write(contribution_id, Uint256(0, 0))
+        contribution_status_.write(contribution_id, Status.OPEN)
+
+        # Emit event
+        ContributionUnassigned.emit(contribution_id.inner)
 
         return ()
     end
 
     # Validate a contribution, marking it as completed
     func validate_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        contribution_id : felt
+        contribution_id : ContributionId
     ):
-        let (contribution) = contribution_access.read(contribution_id)
-        with contribution:
-            contribution_access.caller_is_feeder_or_validator()
-            contribution_access.only_assigned()
-        end
+        internal.only_feeder()
 
-        let contribution = Contribution(
-            contribution.id,
-            contribution.project_id,
-            Status.COMPLETED,
-            contribution.contributor_id,
-            contribution.contribution_count_required,
-            contribution.validator_account,
-        )
-        with contribution:
-            contribution_access.store()
-        end
+        status_access.only_assigned(contribution_id) 
+        
+        # Update storage
+        contribution_status_.write(contribution_id, Status.COMPLETED)
 
-        let (past_contributions) = past_contributions_.read(contribution.contributor_id)
-        past_contributions_.write(contribution.contributor_id, past_contributions + 1)
+        # Increase contributor contribution_count 
+        let (contributor_id) = contribution_contributor_.read(contribution_id)
+        let (past_contributions) = past_contributions_.read(contributor_id)
+        past_contributions_.write(contributor_id, past_contributions + 1)
 
-        ContributionValidated.emit(contribution_id)
+        # Emit event
+        ContributionValidated.emit(contribution_id.inner)
 
         return ()
     end
 
     # Modify a contribution count required
     func modify_contribution_count_required{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        contribution_id : felt, contribution_count_required : felt
+        contribution_id : ContributionId, contribution_count_required : felt
     ):
-        let (contribution) = contribution_access.read(contribution_id)
-        with contribution:
-            contribution_access.caller_is_feeder_or_validator()
-            contribution_access.only_open()
-        end
+        internal.only_feeder()
 
-        let contribution = Contribution(
-            contribution.id,
-            contribution.project_id,
-            contribution.status,
-            contribution.contributor_id,
-            contribution_count_required,
-            contribution.validator_account,
-        )
-        with contribution:
-            contribution_access.store()
-        end
+        status_access.only_open(contribution_id) 
+        
+        # Update storage
+        contribution_gate_.write(contribution_id, contribution_count_required)
 
-        ContributionGateChanged.emit(contribution_id, contribution_count_required)
+        # Emit event
+        ContributionGateChanged.emit(contribution_id.inner, contribution_count_required)
         
         return ()
     end
@@ -281,9 +301,9 @@ namespace contributions:
 
     # Get the contribution details
     func contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        contribution_id : felt
+        contribution_id : ContributionId
     ) -> (contribution : Contribution):
-        let (contribution) = contribution_access.read(contribution_id)
+        let (contribution) = contribution_access.build(contribution_id)
         return (contribution)
     end
 
@@ -352,7 +372,118 @@ namespace contributions:
 
 end
 
+namespace gating:
+    func is_contributor_eligible{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        gate: felt, contributor_id : Uint256
+    ) -> (result : felt):
+        alloc_locals
+        let (past_contribution_count) = past_contributions_.read(contributor_id)
+        let (result) = is_le(gate, past_contribution_count)
+        return (result=result)
+    end
+    
+     func assert_contributor_is_eligible{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr,
+    }(
+        contribution_id: ContributionId, contributor_id : Uint256
+    ):
+        let (gate) = contribution_gate_.read(contribution_id)
+        let (is_eligible) = is_contributor_eligible(gate, contributor_id)
+        with_attr error_message("Contributions: Contributor is not eligible"):
+            assert 1 = is_eligible
+        end
+        return ()
+    end    
+end
+
+namespace github_access:
+    func only_new{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr,
+    }(project_id: felt, issue_number: felt):
+        let (id) = github_ids_to_contribution_id.read(project_id, issue_number)
+        let inner = id.inner
+        with_attr error_message("Contributions: Contribution already exist with id {id}"):
+            assert 0 = inner
+        end
+        return ()
+    end
+    
+end
+
+namespace status_access:
+    func only_open{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr,
+    }(contribution_id : ContributionId):
+        alloc_locals
+        let (status) = contribution_status_.read(contribution_id)
+        internal.status_is_not_none(status)
+        with_attr error_message("Contributions: Contribution is not OPEN"):
+            assert Status.OPEN = status
+        end
+        return ()
+    end
+    
+    func only_assigned{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr,
+    }(contribution_id : ContributionId):
+        alloc_locals
+        let (status) = contribution_status_.read(contribution_id)
+        internal.status_is_not_none(status)
+        with_attr error_message("Contributions: Contribution is not ASSIGNED"):
+            assert Status.ASSIGNED = status
+        end
+        return ()
+    end
+    
+end
+
+namespace contribution_access:
+    func build{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr,
+    }(contribution_id : ContributionId) -> (contribution: Contribution):
+        let (status) = contribution_status_.read(contribution_id)
+        let (gate) = contribution_gate_.read(contribution_id)
+        let (contributor) = contribution_contributor_.read(contribution_id)
+        let (project_id) = contribution_project_id.read(contribution_id)
+        
+        let contribution = Contribution(
+            contribution_id,
+            project_id,
+            status,
+            gate,
+            contributor
+        )
+        return (contribution)
+    end
+
+    func is_open{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contribution: Contribution* 
+    ) -> (is_open : felt):
+        if contribution.status == Status.OPEN:
+            return (is_open=1)
+        end
+        return (is_open=0)
+    end
+end
+
 namespace internal:
+    func status_is_not_none(status: felt):
+        with_attr error_message("Contributions: Contribution does not exist"):
+            assert_not_zero(status)
+        end
+        return ()
+    end
+
     func only_feeder{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         with_attr error_message("Contributions: FEEDER role required"):
             AccessControl._only_role(Role.FEEDER)
@@ -388,8 +519,8 @@ namespace internal:
             contribution_index - 1, contributions
         )
 
-        let (contribution_id) = indexed_contribution_ids_.read(contribution_index - 1)
-        let (contribution) = contribution_access.read(contribution_id)
+        let contribution_id = ContributionId(contribution_index)
+        let (contribution) = contribution_access.build(contribution_id)
         assert contributions[contributions_len] = contribution
 
         return (contributions_len=contributions_len + 1)
@@ -409,8 +540,8 @@ namespace internal:
             contribution_index - 1, contributions, contributor_id
         )
 
-        let (contribution_id) = indexed_contribution_ids_.read(contribution_index - 1)
-        let (local contribution) = contribution_access.read(contribution_id)
+        let contribution_id = ContributionId(contribution_index)
+        let (local contribution) = contribution_access.build(contribution_id)
 
         let (same_contributor) = uint256_eq(contribution.contributor_id, contributor_id)
         if same_contributor * (1 - contribution.status + Status.ASSIGNED) == 1:
@@ -436,14 +567,13 @@ namespace internal:
         let (contributions_len) = fetch_contribution_eligible_to_loop(
             contribution_index - 1, contributions, contributor_id
         )
+        
+        let contribution_id = ContributionId(contribution_index)
 
-        let (contribution_id) = indexed_contribution_ids_.read(contribution_index - 1)
-        let (local contribution) = contribution_access.read(contribution_id)
-
-        let (contributor_eligible) = contribution_access.is_contributor_eligible(
-            contribution, contributor_id
+        let (contribution) = contribution_access.build(contribution_id)
+        let (contributor_eligible) = gating.is_contributor_eligible(
+            contribution.gate, contributor_id
         )
-
         if contributor_eligible == 1:
             assert contributions[contributions_len] = contribution
             tempvar contributions_len = contributions_len + 1
@@ -451,222 +581,7 @@ namespace internal:
             tempvar contributions_len = contributions_len
         end
 
+
         return (contributions_len)
-    end
-end
-
-namespace contribution_access:
-    func assert_valid{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-        contribution : Contribution,
-    }():
-        assert_valid_status()
-        assert_valid_id()
-        assert_valid_project_id()
-        assert_valid_contributor_id()
-        assert_valid_contribution_count()
-
-        return ()
-    end
-
-    func assert_valid_status{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-        contribution : Contribution,
-    }():
-        with_attr error_message(
-                "Contributions: Invalid contribution status ({contribution.status})"):
-            assert_nn(contribution.status)
-            assert_lt(contribution.status, Status.SIZE)
-        end
-        return ()
-    end
-
-    func assert_valid_id{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-        contribution : Contribution,
-    }():
-        with_attr error_message("Contributions: Invalid contribution ID ({contribution.id})"):
-            assert_nn(contribution.id)
-            assert_not_zero(contribution.id)
-        end
-        return ()
-    end
-
-    func assert_valid_project_id{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-        contribution : Contribution,
-    }():
-        with_attr error_message("Contributions: Invalid project ID ({contribution.project_id})"):
-            assert_nn(contribution.project_id)
-            assert_not_zero(contribution.project_id)
-        end
-        return ()
-    end
-
-    func assert_valid_contribution_count{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-        contribution : Contribution,
-    }():
-        with_attr error_message("Contributions: Invalid contribution count required"):
-            let (count_sign) = sign(contribution.contribution_count_required)
-            assert 0 = count_sign * (1 - count_sign)
-            assert_nn(contribution.contribution_count_required)
-        end
-        return ()
-    end
-
-    func assert_valid_contributor_id{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-        contribution : Contribution,
-    }():
-        alloc_locals
-
-        with_attr error_message("Contributions: Invalid contributor ID"):
-            let (local is_zero) = uint256_eq(Uint256(0, 0), contribution.contributor_id)
-            let (is_not_open) = is_le(Status.OPEN + 1, contribution.status)
-            if is_zero == 1:
-                assert Status.OPEN = contribution.status
-            else:
-                assert 1 = is_not_open
-            end
-        end
-        return ()
-    end
-
-    func is_contributor_eligible{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        contribution : Contribution, contributor_id : Uint256
-    ) -> (result : felt):
-        alloc_locals
-        let (past_contribution_count) = past_contributions_.read(contributor_id)
-        let (result) = is_le(contribution.contribution_count_required, past_contribution_count)
-        return (result=result)
-    end
-
-    func assert_assignee_is_eligible{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-        contribution : Contribution,
-    }():
-        let (is_eligible) = is_contributor_eligible(contribution, contribution.contributor_id)
-        with_attr error_message("Contributions: Contributor is not eligible"):
-            assert 1 = is_eligible
-        end
-        return ()
-    end
-
-    func only_open{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-        contribution : Contribution,
-    }():
-        with_attr error_message("Contributions: Contribution is not OPEN"):
-            assert Status.OPEN = contribution.status
-        end
-        return ()
-    end
-
-    func caller_is_feeder_or_validator{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-        contribution : Contribution,
-    }():
-        let (caller) = get_caller_address()
-        let (has_feeder_role) = AccessControl.has_role(Role.FEEDER, caller)
-        # is Zero when caller has feeder role
-        let doesnt_have_feeder_role = 1 - has_feeder_role
-        # is Zero when caller is validator
-        let is_not_validator = contribution.validator_account - caller
-
-        # has feeder role or is validator
-        with_attr error_message("Contributions: caller is not feeder or validator"):
-            assert_not_zero(caller)
-            # safe because `doesnt_have_feeder_role` is either 0 or 1
-            # so the product will never overflow
-            assert doesnt_have_feeder_role * is_not_validator = 0
-        end
-        return ()
-    end
-
-    func is_open{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        contribution : Contribution*
-    ) -> (is_open : felt):
-        if contribution.status == Status.OPEN:
-            return (is_open=1)
-        end
-        return (is_open=0)
-    end
-
-    func only_assigned{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-        contribution : Contribution,
-    }():
-        with_attr error_message("Contributions: Contribution is not ASSIGNED"):
-            assert Status.ASSIGNED = contribution.status
-        end
-        return ()
-    end
-
-    func store{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-        contribution : Contribution,
-    }():
-        increase_contribution_count_if_needed()
-        contributions_.write(contribution.id, contribution)
-        return ()
-    end
-
-    func increase_contribution_count_if_needed{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-        contribution : Contribution,
-    }():
-        let (already_exists) = exists(contribution.id)
-        if already_exists == 0:
-            let (contribution_count) = contribution_count_.read()
-            indexed_contribution_ids_.write(contribution_count, contribution.id)
-            contribution_count_.write(contribution_count + 1)
-            return ()
-        end
-
-        return ()
-    end
-
-    func read{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        contribution_id : felt
-    ) -> (contribution : Contribution):
-        let (contribution) = contributions_.read(contribution_id)
-        with_attr error_message("Contributions: Contribution does not exist"):
-            assert_not_zero(contribution.id)
-        end
-
-        return (contribution)
-    end
-
-    func exists{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        contribution_id : felt
-    ) -> (exists : felt):
-        let (contribution) = contributions_.read(contribution_id)
-        let (exists) = is_not_zero(contribution.id)
-        return (exists)
     end
 end

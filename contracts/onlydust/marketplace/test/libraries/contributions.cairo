@@ -2,13 +2,13 @@
 
 from starkware.cairo.common.uint256 import Uint256
 
-from onlydust.marketplace.core.contributions.library import Contribution, Status
+from onlydust.marketplace.core.contributions.library import Contribution, ContributionId, Status
 
 namespace assert_contribution_that:
-    func id_is{contribution : Contribution}(expected : felt):
+    func id_is{contribution : Contribution}(expected : ContributionId):
         let actual = contribution.id
         with_attr error_message("Invalid contribution ID: expected {expected}, actual {actual}"):
-            assert expected = actual
+            assert expected.inner = actual.inner
         end
         return ()
     end
@@ -39,16 +39,8 @@ namespace assert_contribution_that:
     end
 
     func gate_is{contribution : Contribution}(expected : felt):
-        let actual = contribution.contribution_count_required
+        let actual = contribution.gate
         with_attr error_message("Invalid contributor: expected {expected}, actual {actual}"):
-            assert expected = actual
-        end
-        return ()
-    end
-
-    func validator_is{contribution : Contribution}(expected : felt):
-        let actual = contribution.validator_account
-        with_attr error_message("Invalid validator: expected {expected}, actual {actual}"):
             assert expected = actual
         end
         return ()

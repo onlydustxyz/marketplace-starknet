@@ -4,7 +4,7 @@ from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from openzeppelin.upgrades.library import Proxy
 
-from onlydust.marketplace.core.contributions.library import contributions, Contribution
+from onlydust.marketplace.core.contributions.library import contributions, Contribution, ContributionId
 
 # DO NOT REMOVE THOSE IMPORTS
 # They are mandatory to make this contract upgradable and migratable
@@ -40,7 +40,7 @@ end
 #
 @view
 func contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    contribution_id : felt
+    contribution_id : ContributionId
 ) -> (contribution : Contribution):
     return contributions.contribution(contribution_id)
 end
@@ -123,27 +123,27 @@ end
 @external
 func assign_contributor_to_contribution{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}(contribution_id : felt, contributor_id : Uint256):
+}(contribution_id : ContributionId, contributor_id : Uint256):
     return contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
 end
 
 @external
 func unassign_contributor_from_contribution{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}(contribution_id : felt):
+}(contribution_id : ContributionId):
     return contributions.unassign_contributor_from_contribution(contribution_id)
 end
 
 @external
 func validate_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    contribution_id : felt
+    contribution_id : ContributionId
 ):
     return contributions.validate_contribution(contribution_id)
 end
 
 @external
 func modify_contribution_count_required{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    contribution_id : felt, contribution_count_required : felt
+    contribution_id : ContributionId, contribution_count_required : felt
 ):
     return contributions.modify_contribution_count_required(contribution_id, contribution_count_required)
 end
