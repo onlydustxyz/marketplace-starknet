@@ -2,71 +2,80 @@
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
-from onlydust.marketplace.core.contributions.contributions_migration import migrate
+from onlydust.marketplace.core.contributions.contributions_migration import migrate, contributions_, contribution_count_, indexed_contribution_ids_ 
 from onlydust.marketplace.core.contributions.library import (
     contributions,
-    Contribution,
+    DeprecatedContribution,
+    DeprecatedStatus,
     Status,
     Role,
-    past_contributions_,
+    contribution_access,
+    Contribution,
+    ContributionId,
 )
 
 const ADMIN = 'admin'
 const FEEDER = 'feeder'
 
 @view
-func test_migration_unassigned{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
+func test_migration_open{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
     fixture.initialize()
 
-    const contribution_id = 123
-    let contributor_id = Uint256(1, 0)
+    let project_id = 'MyProject'
+    let old_id = project_id * 1000000 + 1
+    let old_contribution = DeprecatedContribution(
+        old_id,
+        project_id,
+        DeprecatedStatus.OPEN,
+        Uint256(0, 0),
+        1,
+        1        
+    )
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (contribution1) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
-    contributions.unassign_contributor_from_contribution(contribution_id)
-    %{ stop_prank() %}
+    contributions_.write(old_id, old_contribution)
+    indexed_contribution_ids_.write(0, old_id)
+    contribution_count_.write(1)
     
     migrate()
     
+    let expected_id = ContributionId(1)
+    let (new_contribution) = contribution_access.build(expected_id)
+    assert new_contribution = Contribution(expected_id, project_id, Status.OPEN, 1, Uint256(0, 0))
+    
     %{ expect_events(
-        # Original events
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": ids.contribution_id, "gate": 0}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": ids.contribution_id, "contributor_id": {"low": 1, "high": 0}}},
-        {"name": "ContributionUnassigned", "data": {"contribution_id": ids.contribution_id}},
-        # Migration events
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": ids.contribution_id, "gate": 0}},
+        {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.project_id, "issue_number" : 1, "gate": 1}},
     )%}
 
     return()
 end
 
 @view
-func test_migration_reassigned{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
+func test_migration_assigned{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
     fixture.initialize()
 
-    const contribution_id = 123
-    let contributor_1 = Uint256(1, 0)
-    let contributor_2 = Uint256(2, 0)
+    let project_id = 'MyProject'
+    let old_id = project_id * 1000000 + 1
+    let old_contribution = DeprecatedContribution(
+        old_id,
+        project_id,
+        DeprecatedStatus.ASSIGNED,
+        Uint256(1, 0),
+        0,
+        0        
+    )
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (contribution1) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_1)
-    contributions.unassign_contributor_from_contribution(contribution_id)
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_2)
-    %{ stop_prank() %}
-    
+    contributions_.write(old_id, old_contribution)
+    indexed_contribution_ids_.write(0, old_id)
+    contribution_count_.write(1)
+
     migrate()
 
+    let (new_contribution) = contribution_access.build(ContributionId(1))
+    assert new_contribution = Contribution(ContributionId(1), project_id, Status.ASSIGNED, 0, Uint256(1, 0))
+
     %{ expect_events(
-        # Original events
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": ids.contribution_id, "gate": 0}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": ids.contribution_id, "contributor_id": {"low": 1, "high": 0}}},
-        {"name": "ContributionUnassigned", "data": {"contribution_id": ids.contribution_id}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": ids.contribution_id, "contributor_id": {"low": 2, "high": 0}}},
-        # Migration events
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": ids.contribution_id, "gate": 0}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": ids.contribution_id, "contributor_id": {"low": 2, "high": 0}}},
+        {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.project_id, "issue_number" : 1, "gate": 0}},
+        {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": 1, "high": 0}}},
     )%}
 
     return()
@@ -76,26 +85,30 @@ end
 func test_migration_validated{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
     fixture.initialize()
 
-    const contribution_id = 123
-    let contributor_id = Uint256(1, 0)
+    let project_id = 'MyProject'
+    let old_id = project_id * 1000000 + 1
+    let old_contribution = DeprecatedContribution(
+        old_id,
+        project_id,
+        DeprecatedStatus.COMPLETED,
+        Uint256(1, 0),
+        0,
+        0        
+    )
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (contribution1) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
-    contributions.validate_contribution(contribution_id)
-    %{ stop_prank() %}
+    contributions_.write(old_id, old_contribution)
+    indexed_contribution_ids_.write(0, old_id)
+    contribution_count_.write(1)
     
     migrate()
 
+    let (new_contribution) = contribution_access.build(ContributionId(1))
+    assert new_contribution = Contribution(ContributionId(1), project_id, Status.COMPLETED, 0, Uint256(1, 0))
+
     %{ expect_events(
-        # Original events
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": ids.contribution_id, "gate": 0}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": ids.contribution_id, "contributor_id": {"low": 1, "high": 0}}},
-        {"name": "ContributionValidated", "data": {"contribution_id": ids.contribution_id}},
-        # Migration events
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": ids.contribution_id, "gate": 0}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": ids.contribution_id, "contributor_id": {"low": 1, "high": 0}}},
-        {"name": "ContributionValidated", "data": {"contribution_id": ids.contribution_id}},
+        {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.project_id, "issue_number" : 1, "gate": 0}},
+        {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": 1, "high": 0}}},
+        {"name": "ContributionValidated", "data": {"contribution_id": 1}},
     )%}
 
     return()
@@ -105,36 +118,52 @@ end
 func test_migration_validated_multiple{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
     fixture.initialize()
 
-    const contribution_id_1 = 123
-    const contribution_id_2 = 456
-    let contributor_id = Uint256(1, 0)
+    let project_id = 'MyProject'
+    let old_id = project_id * 1000000 + 1
+    let old_contribution = DeprecatedContribution(
+        old_id,
+        project_id,
+        DeprecatedStatus.COMPLETED,
+        Uint256(1, 0),
+        0,
+        0        
+    )
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (contribution1) = contributions.new_contribution(contribution_id_1, 'MyProject', 0, 'validator')
-    let (contribution2) = contributions.new_contribution(contribution_id_2, 'MyProject', 0, 'validator')
-    contributions.assign_contributor_to_contribution(contribution_id_1, contributor_id)
-    contributions.assign_contributor_to_contribution(contribution_id_2, contributor_id)
-    contributions.validate_contribution(contribution_id_1)
-    contributions.validate_contribution(contribution_id_2)
+    contributions_.write(old_id, old_contribution)
+    indexed_contribution_ids_.write(0, old_id)
+    contribution_count_.write(1)
     %{ stop_prank() %}
+
+    let old_id = project_id * 1000000 + 2
+    let old_contribution = DeprecatedContribution(
+        old_id,
+        project_id,
+        DeprecatedStatus.COMPLETED,
+        Uint256(1, 0),
+        0,
+        0        
+    )
+
+    contributions_.write(old_id, old_contribution)
+    indexed_contribution_ids_.write(1, old_id)
+    contribution_count_.write(2)
     
     migrate()
+    
+    let (new_contribution) = contribution_access.build(ContributionId(1))
+    assert new_contribution = Contribution(ContributionId(1), project_id, Status.COMPLETED, 0, Uint256(1, 0))
+    
+    let (new_contribution) = contribution_access.build(ContributionId(2))
+    assert new_contribution = Contribution(ContributionId(2), project_id, Status.COMPLETED, 0, Uint256(1, 0))
 
     %{ expect_events(
-        # Original events
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": ids.contribution_id_1, "gate": 0}},
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": ids.contribution_id_2, "gate": 0}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": ids.contribution_id_1, "contributor_id": {"low": 1, "high": 0}}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": ids.contribution_id_2, "contributor_id": {"low": 1, "high": 0}}},
-        {"name": "ContributionValidated", "data": {"contribution_id": ids.contribution_id_1}},
-        {"name": "ContributionValidated", "data": {"contribution_id": ids.contribution_id_2}},
-        # Migration events
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": ids.contribution_id_1, "gate": 0}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": ids.contribution_id_1, "contributor_id": {"low": 1, "high": 0}}},
-        {"name": "ContributionValidated", "data": {"contribution_id": ids.contribution_id_1}},
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": ids.contribution_id_2, "gate": 0}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": ids.contribution_id_2, "contributor_id": {"low": 1, "high": 0}}},
-        {"name": "ContributionValidated", "data": {"contribution_id": ids.contribution_id_2}},
+        {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.project_id, "issue_number" : 1, "gate": 0}},
+        {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": 1, "high": 0}}},
+        {"name": "ContributionValidated", "data": {"contribution_id": 1}},
+        {"name": "ContributionCreated", "data": {"contribution_id": 2, "project_id": ids.project_id, "issue_number" : 2, "gate": 0}},
+        {"name": "ContributionAssigned", "data": {"contribution_id": 2, "contributor_id": {"low": 1, "high": 0}}},
+        {"name": "ContributionValidated", "data": {"contribution_id": 2}},
     )%}
 
     return()

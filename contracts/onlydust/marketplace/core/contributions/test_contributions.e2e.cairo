@@ -4,7 +4,7 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
 from onlydust.marketplace.interfaces.contributions import IContributions
-from onlydust.marketplace.core.contributions.library import Contribution, Status
+from onlydust.marketplace.core.contributions.library import Contribution, Status, ContributionId
 from onlydust.marketplace.test.libraries.contributions import assert_contribution_that
 
 const ADMIN = 'admin'
@@ -32,20 +32,23 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
 
     let CONTRIBUTOR_ID = Uint256(12, 0)
 
-    let UNASSIGNED_CONTRIBUTION_ID = 1
-    let FEEDER_VALIDATED_CONTRIBUTION_ID = 2
-    let VALIDATOR_VALIDATED_CONTRIBUTION_ID = 3
+    
+    const PROJECT_ID = 'MyProject'
+    let UNASSIGNED_CONTRIBUTION_ID = ContributionId(1)
+    let FEEDER_VALIDATED_CONTRIBUTION_ID =  ContributionId(2)
+    let VALIDATOR_VALIDATED_CONTRIBUTION_ID = ContributionId(3)
+
 
     # Create two contributions and assign them a contibutor
     with contributions:
         contributions_access.new_contribution(
-            UNASSIGNED_CONTRIBUTION_ID, 'MyProject', 0, 'validator'
+            PROJECT_ID * 1000000 + 1, PROJECT_ID, 0, 'validator'
         )
         contributions_access.new_contribution(
-            FEEDER_VALIDATED_CONTRIBUTION_ID, 'MyProject', 0, 'validator'
+            PROJECT_ID * 1000000 + 2, PROJECT_ID, 0, 'validator'
         )
         contributions_access.new_contribution(
-            VALIDATOR_VALIDATED_CONTRIBUTION_ID, 'MyProject', 0, 'validator'
+           PROJECT_ID * 1000000 + 3, PROJECT_ID, 0, 'validator'
         )
 
         contributions_access.assign_contributor_to_contribution(
@@ -69,7 +72,7 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
     let contribution = contribs[0]
     with contribution:
         assert_contribution_that.id_is(UNASSIGNED_CONTRIBUTION_ID)
-        assert_contribution_that.project_id_is('MyProject')
+        assert_contribution_that.project_id_is(PROJECT_ID)
         assert_contribution_that.status_is(Status.OPEN)
     end
 
@@ -77,14 +80,14 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
     let contribution = contribs[1]
     with contribution:
         assert_contribution_that.id_is(FEEDER_VALIDATED_CONTRIBUTION_ID)
-        assert_contribution_that.project_id_is('MyProject')
+        assert_contribution_that.project_id_is(PROJECT_ID)
         assert_contribution_that.status_is(Status.ASSIGNED)
         assert_contribution_that.contributor_is(CONTRIBUTOR_ID)
     end
     let contribution = contribs[2]
     with contribution:
         assert_contribution_that.id_is(VALIDATOR_VALIDATED_CONTRIBUTION_ID)
-        assert_contribution_that.project_id_is('MyProject')
+        assert_contribution_that.project_id_is(PROJECT_ID)
         assert_contribution_that.status_is(Status.ASSIGNED)
         assert_contribution_that.contributor_is(CONTRIBUTOR_ID)
     end
@@ -98,7 +101,7 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
     let contribution = contribs[0]
     with contribution:
         assert_contribution_that.id_is(UNASSIGNED_CONTRIBUTION_ID)
-        assert_contribution_that.project_id_is('MyProject')
+        assert_contribution_that.project_id_is(PROJECT_ID)
         assert_contribution_that.status_is(Status.OPEN)
     end
 
@@ -112,7 +115,7 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
     let contribution = contribs[0]
     with contribution:
         assert_contribution_that.id_is(FEEDER_VALIDATED_CONTRIBUTION_ID)
-        assert_contribution_that.project_id_is('MyProject')
+        assert_contribution_that.project_id_is(PROJECT_ID)
         assert_contribution_that.status_is(Status.ASSIGNED)
         assert_contribution_that.contributor_is(CONTRIBUTOR_ID)
     end
@@ -120,7 +123,7 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
     let contribution = contribs[1]
     with contribution:
         assert_contribution_that.id_is(VALIDATOR_VALIDATED_CONTRIBUTION_ID)
-        assert_contribution_that.project_id_is('MyProject')
+        assert_contribution_that.project_id_is(PROJECT_ID)
         assert_contribution_that.status_is(Status.ASSIGNED)
         assert_contribution_that.contributor_is(CONTRIBUTOR_ID)
     end
@@ -133,7 +136,7 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
 
     with contribution:
         assert_contribution_that.id_is(UNASSIGNED_CONTRIBUTION_ID)
-        assert_contribution_that.project_id_is('MyProject')
+        assert_contribution_that.project_id_is(PROJECT_ID)
         assert_contribution_that.gate_is(10)
         assert_contribution_that.status_is(Status.OPEN)
     end
@@ -147,24 +150,9 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
 
     with contribution:
         assert_contribution_that.id_is(FEEDER_VALIDATED_CONTRIBUTION_ID)
-        assert_contribution_that.project_id_is('MyProject')
+        assert_contribution_that.project_id_is(PROJECT_ID)
         assert_contribution_that.status_is(Status.COMPLETED)
     end
-
-    # Check validate contribution by validator works
-    with contributions:
-        contributions_access.validate_contribution_as(
-            VALIDATOR_VALIDATED_CONTRIBUTION_ID, 'validator'
-        )
-        let (contribution) = contributions_access.contribution(VALIDATOR_VALIDATED_CONTRIBUTION_ID)
-    end
-
-    with contribution:
-        assert_contribution_that.id_is(VALIDATOR_VALIDATED_CONTRIBUTION_ID)
-        assert_contribution_that.project_id_is('MyProject')
-        assert_contribution_that.status_is(Status.COMPLETED)
-    end
-
     return ()
 end
 
@@ -200,7 +188,7 @@ namespace contributions_access:
 
     func assign_contributor_to_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(contribution_id : felt, contributor_id : Uint256):
+    }(contribution_id : ContributionId, contributor_id : Uint256):
         %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
         IContributions.assign_contributor_to_contribution(
             contributions, contribution_id, contributor_id
@@ -211,7 +199,7 @@ namespace contributions_access:
 
     func unassign_contributor_from_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(contribution_id : felt):
+    }(contribution_id : ContributionId):
         %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
         IContributions.unassign_contributor_from_contribution(contributions, contribution_id)
         %{ stop_prank() %}
@@ -220,7 +208,7 @@ namespace contributions_access:
 
     func validate_contribution_as{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(contribution_id : felt, caller : felt):
+    }(contribution_id : ContributionId, caller : felt):
         %{ stop_prank = start_prank(ids.caller, ids.contributions) %}
         IContributions.validate_contribution(contributions, contribution_id)
         %{ stop_prank() %}
@@ -229,7 +217,7 @@ namespace contributions_access:
 
     func modify_contribution_count{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(contribution_id : felt, count : felt):
+    }(contribution_id : ContributionId, count : felt):
         %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
         IContributions.modify_contribution_count_required(contributions, contribution_id, count)
         %{ stop_prank() %}
@@ -238,7 +226,7 @@ namespace contributions_access:
 
     func contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(contribution_id : felt) -> (contribution : Contribution):
+    }(contribution_id : ContributionId) -> (contribution : Contribution):
         let (contribution) = IContributions.contribution(contributions, contribution_id)
         return (contribution)
     end

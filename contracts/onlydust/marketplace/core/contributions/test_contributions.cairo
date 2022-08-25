@@ -5,16 +5,19 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 
 from onlydust.marketplace.core.contributions.library import (
     contributions,
-    Contribution,
     Status,
     Role,
     past_contributions_,
+    ContributionId,
 )
 from onlydust.marketplace.test.libraries.contributions import assert_contribution_that
 
 const ADMIN = 'admin'
 const FEEDER = 'feeder'
 const REGISTRY = 'registry'
+const PROJECT_ID = 'MyProject'
+const ID1 = 1000000 * PROJECT_ID + 1
+const ID2 = 1000000 * PROJECT_ID + 2
 
 @view
 func test_new_contribution_can_be_added{
@@ -25,9 +28,8 @@ func test_new_contribution_can_be_added{
     fixture.initialize()
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (local contribution1) = contributions.new_contribution(123, 'MyProject', 0, 'validator')
-    let (contribution1) = contributions.new_contribution(123, 'MyProject', 0, 'validator')  # adding twice the same to test update
-    let (contribution2) = contributions.new_contribution(124, 'MyProject', 0, 'validator')
+    let (local contribution1) = contributions.new_contribution(1000000 * PROJECT_ID +1, PROJECT_ID, 0, 'validator')
+    let (contribution2) = contributions.new_contribution(1000000 * PROJECT_ID + 2, PROJECT_ID, 0, 'validator')
     %{ stop_prank() %}
 
     let (count, contribs) = contributions.all_contributions()
@@ -39,7 +41,6 @@ func test_new_contribution_can_be_added{
         assert_contribution_that.id_is(contribution1.id)
         assert_contribution_that.project_id_is(contribution1.project_id)
         assert_contribution_that.status_is(Status.OPEN)
-        assert_contribution_that.validator_is('validator')
     end
 
     let contribution = contribs[1]
@@ -47,47 +48,34 @@ func test_new_contribution_can_be_added{
         assert_contribution_that.id_is(contribution2.id)
         assert_contribution_that.project_id_is(contribution2.project_id)
         assert_contribution_that.status_is(Status.OPEN)
-        assert_contribution_that.validator_is('validator')
     end
 
     %{ expect_events(
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 124, "gate": 0}},
+        {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
+        {"name": "ContributionCreated", "data": {"contribution_id": 2, "project_id": ids.PROJECT_ID,  "issue_number": 2, "gate": 0}},
     )%}
     return ()
 end
 
 @view
-func test_new_contribution_with_0x0_validator_can_be_added{
+func test_same_contribution_cannot_be_added_twice{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     alloc_locals
 
     fixture.initialize()
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (local contribution) = contributions.new_contribution(123, 'MyProject', 0, 0x0)
+    %{ 
+        stop_prank = start_prank(ids.FEEDER)
+        expect_revert(error_message="Contributions: Contribution already exist")
+    %}
+    let (local contribution1) = contributions.new_contribution(ID1, PROJECT_ID, 0, 'validator')
+    let (contribution2) = contributions.new_contribution(ID1, PROJECT_ID, 0, 'validator')
     %{ stop_prank() %}
-
-    let (count, contribs) = contributions.all_contributions()
-
-    assert 1 = count
-
-    let contribution = contribs[0]
-    with contribution:
-        assert_contribution_that.id_is(contribution.id)
-        assert_contribution_that.project_id_is(contribution.project_id)
-        assert_contribution_that.status_is(Status.OPEN)
-        assert_contribution_that.validator_is(0x0)
-    end
-
-    %{ expect_events(
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
-    )%}
 
     return ()
 end
+
 
 @view
 func test_feeder_can_assign_contribution_to_contributor{
@@ -95,12 +83,12 @@ func test_feeder_can_assign_contribution_to_contributor{
 }():
     fixture.initialize()
 
-    const contribution_id = 123
+    let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
     let (contribution) = contributions.new_contribution(
-        contribution_id, 'MyProject', 0, 'validator'
+        1000000 * PROJECT_ID + 1, PROJECT_ID, 0, 'validator'
     )
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{ stop_prank() %}
@@ -112,8 +100,8 @@ func test_feeder_can_assign_contribution_to_contributor{
     end
 
     %{ expect_events(
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": 123, "contributor_id": {"low": 1, "high": 0}}},
+        {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
+        {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": 1, "high": 0}}},
     )%}
     return ()
 end
@@ -124,11 +112,11 @@ func test_anyone_cannot_assign_contribution_to_contributor{
 }():
     fixture.initialize()
 
-    const contribution_id = 123
+    let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(123, 'MyProject', 0, 'validator')
+    let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0, 'validator')
     %{
         stop_prank() 
         expect_revert(error_message="Contributions: FEEDER role required")
@@ -144,7 +132,7 @@ func test_cannot_assign_non_existent_contribution{
 }():
     fixture.initialize()
 
-    const contribution_id = 123
+    let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
     %{
@@ -163,11 +151,11 @@ func test_cannot_assign_twice_a_contribution{
 }():
     fixture.initialize()
 
-    const contribution_id = 123
+    let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
+    let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0, 'validator')
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{ expect_revert(error_message="Contributions: Contribution is not OPEN") %}
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
@@ -182,11 +170,11 @@ func test_cannot_assign_contribution_to_non_eligible_contributor{
 }():
     fixture.initialize()
 
-    const contribution_id = 123
+    let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 3, 'validator')
+    let (_) = contributions.new_contribution(ID1, PROJECT_ID, 3, 'validator')
     %{ expect_revert(error_message="Contributions: Contributor is not eligible") %}
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{ stop_prank() %}
@@ -200,16 +188,16 @@ func test_can_assign_gated_contribution_eligible_contributor{
 }():
     fixture.initialize()
 
-    const contribution_id = 123
-    const gated_contribution_id = 124
+    let contribution_id = ContributionId(1)
+    let gated_contribution_id = ContributionId(2)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
     # Create a non-gated contribution
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
+    let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0, 'validator')
 
     # Create a gated contribution
-    let (_) = contributions.new_contribution(gated_contribution_id, 'MyProject', 1, 'validator')
+    let (_) = contributions.new_contribution(ID2, PROJECT_ID, 1, 'validator')
 
     # Assign and validate the non-gated contribution
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
@@ -227,22 +215,6 @@ func test_can_assign_gated_contribution_eligible_contributor{
 end
 
 @view
-func test_contribution_creation_with_invalid_id_is_reverted{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    %{
-        stop_prank = start_prank(ids.FEEDER)
-        expect_revert(error_message="Contributions: Invalid contribution ID")
-    %}
-    let (_) = contributions.new_contribution(0, 'MyProject', 0, 'validator')
-    %{ stop_prank() %}
-
-    return ()
-end
-
-@view
 func test_contribution_creation_with_invalid_project_id_is_reverted{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
@@ -252,7 +224,7 @@ func test_contribution_creation_with_invalid_project_id_is_reverted{
         stop_prank = start_prank(ids.FEEDER)
         expect_revert(error_message="Contributions: Invalid project ID")
     %}
-    let (_) = contributions.new_contribution(123, 0, 0, 'validator')
+    let (_) = contributions.new_contribution(ID1, 0, 0, 'validator')
     %{ stop_prank() %}
 
     return ()
@@ -268,7 +240,7 @@ func test_contribution_creation_with_invalid_contribution_count_is_reverted{
         stop_prank = start_prank(ids.FEEDER)
         expect_revert(error_message="Contributions: Invalid contribution count required")
     %}
-    let (_) = contributions.new_contribution(123, 'MyProject', -1, 'validator')
+    let (_) = contributions.new_contribution(ID1, PROJECT_ID, -1, 'validator')
     %{ stop_prank() %}
 
     return ()
@@ -281,7 +253,7 @@ func test_anyone_cannot_add_contribution{
     fixture.initialize()
 
     %{ expect_revert(error_message="Contributions: FEEDER role required") %}
-    let (_) = contributions.new_contribution(123, 'MyProject', 0, 'validator')
+    let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0, 'validator')
 
     return ()
 end
@@ -292,11 +264,11 @@ func test_feeder_can_unassign_contribution_from_contributor{
 }():
     fixture.initialize()
 
-    const contribution_id = 123
+    let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
+    let (_) = contributions.new_contribution(1000000 * PROJECT_ID + 1, PROJECT_ID, 0, 'validator')
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     contributions.unassign_contributor_from_contribution(contribution_id)
     %{ stop_prank() %}
@@ -308,9 +280,9 @@ func test_feeder_can_unassign_contribution_from_contributor{
     end
 
     %{ expect_events(
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": 123, "contributor_id": {"low": 1, "high": 0}}},
-        {"name": "ContributionUnassigned", "data": {"contribution_id": 123}},
+        {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID, "issue_number": 1, "gate": 0}},
+        {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": 1, "high": 0}}},
+        {"name": "ContributionUnassigned", "data": {"contribution_id": 1}},
     )%}
 
     return ()
@@ -322,11 +294,11 @@ func test_anyone_cannot_unassign_contribution_from_contributor{
 }():
     fixture.initialize()
 
-    const contribution_id = 123
+    let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
+    let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0, 'validator')
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{
         stop_prank() 
@@ -343,7 +315,7 @@ func test_cannot_unassign_from_non_existent_contribution{
 }():
     fixture.initialize()
 
-    const contribution_id = 123
+    let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
     %{
@@ -362,10 +334,10 @@ func test_cannot_unassign_contribution_if_not_assigned{
 }():
     fixture.initialize()
 
-    const contribution_id = 123
+    let contribution_id = ContributionId(1)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
+    let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0, 'validator')
     %{ expect_revert(error_message="Contributions: Contribution is not ASSIGNED") %}
     contributions.unassign_contributor_from_contribution(contribution_id)
     %{ stop_prank() %}
@@ -379,11 +351,11 @@ func test_feeder_can_validate_assigned_contribution{
 }():
     fixture.initialize()
 
-    const contribution_id = 123
+    let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
+    let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0, 'validator')
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     contributions.validate_contribution(contribution_id)
     %{ stop_prank() %}
@@ -394,96 +366,10 @@ func test_feeder_can_validate_assigned_contribution{
     end
 
     %{ expect_events(
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": 123, "contributor_id": {"low": 1, "high": 0}}},
-        {"name": "ContributionValidated", "data": {"contribution_id": 123}},
+        {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
+        {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": 1, "high": 0}}},
+        {"name": "ContributionValidated", "data": {"contribution_id": 1}},
     )%}
-
-    return ()
-end
-
-@view
-func test_feeder_can_validate_assigned_contribution_when_validator_is_0x0{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    const contribution_id = 123
-    let contributor_id = Uint256(1, 0)
-
-    %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 0x0)
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
-    contributions.validate_contribution(contribution_id)
-    %{ stop_prank() %}
-
-    let (contribution) = contributions.contribution(contribution_id)
-    with contribution:
-        assert_contribution_that.status_is(Status.COMPLETED)
-    end
-
-    %{ expect_events(
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": 123, "contributor_id": {"low": 1, "high": 0}}},
-        {"name": "ContributionValidated", "data": {"contribution_id": 123}},
-    )%}
-
-    return ()
-end
-
-@view
-func test_validator_can_validate_assigned_contribution{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    const contribution_id = 123
-    let contributor_id = Uint256(1, 0)
-    let validator_account = 'validator'
-
-    %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, validator_account)
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
-    %{ stop_prank() %}
-
-    %{ stop_prank = start_prank(ids.validator_account) %}
-    contributions.validate_contribution(contribution_id)
-    %{ stop_prank() %}
-
-    let (contribution) = contributions.contribution(contribution_id)
-    with contribution:
-        assert_contribution_that.status_is(Status.COMPLETED)
-    end
-
-    %{ expect_events(
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": 123, "contributor_id": {"low": 1, "high": 0}}},
-        {"name": "ContributionValidated", "data": {"contribution_id": 123}},
-    )%}
-
-    return ()
-end
-
-@view
-func test_validator_cannot_validate_assigned_contribution_when_validator_account_is_0x0{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    const contribution_id = 123
-    let contributor_id = Uint256(1, 0)
-    let validator_account = 'validator'
-
-    %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 0x0)
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
-    %{
-        stop_prank() 
-        stop_prank = start_prank(ids.validator_account)
-        expect_revert(error_message="Contributions: caller is not feeder or validator")
-    %}
-    contributions.validate_contribution(contribution_id)
-    %{ stop_prank() %}
 
     return ()
 end
@@ -494,36 +380,15 @@ func test_anyone_cannot_validate_contribution{
 }():
     fixture.initialize()
 
-    const contribution_id = 123
+    let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
+    let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0, 'validator')
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{
         stop_prank() 
-        expect_revert(error_message="Contributions: caller is not feeder or validator")
-    %}
-    contributions.validate_contribution(contribution_id)
-
-    return ()
-end
-
-@view
-func test_anyone_cannot_validate_contribution_with_0x0_validator{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    const contribution_id = 123
-    let contributor_id = Uint256(1, 0)
-
-    %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 0x0)
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
-    %{
-        stop_prank() 
-        expect_revert(error_message="Contributions: caller is not feeder or validator")
+        expect_revert(error_message="Contributions: FEEDER role required")
     %}
     contributions.validate_contribution(contribution_id)
 
@@ -536,7 +401,7 @@ func test_cannot_validate_non_existent_contribution{
 }():
     fixture.initialize()
 
-    const contribution_id = 123
+    let contribution_id = ContributionId(1)
 
     %{
         stop_prank = start_prank(ids.FEEDER) 
@@ -554,10 +419,10 @@ func test_cannot_validate_contribution_if_not_assigned{
 }():
     fixture.initialize()
 
-    const contribution_id = 123
+    let contribution_id = ContributionId(1)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
+    let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0, 'validator')
     %{ expect_revert(error_message="Contributions: Contribution is not ASSIGNED") %}
     contributions.validate_contribution(contribution_id)
     %{ stop_prank() %}
@@ -571,12 +436,12 @@ func test_feeder_can_modify_contribution_count_required{
 }():
     fixture.initialize()
 
-    const contribution_id = 123
+    let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
     let validator_account = 'validator'
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, validator_account)
+    let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0, validator_account)
     contributions.modify_contribution_count_required(contribution_id, 3)
     %{ stop_prank() %}
 
@@ -586,39 +451,8 @@ func test_feeder_can_modify_contribution_count_required{
     end
 
     %{ expect_events(
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
-        {"name": "ContributionGateChanged", "data": {"contribution_id": 123, "gate": 3}},
-    )%}
-
-    return ()
-end
-
-@view
-func test_validator_can_modify_contribution_count_required{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    const contribution_id = 123
-    let contributor_id = Uint256(1, 0)
-    let validator_account = 'validator'
-
-    %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
-    %{ stop_prank() %}
-
-    %{ stop_prank = start_prank(ids.validator_account) %}
-    contributions.modify_contribution_count_required(contribution_id, 3)
-    %{ stop_prank() %}
-
-    let (contribution) = contributions.contribution(contribution_id)
-    with contribution:
-        assert_contribution_that.gate_is(3)
-    end
-
-    %{ expect_events(
-        {"name": "ContributionCreated", "data": {"project_id": 'MyProject', "contribution_id": 123, "gate": 0}},
-        {"name": "ContributionGateChanged", "data": {"contribution_id": 123, "gate": 3}},
+        {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
+        {"name": "ContributionGateChanged", "data": {"contribution_id": 1, "gate": 3}},
     )%}
 
     return ()
@@ -630,16 +464,15 @@ func test_anyone_cannot_modify_contribution_count_required{
 }():
     fixture.initialize()
 
-    const contribution_id = 123
+    let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
     let validator_account = 'validator'
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    let (_) = contributions.new_contribution(contribution_id, 'MyProject', 0, 'validator')
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
+    let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0, 'validator')
     %{ 
         stop_prank ()
-        expect_revert(error_message="Contributions: caller is not feeder or validator")
+        expect_revert(error_message="Contributions: FEEDER role require")
     %}
     contributions.modify_contribution_count_required(contribution_id, 3)
 
@@ -726,7 +559,7 @@ func test_admin_can_grant_and_revoke_roles{
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.RANDOM_ADDRESS) %}
-    let (local contribution) = contributions.new_contribution(123, 'MyProject', 0, 'validator')
+    let (local contribution) = contributions.new_contribution(ID1, PROJECT_ID, 0, 'validator')
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
@@ -743,7 +576,7 @@ func test_admin_can_grant_and_revoke_roles{
         stop_prank = start_prank(ids.RANDOM_ADDRESS) 
         expect_revert(error_message='Contributions: FEEDER role required')
     %}
-    contributions.new_contribution(123, 'MyProject', 0, 'validator')
+    contributions.new_contribution(ID1, PROJECT_ID, 0, 'validator')
     %{ stop_prank() %}
 
     return ()
@@ -771,15 +604,15 @@ func test_anyone_can_list_open_contributions{
     fixture.initialize()
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    const contribution1_id = 123
+    let contribution1_id = ContributionId(1)
     let (contribution1) = contributions.new_contribution(
-        contribution1_id, 'MyProject', 0, 'validator'
+        ID1, PROJECT_ID, 0, 'validator'
     )
     contributions.assign_contributor_to_contribution(contribution1_id, Uint256(1, 0))
 
-    const contribution2_id = 124
+    let contribution2_id = ContributionId(2)
     let (local contribution2) = contributions.new_contribution(
-        contribution2_id, 'MyProject', 0, 'validator'
+        ID2, PROJECT_ID, 0, 'validator'
     )
     %{ stop_prank() %}
 
@@ -800,15 +633,15 @@ func test_anyone_can_list_assigned_contributions{
     let contributor_id = Uint256(1, 0)
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    const contribution1_id = 123
+    let contribution1_id = ContributionId(1)
     let (contribution1) = contributions.new_contribution(
-        contribution1_id, 'MyProject', 0, 'validator'
+        ID1, PROJECT_ID, 0, 'validator'
     )
     contributions.assign_contributor_to_contribution(contribution1_id, contributor_id)
 
-    const contribution2_id = 124
+    let contribution2_id = ContributionId(2)
     let (local contribution2) = contributions.new_contribution(
-        contribution2_id, 'MyProject', 0, 'validator'
+        ID2, PROJECT_ID, 0, 'validator'
     )
     %{ stop_prank() %}
 
@@ -817,7 +650,7 @@ func test_anyone_can_list_assigned_contributions{
     let contribution = contribs[0]
     with contribution:
         assert_contribution_that.id_is(contribution1_id)
-        assert_contribution_that.project_id_is('MyProject')
+        assert_contribution_that.project_id_is(PROJECT_ID)
         assert_contribution_that.status_is(Status.ASSIGNED)
         assert_contribution_that.contributor_is(contributor_id)
     end
@@ -839,25 +672,25 @@ func test_anyone_can_list_contributions_eligible_to_contributor{
     # Create different contributions
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
-    let contribution_id = 1  # 'open non-gated'
+    let contribution_id = ContributionId(3)  # 'open non-gated'
     let (contribution1) = contributions.new_contribution(
-        contribution_id, 'OnlyDust', 0, 'validator'
+        1000000 * 'OnlyDust' + 1, 'OnlyDust', 0, 'validator'
     )
 
-    let contribution_id = 2  # 'assigned non-gated'
+    let contribution_id = ContributionId(4)  # 'assigned non-gated'
     let (local contribution2) = contributions.new_contribution(
-        contribution_id, 'Briq', 0, 'validator'
+        1000000 * 'Briq' + 1, 'Briq', 0, 'validator'
     )
     contributions.assign_contributor_to_contribution(contribution_id, Uint256(1, 0))
 
-    let contribution_id = 3  # 'open gated'
+    let contribution_id = ContributionId(5)  # 'open gated'
     let (local contribution3) = contributions.new_contribution(
-        contribution_id, 'Briq', 1, 'validator'
+        1000000 * 'Briq' + 2, 'Briq', 1, 'validator'
     )
 
-    let contribution_id = 4  # 'open gated too_high'
+    let contribution_id = ContributionId(6)  # 'open gated too_high'
     let (local contribution5) = contributions.new_contribution(
-        contribution_id, 'Briq', 3, 'validator'
+        1000000 * 'Briq' + 3, 'Briq', 3, 'validator'
     )
 
     %{ stop_prank() %}
@@ -867,14 +700,14 @@ func test_anyone_can_list_contributions_eligible_to_contributor{
 
     let contribution = contribs[0]
     with contribution:
-        assert_contribution_that.id_is('exercise')
-        assert_contribution_that.project_id_is('OnlyDust')
+        assert_contribution_that.id_is(ContributionId(1))
+        assert_contribution_that.project_id_is('Random')
         assert_contribution_that.contributor_is(contributor_id)
     end
 
     let contribution = contribs[2]
     with contribution:
-        assert_contribution_that.id_is(1)
+        assert_contribution_that.id_is(ContributionId(3))
         assert_contribution_that.project_id_is('OnlyDust')
         assert_contribution_that.contributor_is(Uint256(0, 0))
     end
@@ -894,18 +727,18 @@ namespace fixture:
     func validate_two_contributions{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
     }(contributor_id : Uint256):
-        const contribution_id = 'exercise'
-        const gated_contribution_id = 'briqgame'
+        let contribution_id = ContributionId(1)
+        let gated_contribution_id = ContributionId(2)
 
         %{ stop_prank = start_prank(ids.FEEDER) %}
         # Create a non-gated contribution
         let (contribution) = contributions.new_contribution(
-            contribution_id, 'OnlyDust', 0, 'validator'
+            1000000 * 'Random' + 1, 'Random', 0, 'validator'
         )
 
         # Create a gated contribution
         let (contribution) = contributions.new_contribution(
-            gated_contribution_id, 'Briq', 1, 'validator'
+            1000000 * 'Random' + 2, 'Random', 1, 'validator'
         )
 
         # Assign and validate the non-gated contribution
