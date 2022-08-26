@@ -171,7 +171,7 @@ namespace contributions:
 
     # Add a contribution for a given token id
     func new_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        old_composite_id : felt, project_id : felt, contribution_count_required : felt, _unused: felt
+        old_composite_id : felt, project_id : felt, contribution_count_required : felt
     ) -> (contribution : Contribution):
         alloc_locals
 
