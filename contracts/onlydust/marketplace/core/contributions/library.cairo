@@ -67,6 +67,10 @@ func ContributionCreated(contribution_id: felt, project_id: felt, issue_number: 
 end
 
 @event
+func ContributionRemoved(contribution_id: felt):
+end
+
+@event
 func ContributionAssigned(contribution_id: felt, contributor_id: Uint256):
 end
 
@@ -217,6 +221,24 @@ namespace contributions:
         )
 
         return (contribution)
+    end
+
+    # Remove a contribution for a given token id
+    func remove_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contribution_id : ContributionId 
+    ):
+        alloc_locals
+
+        internal.only_feeder()
+
+        # Update storage
+        contribution_status_.write(contribution_id, Status.NONE)
+        contribution_gate_.write(contribution_id, 0)
+        contribution_project_id.write(contribution_id, 0)
+
+        ContributionRemoved.emit(contribution_id.inner)
+
+        return ()
     end
 
     # Assign a contributor to a contribution

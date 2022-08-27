@@ -121,6 +121,15 @@ func new_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_ch
 end
 
 @external
+func remove_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    contribution_id : ContributionId
+):
+    return contributions.remove_contribution(
+        contribution_id
+    )
+end
+
+@external
 func assign_contributor_to_contribution{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }(contribution_id : ContributionId, contributor_id : Uint256):

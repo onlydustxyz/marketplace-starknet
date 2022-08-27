@@ -11,6 +11,9 @@ namespace IContributions:
     ) -> (contribution : Contribution):
     end
 
+    func remove_contribution(contribution_id : ContributionId):
+    end
+
     func contribution(contribution_id : ContributionId) -> (contribution : Contribution):
     end
 
