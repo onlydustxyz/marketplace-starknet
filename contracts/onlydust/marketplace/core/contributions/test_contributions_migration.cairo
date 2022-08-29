@@ -8,11 +8,12 @@ from onlydust.marketplace.core.contributions.library import (
     DeprecatedContribution,
     DeprecatedStatus,
     Status,
-    Role,
     contribution_access,
     Contribution,
     ContributionId,
 )
+from onlydust.marketplace.core.contributions.access_control import access_control
+
 
 const ADMIN = 'admin'
 const FEEDER = 'feeder'
@@ -174,7 +175,7 @@ namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         contributions.initialize(ADMIN)
         %{ stop_prank = start_prank(ids.ADMIN) %}
-        contributions.grant_feeder_role(FEEDER)
+        access_control.grant_feeder_role(FEEDER)
         %{ stop_prank() %}
         return ()
     end

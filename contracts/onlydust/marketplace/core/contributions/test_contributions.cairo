@@ -6,10 +6,11 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from onlydust.marketplace.core.contributions.library import (
     contributions,
     Status,
-    Role,
     past_contributions_,
     ContributionId,
 )
+from onlydust.marketplace.core.contributions.access_control import (access_control, Role)
+
 from onlydust.marketplace.test.libraries.contributions import assert_contribution_that
 
 const ADMIN = 'admin'
@@ -561,7 +562,7 @@ func test_admin_cannot_revoke_himself{
         stop_prank = start_prank(ids.ADMIN)
         expect_revert(error_message="Contributions: Cannot self renounce to ADMIN role")
     %}
-    contributions.revoke_admin_role(ADMIN)
+    access_control.revoke_admin_role(ADMIN)
 
     %{ stop_prank() %}
 
@@ -577,11 +578,11 @@ func test_admin_can_transfer_ownership{
     const NEW_ADMIN = 'new_admin'
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    contributions.grant_admin_role(NEW_ADMIN)
+    access_control.grant_admin_role(NEW_ADMIN)
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.NEW_ADMIN) %}
-    contributions.revoke_admin_role(ADMIN)
+    access_control.revoke_admin_role(ADMIN)
     %{
         stop_prank() 
         expect_events(
@@ -600,7 +601,7 @@ func test_anyone_cannot_grant_role{
     fixture.initialize()
 
     %{ expect_revert(error_message="AccessControl: caller is missing role 0") %}
-    contributions.grant_admin_role(FEEDER)
+    access_control.grant_admin_role(FEEDER)
 
     return ()
 end
@@ -612,7 +613,7 @@ func test_anyone_cannot_revoke_role{
     fixture.initialize()
 
     %{ expect_revert(error_message="AccessControl: caller is missing role 0") %}
-    contributions.revoke_admin_role(ADMIN)
+    access_control.revoke_admin_role(ADMIN)
 
     return ()
 end
@@ -627,7 +628,7 @@ func test_admin_can_grant_and_revoke_roles{
     const RANDOM_ADDRESS = 'rand'
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    contributions.grant_feeder_role(RANDOM_ADDRESS)
+    access_control.grant_feeder_role(RANDOM_ADDRESS)
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.RANDOM_ADDRESS) %}
@@ -635,7 +636,7 @@ func test_admin_can_grant_and_revoke_roles{
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    contributions.revoke_feeder_role(RANDOM_ADDRESS)
+    access_control.revoke_feeder_role(RANDOM_ADDRESS)
     %{
         stop_prank() 
         expect_events(
@@ -791,7 +792,7 @@ namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         contributions.initialize(ADMIN)
         %{ stop_prank = start_prank(ids.ADMIN) %}
-        contributions.grant_feeder_role(FEEDER)
+        access_control.grant_feeder_role(FEEDER)
         %{ stop_prank() %}
         return ()
     end
