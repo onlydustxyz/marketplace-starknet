@@ -9,7 +9,7 @@ from onlydust.marketplace.core.contributions.library import (
     past_contributions_,
     ContributionId,
 )
-from onlydust.marketplace.core.contributions.access_control import (access_control, Role)
+from onlydust.marketplace.core.contributions.access_control import access_control
 
 from onlydust.marketplace.test.libraries.contributions import assert_contribution_that
 
@@ -548,109 +548,6 @@ func test_anyone_cannot_modify_contribution_count_required{
         expect_revert(error_message="Contributions: FEEDER role require")
     %}
     contributions.modify_contribution_count_required(contribution_id, 3)
-
-    return ()
-end
-
-@view
-func test_admin_cannot_revoke_himself{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    %{
-        stop_prank = start_prank(ids.ADMIN)
-        expect_revert(error_message="Contributions: Cannot self renounce to ADMIN role")
-    %}
-    access_control.revoke_admin_role(ADMIN)
-
-    %{ stop_prank() %}
-
-    return ()
-end
-
-@view
-func test_admin_can_transfer_ownership{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    const NEW_ADMIN = 'new_admin'
-
-    %{ stop_prank = start_prank(ids.ADMIN) %}
-    access_control.grant_admin_role(NEW_ADMIN)
-    %{ stop_prank() %}
-
-    %{ stop_prank = start_prank(ids.NEW_ADMIN) %}
-    access_control.revoke_admin_role(ADMIN)
-    %{
-        stop_prank() 
-        expect_events(
-            {"name": "RoleGranted", "data": [ids.Role.ADMIN, ids.NEW_ADMIN, ids.ADMIN]},
-            {"name": "RoleRevoked", "data": [ids.Role.ADMIN, ids.ADMIN, ids.NEW_ADMIN]}
-        )
-    %}
-
-    return ()
-end
-
-@view
-func test_anyone_cannot_grant_role{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    %{ expect_revert(error_message="AccessControl: caller is missing role 0") %}
-    access_control.grant_admin_role(FEEDER)
-
-    return ()
-end
-
-@view
-func test_anyone_cannot_revoke_role{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    fixture.initialize()
-
-    %{ expect_revert(error_message="AccessControl: caller is missing role 0") %}
-    access_control.revoke_admin_role(ADMIN)
-
-    return ()
-end
-
-@view
-func test_admin_can_grant_and_revoke_roles{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    alloc_locals
-    fixture.initialize()
-
-    const RANDOM_ADDRESS = 'rand'
-
-    %{ stop_prank = start_prank(ids.ADMIN) %}
-    access_control.grant_feeder_role(RANDOM_ADDRESS)
-    %{ stop_prank() %}
-
-    %{ stop_prank = start_prank(ids.RANDOM_ADDRESS) %}
-    let (local contribution) = contributions.new_contribution(ID1, PROJECT_ID, 0)
-    %{ stop_prank() %}
-
-    %{ stop_prank = start_prank(ids.ADMIN) %}
-    access_control.revoke_feeder_role(RANDOM_ADDRESS)
-    %{
-        stop_prank() 
-        expect_events(
-            {"name": "RoleGranted", "data": [ids.Role.FEEDER, ids.RANDOM_ADDRESS, ids.ADMIN]},
-            {"name": "RoleRevoked", "data": [ids.Role.FEEDER, ids.RANDOM_ADDRESS, ids.ADMIN]}
-        )
-    %}
-
-    %{
-        stop_prank = start_prank(ids.RANDOM_ADDRESS) 
-        expect_revert(error_message='Contributions: FEEDER role required')
-    %}
-    contributions.new_contribution(ID1, PROJECT_ID, 0)
-    %{ stop_prank() %}
 
     return ()
 end
