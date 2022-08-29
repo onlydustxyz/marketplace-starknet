@@ -1,23 +1,27 @@
 %lang starknet
 
-from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.uint256 import Uint256, uint256_eq
+from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.math import assert_nn, assert_lt, assert_le, assert_not_zero, sign
-from starkware.cairo.common.math_cmp import is_not_zero, is_le
-from starkware.cairo.common.hash import hash2
+from starkware.cairo.common.math import assert_not_zero
 from starkware.starknet.common.syscalls import get_caller_address
 
 from openzeppelin.access.accesscontrol import AccessControl
-from onlydust.stream.default_implementation import stream
 
 #
 # Enums
 #
 struct Role:
     # Keep ADMIN role first of this list as 0 is the default admin value to manage roles in AccessControl library
-    member ADMIN : felt  # ADMIN role, can assign/revoke roles
-    member FEEDER : felt  # FEEDER role, can add a contribution
+    member ADMIN : felt  # can assign/revoke roles
+    member FEEDER : felt  # can interact with all contributions
+    member LEAD_CONTRIBUTOR : felt # can add interact with contributions on its project
+end
+
+#
+# Storage
+#
+@storage_var
+func role_member_by_contributor_and_key_(role : felt, key : felt, contributor_id : Uint256) -> (is_member : felt):
 end
 
 #
@@ -81,6 +85,29 @@ namespace access_control:
         end
 
         return ()
+    end
+
+    func grant_lead_contributor_role_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        project_id : felt, contributor_id : Uint256):
+        only_admin()
+        role_member_by_contributor_and_key_.write(Role.LEAD_CONTRIBUTOR, project_id, contributor_id, 1)
+        return ()
+    end
+
+    func revoke_lead_contributor_role_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        project_id : felt, contributor_id : Uint256):
+        only_admin()
+        role_member_by_contributor_and_key_.write(Role.LEAD_CONTRIBUTOR, project_id, contributor_id, 0)
+        return ()
+    end
+
+    func only_lead_contributor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        project_id : felt, contributor_id : Uint256):
+        let (is_member) = role_member_by_contributor_and_key_.read(Role.LEAD_CONTRIBUTOR, project_id, contributor_id)
+        with_attr error_message("Contributions: LEAD_CONTRIBUTOR role required"):
+            assert_not_zero(is_member)
+        end
+        return()
     end
 end
 

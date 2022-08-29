@@ -157,3 +157,18 @@ func modify_contribution_count_required{syscall_ptr : felt*, pedersen_ptr : Hash
 ):
     return contributions.modify_contribution_count_required(contribution_id, contribution_count_required)
 end
+
+@external
+func add_lead_contributor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    project_id : felt, contributor_id : Uint256
+):
+    return contributions.add_lead_contributor(project_id, contributor_id)
+end
+
+@external
+func remove_lead_contributor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    project_id : felt, contributor_id : Uint256
+):
+    return contributions.remove_lead_contributor(project_id, contributor_id)
+end
+

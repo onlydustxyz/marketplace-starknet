@@ -6,7 +6,6 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math import assert_nn, assert_lt, assert_le, assert_not_zero, sign
 from starkware.cairo.common.math_cmp import is_not_zero, is_le
 from starkware.cairo.common.hash import hash2
-from starkware.starknet.common.syscalls import get_caller_address
 
 from onlydust.stream.default_implementation import stream
 from onlydust.marketplace.core.contributions.access_control import access_control
@@ -78,6 +77,14 @@ end
 
 @event
 func ContributionGateChanged(contribution_id : felt, gate : felt):
+end
+
+@event
+func LeadContributorAdded(project_id : felt, contributor_id : Uint256):
+end
+
+@event
+func LeadContributorRemoved(project_id : felt, contributor_id : Uint256):
 end
 
 #
@@ -343,6 +350,22 @@ namespace contributions:
             contribution_count, contributions, contributor_id
         )
         return (contributions_len, contributions)
+    end
+
+    func add_lead_contributor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        project_id : felt, contributor_id : Uint256
+    ):
+        access_control.grant_lead_contributor_role_for_project(project_id, contributor_id)
+        LeadContributorAdded.emit(project_id, contributor_id)
+        return ()
+    end
+
+    func remove_lead_contributor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        project_id : felt, contributor_id : Uint256
+    ):
+        access_control.revoke_lead_contributor_role_for_project(project_id, contributor_id)
+        LeadContributorRemoved.emit(project_id, contributor_id)
+        return ()
     end
 
 end
