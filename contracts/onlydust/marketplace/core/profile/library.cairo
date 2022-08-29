@@ -7,8 +7,7 @@ from starkware.starknet.common.syscalls import get_caller_address
 
 from openzeppelin.token.erc721.library import ERC721
 
-from onlydust.marketplace.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
-
+from openzeppelin.access.accesscontrol import AccessControl
 from openzeppelin.security.safemath import SafeUint256
 
 #
@@ -49,7 +48,7 @@ namespace profile:
         admin : felt
     ):
         ERC721.initializer('Death Note Profile', 'DNP')
-        AccessControl.constructor()
+        AccessControl.initializer()
         AccessControl._grant_role(Role.ADMIN, admin)
         return ()
     end
@@ -137,7 +136,7 @@ namespace internal:
 
     func assert_only_admin{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         with_attr error_message("profile: ADMIN role required"):
-            AccessControl._only_role(Role.ADMIN)
+            AccessControl.assert_only_role(Role.ADMIN)
         end
 
         return ()
@@ -145,7 +144,7 @@ namespace internal:
 
     func assert_only_minter{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         with_attr error_message("profile: MINTER role required"):
-            AccessControl._only_role(Role.MINTER)
+            AccessControl.assert_only_role(Role.MINTER)
         end
 
         return ()
