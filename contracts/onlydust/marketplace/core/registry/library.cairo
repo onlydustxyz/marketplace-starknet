@@ -7,7 +7,7 @@ from starkware.starknet.common.syscalls import get_caller_address
 
 from onlydust.marketplace.interfaces.profile import IProfile
 
-from onlydust.marketplace.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
+from openzeppelin.access.accesscontrol import AccessControl
 
 #
 # Enums
@@ -65,7 +65,7 @@ namespace registry:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         admin : felt
     ):
-        AccessControl.constructor()
+        AccessControl.initializer()
         AccessControl._grant_role(Role.ADMIN, admin)
         return ()
     end
@@ -186,7 +186,7 @@ end
 namespace internal:
     func assert_only_admin{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         with_attr error_message("Registry: ADMIN role required"):
-            AccessControl._only_role(Role.ADMIN)
+            AccessControl.assert_only_role(Role.ADMIN)
         end
 
         return ()
@@ -194,7 +194,7 @@ namespace internal:
 
     func assert_only_register{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         with_attr error_message("Registry: REGISTERER role required"):
-            AccessControl._only_role(Role.REGISTERER)
+            AccessControl.assert_only_role(Role.REGISTERER)
         end
 
         return ()

@@ -8,7 +8,7 @@ from starkware.cairo.common.math_cmp import is_not_zero, is_le
 from starkware.cairo.common.hash import hash2
 from starkware.starknet.common.syscalls import get_caller_address
 
-from onlydust.marketplace.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
+from openzeppelin.access.accesscontrol import AccessControl
 from onlydust.stream.default_implementation import stream
 
 #
@@ -27,7 +27,7 @@ namespace access_control:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         admin : felt
     ):
-        AccessControl.constructor()
+        AccessControl.initializer()
         AccessControl._grant_role(Role.ADMIN, admin)
         return ()
     end
@@ -69,7 +69,7 @@ namespace access_control:
 
     func only_feeder{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         with_attr error_message("Contributions: FEEDER role required"):
-            AccessControl._only_role(Role.FEEDER)
+            AccessControl.assert_only_role(Role.FEEDER)
         end
 
         return ()
@@ -77,7 +77,7 @@ namespace access_control:
 
     func only_admin{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         with_attr error_message("Contributions: ADMIN role required"):
-            AccessControl._only_role(Role.ADMIN)
+            AccessControl.assert_only_role(Role.ADMIN)
         end
 
         return ()
