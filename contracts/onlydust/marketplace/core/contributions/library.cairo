@@ -8,18 +8,12 @@ from starkware.cairo.common.math_cmp import is_not_zero, is_le
 from starkware.cairo.common.hash import hash2
 from starkware.starknet.common.syscalls import get_caller_address
 
-from onlydust.marketplace.library.accesscontrol import AccessControl  # TODO change to OZ implem when 0.2.0 is released
 from onlydust.stream.default_implementation import stream
+from onlydust.marketplace.core.contributions.access_control import access_control
 
 #
 # Enums
 #
-struct Role:
-    # Keep ADMIN role first of this list as 0 is the default admin value to manage roles in AccessControl library
-    member ADMIN : felt  # ADMIN role, can assign/revoke roles
-    member FEEDER : felt  # FEEDER role, can add a contribution
-end
-
 struct DeprecatedStatus:
     member OPEN : felt
     member ASSIGNED : felt
@@ -28,7 +22,7 @@ struct DeprecatedStatus:
 end
 
 struct Status:
-    member NONE: felt
+    member NONE : felt
     member OPEN : felt
     member ASSIGNED : felt
     member COMPLETED : felt
@@ -52,11 +46,11 @@ struct ContributionId:
 end
 
 struct Contribution:
-    member id: ContributionId
+    member id : ContributionId
     member project_id : felt
-    member status: felt
-    member gate: felt
-    member contributor_id: Uint256
+    member status : felt
+    member gate : felt
+    member contributor_id : Uint256
 end
 
 #
@@ -75,22 +69,22 @@ func ContributionAssigned(contribution_id: felt, contributor_id: Uint256):
 end
 
 @event
-func ContributionUnassigned(contribution_id: felt):
+func ContributionUnassigned(contribution_id : felt):
 end
 
 @event
-func ContributionValidated(contribution_id: felt):
+func ContributionValidated(contribution_id : felt):
 end
 
 @event
-func ContributionGateChanged(contribution_id: felt, gate: felt):
+func ContributionGateChanged(contribution_id : felt, gate : felt):
 end
 
 #
 # Storage
 #
 @storage_var
-func contribution_project_id(contribution_id : ContributionId) -> (project_id: felt):
+func contribution_project_id(contribution_id : ContributionId) -> (project_id : felt):
 end
 
 @storage_var
@@ -98,11 +92,11 @@ func contribution_status_(contribution_id : ContributionId) -> (status : felt):
 end
 
 @storage_var
-func contribution_contributor_(contribution_id : ContributionId) -> (contributor_id: Uint256):
+func contribution_contributor_(contribution_id : ContributionId) -> (contributor_id : Uint256):
 end
 
 @storage_var
-func contribution_gate_(contribution_id : ContributionId) -> (gate: felt):
+func contribution_gate_(contribution_id : ContributionId) -> (gate : felt):
 end
 
 @storage_var
@@ -114,7 +108,7 @@ func past_contributions_(contributor_id : Uint256) -> (contribution_count : felt
 end
 
 @storage_var
-func github_ids_to_contribution_id(project_id : felt, issue_numer: felt) -> (contribution_id: ContributionId):
+func github_ids_to_contribution_id(project_id : felt, issue_numer : felt) -> (contribution_id : ContributionId):
 end
 
 
@@ -122,50 +116,10 @@ end
 # Functions
 #
 namespace contributions:
-    #
-    # Access Control
-    #
-
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         admin : felt
     ):
-        AccessControl.constructor()
-        AccessControl._grant_role(Role.ADMIN, admin)
-        return ()
-    end
-
-    # Grant the ADMIN role to a given address
-    func grant_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        address : felt
-    ):
-        AccessControl.grant_role(Role.ADMIN, address)
-        return ()
-    end
-
-    # Revoke the ADMIN role from a given address
-    func revoke_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        address : felt
-    ):
-        with_attr error_message("Contributions: Cannot self renounce to ADMIN role"):
-            internal.assert_not_caller(address)
-        end
-        AccessControl.revoke_role(Role.ADMIN, address)
-        return ()
-    end
-
-    # Grant the FEEDER role to a given address
-    func grant_feeder_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        address : felt
-    ):
-        AccessControl.grant_role(Role.FEEDER, address)
-        return ()
-    end
-
-    # Revoke the FEEDER role from a given address
-    func revoke_feeder_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        address : felt
-    ):
-        AccessControl.revoke_role(Role.FEEDER, address)
+        access_control.initialize(admin)
         return ()
     end
 
@@ -179,7 +133,7 @@ namespace contributions:
     ) -> (contribution : Contribution):
         alloc_locals
 
-        internal.only_feeder()
+        access_control.only_feeder()
         
         with_attr error_message("Contributions: Invalid project ID ({project_id})"):
             assert_nn(project_id)
@@ -227,7 +181,7 @@ namespace contributions:
     func delete_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         contribution_id : ContributionId 
     ):
-        internal.only_feeder()
+        access_control.only_feeder()
         status_access.only_open(contribution_id)
 
         # Update storage
@@ -244,7 +198,7 @@ namespace contributions:
     func assign_contributor_to_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
     }(contribution_id : ContributionId, contributor_id : Uint256):
-        internal.only_feeder()
+        access_control.only_feeder()
         
         status_access.only_open(contribution_id)
         gating.assert_contributor_is_eligible(contribution_id, contributor_id)
@@ -263,7 +217,7 @@ namespace contributions:
     func unassign_contributor_from_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
     }(contribution_id : ContributionId):
-        internal.only_feeder()
+        access_control.only_feeder()
 
        status_access.only_assigned(contribution_id) 
 
@@ -281,7 +235,7 @@ namespace contributions:
     func validate_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         contribution_id : ContributionId
     ):
-        internal.only_feeder()
+        access_control.only_feeder()
 
         status_access.only_assigned(contribution_id) 
         
@@ -303,7 +257,7 @@ namespace contributions:
     func modify_contribution_count_required{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         contribution_id : ContributionId, contribution_count_required : felt
     ):
-        internal.only_feeder()
+        access_control.only_feeder()
 
         status_access.only_open(contribution_id) 
         
@@ -502,28 +456,6 @@ namespace internal:
         with_attr error_message("Contributions: Contribution does not exist"):
             assert_not_zero(status)
         end
-        return ()
-    end
-
-    func only_feeder{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-        with_attr error_message("Contributions: FEEDER role required"):
-            AccessControl._only_role(Role.FEEDER)
-        end
-
-        return ()
-    end
-
-    func only_admin{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-        with_attr error_message("Contributions: ADMIN role required"):
-            AccessControl._only_role(Role.ADMIN)
-        end
-
-        return ()
-    end
-
-    func assert_not_caller{syscall_ptr : felt*}(address : felt):
-        let (caller_address) = get_caller_address()
-        assert_not_zero(caller_address - address)
         return ()
     end
 

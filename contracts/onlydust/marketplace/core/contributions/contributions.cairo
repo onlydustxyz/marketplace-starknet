@@ -5,6 +5,7 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from openzeppelin.upgrades.library import Proxy
 
 from onlydust.marketplace.core.contributions.library import contributions, Contribution, ContributionId
+from onlydust.marketplace.core.contributions.access_control import access_control
 
 # DO NOT REMOVE THOSE IMPORTS
 # They are mandatory to make this contract upgradable and migratable
@@ -87,28 +88,28 @@ end
 func grant_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     address : felt
 ):
-    return contributions.grant_admin_role(address)
+    return access_control.grant_admin_role(address)
 end
 
 @external
 func revoke_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     address : felt
 ):
-    return contributions.revoke_admin_role(address)
+    return access_control.revoke_admin_role(address)
 end
 
 @external
 func grant_feeder_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     address : felt
 ):
-    return contributions.grant_feeder_role(address)
+    return access_control.grant_feeder_role(address)
 end
 
 @external
 func revoke_feeder_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     address : felt
 ):
-    return contributions.revoke_feeder_role(address)
+    return access_control.revoke_feeder_role(address)
 end
 
 @external
