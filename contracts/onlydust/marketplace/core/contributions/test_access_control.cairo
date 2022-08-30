@@ -114,16 +114,16 @@ end
 func test_only_admin_can_grant_lead_contributor_role{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
-    let CONTRIBUTOR_ID = Uint256(12,0)
+    let LEAD_CONTRIBUTOR_ACCOUNT = 'lead_contributor'
 
     fixture.initialize()
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    access_control.grant_lead_contributor_role_for_project(PROJECT_ID, CONTRIBUTOR_ID)
+    access_control.grant_lead_contributor_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
     %{ stop_prank() %}
 
     %{ expect_revert(error_message="Contributions: ADMIN role required") %}
-    access_control.grant_lead_contributor_role_for_project(PROJECT_ID, CONTRIBUTOR_ID)
+    access_control.grant_lead_contributor_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
 
     return ()
 end
@@ -132,55 +132,46 @@ end
 func test_only_admin_can_revoke_lead_contributor_role{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
-    let CONTRIBUTOR_ID = Uint256(12,0)
+    let LEAD_CONTRIBUTOR_ACCOUNT = 'lead_contributor'
 
     fixture.initialize()
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    access_control.revoke_lead_contributor_role_for_project(PROJECT_ID, CONTRIBUTOR_ID)
+    access_control.revoke_lead_contributor_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
     %{ stop_prank() %}
 
     %{ expect_revert(error_message="Contributions: ADMIN role required") %}
-    access_control.revoke_lead_contributor_role_for_project(PROJECT_ID, CONTRIBUTOR_ID)
+    access_control.revoke_lead_contributor_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
 
     return ()
 end
 
 
 @view
-func test_only_lead_contributor_or_feeder_revert_if_no_permission{
+func test_only_lead_contributor_revert_if_no_permission{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
-    let CONTRIBUTOR_ID = Uint256(12,0)
-
     fixture.initialize()
 
-    %{ stop_prank = start_prank(ids.ADMIN) %}
-    access_control.grant_lead_contributor_role_for_project(PROJECT_ID, CONTRIBUTOR_ID)
-    %{ stop_prank() %}
-
-    access_control.only_lead_contributor_or_feeder(PROJECT_ID, CONTRIBUTOR_ID)
+    const LEAD_CONTRIBUTOR_ACCOUNT = 'lead_contributor'
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    access_control.revoke_lead_contributor_role_for_project(PROJECT_ID, CONTRIBUTOR_ID)
+    access_control.grant_lead_contributor_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
     %{ stop_prank() %}
 
-    %{ expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR or FEEDER role required") %}
-    access_control.only_lead_contributor_or_feeder(PROJECT_ID, CONTRIBUTOR_ID)
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
+    access_control.only_lead_contributor(PROJECT_ID)
+    %{ stop_prank() %}
 
-    return ()
-end
+    %{ stop_prank = start_prank(ids.ADMIN) %}
+    access_control.revoke_lead_contributor_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
+    %{ stop_prank() %}
 
-@view
-func test_default_to_feeder_role_if_not_lead_contributor {
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
-    let CONTRIBUTOR_ID = Uint256(12,0)
-
-    fixture.initialize()
-
-    %{ stop_prank = start_prank(ids.FEEDER) %}
-    access_control.only_lead_contributor_or_feeder(PROJECT_ID, CONTRIBUTOR_ID)
+    %{
+        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT)
+        expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role required")
+    %}
+    access_control.only_lead_contributor(PROJECT_ID)
     %{ stop_prank() %}
 
     return ()

@@ -160,15 +160,15 @@ end
 
 @external
 func add_lead_contributor_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    project_id : felt, contributor_id : Uint256
+    project_id : felt, lead_contributor_account: felt
 ):
-    return contributions.add_lead_contributor_for_project(project_id, contributor_id)
+    return contributions.add_lead_contributor_for_project(project_id, lead_contributor_account)
 end
 
 @external
 func remove_lead_contributor_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    project_id : felt, contributor_id : Uint256
+    project_id : felt, lead_contributor_account: felt
 ):
-    return contributions.remove_lead_contributor_for_project(project_id, contributor_id)
+    return contributions.remove_lead_contributor_for_project(project_id, lead_contributor_account)
 end
 

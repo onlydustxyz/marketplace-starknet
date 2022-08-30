@@ -11,13 +11,13 @@ from onlydust.marketplace.test.libraries.user import assert_user_that
 from onlydust.marketplace.test.libraries.contributions import assert_contribution_that
 
 const ADMIN = 'onlydust'
-const FEEDER = 'feeder'
 const REGISTERER = 'register'
 const CONTRIBUTOR = '0xdead'
 const GITHUB_ID = 'user123'
 const PROJECT_ID = 'MyProject'
 const ID1 = 1000000 * PROJECT_ID + 1
 const ID2 = 1000000 * PROJECT_ID + 2
+const LEAD_CONTRIBUTOR_ACCOUNT = 'LeadContributor'
 
 #
 # Tests
@@ -40,7 +40,7 @@ func __setup__{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
     IRegistry.set_profile_contract(registry, profile_contract)
     IRegistry.grant_registerer_role(registry, REGISTERER)
     IProfile.grant_minter_role(profile_contract, registry)
-    IContributions.grant_feeder_role(contributions_contract, FEEDER)
+    IContributions.add_lead_contributor_for_project(contributions_contract, PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
     %{ [stop_prank() for stop_prank in stop_pranks] %}
 
     return ()
@@ -130,7 +130,7 @@ namespace contributions_access:
         project_id : felt,
         contribution_count_required : felt,
     ):
-        %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
+        %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
         IContributions.new_contribution(
             contributions,
             old_contribution_id,
@@ -158,7 +158,7 @@ namespace contributions_access:
     func assign_contributor_to_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
     }(contribution_id : ContributionId, contributor_id : Uint256):
-        %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
+        %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
         IContributions.assign_contributor_to_contribution(
             contributions, contribution_id, contributor_id
         )
@@ -169,7 +169,7 @@ namespace contributions_access:
     func unassign_contributor_from_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
     }(contribution_id : ContributionId):
-        %{ stop_prank = start_prank(ids.FEEDER, ids.contributions) %}
+        %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
         IContributions.unassign_contributor_from_contribution(contributions, contribution_id)
         %{ stop_prank() %}
         return ()
