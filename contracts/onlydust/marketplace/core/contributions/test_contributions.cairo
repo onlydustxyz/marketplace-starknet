@@ -77,7 +77,7 @@ func test_same_contribution_cannot_be_added_twice{
 end
 
 @view
-func test_contribution_can_be_deleted{
+func test_feeder_can_delete_contribution{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     alloc_locals
@@ -98,6 +98,28 @@ func test_contribution_can_be_deleted{
     %{ expect_events(
         {"name": "ContributionDeleted", "data": {"contribution_id": 1}}
     )%}
+
+    return ()
+end
+
+@view
+func test_anyone_cannot_delete_contribution{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    alloc_locals
+
+    fixture.initialize()
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    let (local contribution1) = contributions.new_contribution(1000000 * PROJECT_ID +1, PROJECT_ID, 0)
+    let (contribution2) = contributions.new_contribution(1000000 * PROJECT_ID + 2, PROJECT_ID, 0)
+    %{ stop_prank() %}
+
+    %{
+        expect_revert(error_message="Contributions: FEEDER role required")
+    %}
+
+    contributions.delete_contribution(contribution1.id)
 
     return ()
 end
