@@ -147,7 +147,7 @@ end
 
 
 @view
-func test_only_lead_contributor_revert_if_no_permission{
+func test_only_lead_contributor_or_feeder_revert_if_no_permission{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     let CONTRIBUTOR_ID = Uint256(12,0)
@@ -158,14 +158,33 @@ func test_only_lead_contributor_revert_if_no_permission{
     access_control.grant_lead_contributor_role_for_project(PROJECT_ID, CONTRIBUTOR_ID)
     %{ stop_prank() %}
 
-    access_control.only_lead_contributor(PROJECT_ID, CONTRIBUTOR_ID)
+    access_control.only_lead_contributor_or_feeder(PROJECT_ID, CONTRIBUTOR_ID)
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
     access_control.revoke_lead_contributor_role_for_project(PROJECT_ID, CONTRIBUTOR_ID)
     %{ stop_prank() %}
 
-    %{ expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role required") %}
-    access_control.only_lead_contributor(PROJECT_ID, CONTRIBUTOR_ID)
+    %{ expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR or FEEDER role required") %}
+    access_control.only_lead_contributor_or_feeder(PROJECT_ID, CONTRIBUTOR_ID)
+
+    return ()
+end
+
+@view
+func test_default_to_feeder_role_if_not_lead_contributor {
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    let CONTRIBUTOR_ID = Uint256(12,0)
+
+    fixture.initialize()
+
+    %{ stop_prank = start_prank(ids.ADMIN) %}
+    access_control.grant_feeder_role(RANDOM_ADDRESS)
+    %{ stop_prank() %}
+
+    %{ stop_prank = start_prank(ids.RANDOM_ADDRESS) %}
+    access_control.only_lead_contributor_or_feeder(PROJECT_ID, CONTRIBUTOR_ID)
+    %{ stop_prank() %}
 
     return ()
 end
