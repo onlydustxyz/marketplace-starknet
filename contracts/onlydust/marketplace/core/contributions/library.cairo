@@ -6,6 +6,7 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math import assert_nn, assert_lt, assert_le, assert_not_zero, sign
 from starkware.cairo.common.math_cmp import is_not_zero, is_le
 from starkware.cairo.common.hash import hash2
+from starkware.starknet.common.syscalls import get_caller_address
 
 from onlydust.stream.default_implementation import stream
 from onlydust.marketplace.core.contributions.access_control import access_control
@@ -80,11 +81,11 @@ func ContributionGateChanged(contribution_id : felt, gate : felt):
 end
 
 @event
-func LeadContributorAdded(project_id : felt, contributor_id : Uint256):
+func LeadContributorAdded(project_id : felt, lead_contributor_account: felt):
 end
 
 @event
-func LeadContributorRemoved(project_id : felt, contributor_id : Uint256):
+func LeadContributorRemoved(project_id : felt, lead_contributor_account: felt):
 end
 
 #
@@ -140,12 +141,8 @@ namespace contributions:
     ) -> (contribution : Contribution):
         alloc_locals
 
-        access_control.only_feeder()
-
-        with_attr error_message("Contributions: Invalid project ID ({project_id})"):
-            assert_nn(project_id)
-            assert_not_zero(project_id)
-        end
+        project_access.assert_project_id_is_valid(project_id)
+        access_control.only_lead_contributor(project_id)
 
         with_attr error_message("Contributions: Invalid contribution count required"):
             let (count_sign) = sign(contribution_count_required)
@@ -154,7 +151,7 @@ namespace contributions:
         end
         
         let issue_number = old_composite_id - project_id * 1000000
-        with_attr error_message("Contributions: invalid id {old_composite_id}, must be project_id * 1000000 + issue_number"):
+        with_attr error_message("Contributions: Invalid id {old_composite_id}, must be project_id * 1000000 + issue_number"):
             assert_nn(issue_number)
             assert_not_zero(issue_number)
         end
@@ -188,7 +185,8 @@ namespace contributions:
     func delete_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         contribution_id : ContributionId 
     ):
-        access_control.only_feeder()
+        let (project_id) = project_access.find_contribution_project(contribution_id)
+        access_control.only_lead_contributor(project_id)
         status_access.only_open(contribution_id)
 
         # Update storage
@@ -205,7 +203,8 @@ namespace contributions:
     func assign_contributor_to_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
     }(contribution_id : ContributionId, contributor_id : Uint256):
-        access_control.only_feeder()
+        let (project_id) = project_access.find_contribution_project(contribution_id)
+        access_control.only_lead_contributor(project_id)
         
         status_access.only_open(contribution_id)
         gating.assert_contributor_is_eligible(contribution_id, contributor_id)
@@ -224,7 +223,8 @@ namespace contributions:
     func unassign_contributor_from_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
     }(contribution_id : ContributionId):
-        access_control.only_feeder()
+        let (project_id) = project_access.find_contribution_project(contribution_id)
+        access_control.only_lead_contributor(project_id)
 
        status_access.only_assigned(contribution_id) 
 
@@ -242,7 +242,8 @@ namespace contributions:
     func validate_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         contribution_id : ContributionId
     ):
-        access_control.only_feeder()
+        let (project_id) = project_access.find_contribution_project(contribution_id)
+        access_control.only_lead_contributor(project_id)
 
         status_access.only_assigned(contribution_id) 
         
@@ -264,7 +265,8 @@ namespace contributions:
     func modify_contribution_count_required{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         contribution_id : ContributionId, contribution_count_required : felt
     ):
-        access_control.only_feeder()
+        let (project_id) = project_access.find_contribution_project(contribution_id)
+        access_control.only_lead_contributor(project_id)
 
         status_access.only_open(contribution_id) 
         
@@ -353,21 +355,40 @@ namespace contributions:
     end
 
     func add_lead_contributor_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        project_id : felt, contributor_id : Uint256
+        project_id : felt, lead_contributor_account: felt 
     ):
-        access_control.grant_lead_contributor_role_for_project(project_id, contributor_id)
-        LeadContributorAdded.emit(project_id, contributor_id)
+        access_control.grant_lead_contributor_role_for_project(project_id, lead_contributor_account)
+        LeadContributorAdded.emit(project_id, lead_contributor_account)
         return ()
     end
 
     func remove_lead_contributor_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        project_id : felt, contributor_id : Uint256
+        project_id : felt, lead_contributor_account: felt
     ):
-        access_control.revoke_lead_contributor_role_for_project(project_id, contributor_id)
-        LeadContributorRemoved.emit(project_id, contributor_id)
+        access_control.revoke_lead_contributor_role_for_project(project_id, lead_contributor_account)
+        LeadContributorRemoved.emit(project_id, lead_contributor_account)
         return ()
     end
 
+end
+
+namespace project_access:
+    func assert_project_id_is_valid{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(project_id: felt):
+        with_attr error_message("Contributions: Invalid project ID ({project_id})"):
+            assert_nn(project_id)
+            assert_not_zero(project_id)
+        end
+        return ()
+    end
+    
+    func find_contribution_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(contribution_id: ContributionId) -> (project_id: felt):
+        let (project_id) = contribution_project_id.read(contribution_id)
+        with_attr error_message("Contributions: Contribution does not exist"):
+            assert_not_zero(project_id)
+        end
+
+        return (project_id) 
+    end
 end
 
 namespace gating:

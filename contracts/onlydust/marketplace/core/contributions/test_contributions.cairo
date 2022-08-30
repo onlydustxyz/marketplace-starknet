@@ -14,13 +14,11 @@ from onlydust.marketplace.core.contributions.access_control import access_contro
 from onlydust.marketplace.test.libraries.contributions import assert_contribution_that
 
 const ADMIN = 'admin'
-const FEEDER = 'feeder'
 const REGISTRY = 'registry'
 const PROJECT_ID = 'MyProject'
 const ID1 = 1000000 * PROJECT_ID + 1
 const ID2 = 1000000 * PROJECT_ID + 2
-const LEAD_CONTRIBUTOR_ID = 42
-const LEAD_CONTRIBUTOR_ADDRESS = 'lead'
+const LEAD_CONTRIBUTOR_ACCOUNT = 'lead'
 
 @view
 func test_lead_contributor_can_be_added_and_removed{
@@ -28,14 +26,14 @@ func test_lead_contributor_can_be_added_and_removed{
 }():
     fixture.initialize()
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    contributions.add_lead_contributor_for_project(PROJECT_ID, Uint256(LEAD_CONTRIBUTOR_ID, 0))
-    contributions.remove_lead_contributor_for_project(PROJECT_ID, Uint256(LEAD_CONTRIBUTOR_ID, 0))
+    contributions.add_lead_contributor_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
+    contributions.remove_lead_contributor_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
     %{ stop_prank() %}
 
     %{ 
         expect_events(
-            { "name": "LeadContributorAdded", "data": { "project_id": ids.PROJECT_ID,  "contributor_id": { "high": 0, "low": ids.LEAD_CONTRIBUTOR_ID} }},
-            { "name": "LeadContributorRemoved", "data": { "project_id": ids.PROJECT_ID,  "contributor_id": { "high": 0, "low": ids.LEAD_CONTRIBUTOR_ID} }},
+            { "name": "LeadContributorAdded", "data": { "project_id": ids.PROJECT_ID,  "lead_contributor_account":  ids.LEAD_CONTRIBUTOR_ACCOUNT }},
+            { "name": "LeadContributorRemoved", "data": { "project_id": ids.PROJECT_ID,  "lead_contributor_account": ids.LEAD_CONTRIBUTOR_ACCOUNT }},
         )
     %}
 
@@ -43,14 +41,14 @@ func test_lead_contributor_can_be_added_and_removed{
 end
 
 @view
-func test_new_contribution_can_be_added_by_feeder {
+func lead_can_test_new_contribution_can_be_added {
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     alloc_locals
 
     fixture.initialize()
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (local contribution1) = contributions.new_contribution(1000000 * PROJECT_ID +1, PROJECT_ID, 0)
     let (contribution2) = contributions.new_contribution(1000000 * PROJECT_ID + 2, PROJECT_ID, 0)
     %{ stop_prank() %}
@@ -90,10 +88,10 @@ func test_new_contribution_can_be_added_by_lead_contributor {
     fixture.initialize()
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    contributions.add_lead_contributor_for_project(PROJECT_ID, Uint256(LEAD_CONTRIBUTOR_ID, 0))
+    contributions.add_lead_contributor_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
     %{ stop_prank() %}
 
-    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ADDRESS) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     contributions.new_contribution(1000000 * PROJECT_ID +1, PROJECT_ID, 0)
     %{ stop_prank() %}
 
@@ -109,7 +107,7 @@ func test_same_contribution_cannot_be_added_twice{
     fixture.initialize()
 
     %{ 
-        stop_prank = start_prank(ids.FEEDER)
+        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT)
         expect_revert(error_message="Contributions: Contribution already exist")
     %}
     let (local contribution1) = contributions.new_contribution(ID1, PROJECT_ID, 0)
@@ -127,7 +125,7 @@ func test_feeder_can_delete_contribution{
 
     fixture.initialize()
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (local contribution1) = contributions.new_contribution(1000000 * PROJECT_ID +1, PROJECT_ID, 0)
     contributions.delete_contribution(contribution1.id)
     %{ stop_prank() %}
@@ -152,14 +150,13 @@ func test_anyone_cannot_delete_contribution{
 
     fixture.initialize()
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (local contribution1) = contributions.new_contribution(1000000 * PROJECT_ID +1, PROJECT_ID, 0)
     %{ stop_prank() %}
 
     %{
-        expect_revert(error_message="Contributions: FEEDER role required")
+        expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role required")
     %}
-
     contributions.delete_contribution(contribution1.id)
 
     return ()
@@ -175,7 +172,7 @@ func test_only_open_delete_contribution{
 
     let contributor_test = Uint256(1, 0)
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (local contribution1) = contributions.new_contribution(1000000 * PROJECT_ID +1, PROJECT_ID, 0)
     %{ stop_prank() %}
 
@@ -183,7 +180,7 @@ func test_only_open_delete_contribution{
         expect_revert(error_message="Contributions: Contribution is not OPEN")
     %}
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     # set status to ASSIGNED
     contributions.assign_contributor_to_contribution(contribution1.id, contributor_test)
     contributions.delete_contribution(contribution1.id)
@@ -193,7 +190,7 @@ func test_only_open_delete_contribution{
 end
 
 @view
-func test_feeder_can_assign_contribution_to_contributor{
+func test_lead_can_assign_contribution_to_contributor{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     fixture.initialize()
@@ -201,7 +198,7 @@ func test_feeder_can_assign_contribution_to_contributor{
     let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (contribution) = contributions.new_contribution(
         1000000 * PROJECT_ID + 1, PROJECT_ID, 0
     )
@@ -230,11 +227,11 @@ func test_anyone_cannot_assign_contribution_to_contributor{
     let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0)
     %{
         stop_prank() 
-        expect_revert(error_message="Contributions: FEEDER role required")
+        expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role required")
     %}
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
 
@@ -251,7 +248,7 @@ func test_cannot_assign_non_existent_contribution{
     let contributor_id = Uint256(1, 0)
 
     %{
-        stop_prank = start_prank(ids.FEEDER) 
+        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) 
         expect_revert(error_message="Contributions: Contribution does not exist")
     %}
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
@@ -269,7 +266,7 @@ func test_cannot_assign_twice_a_contribution{
     let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0)
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{ expect_revert(error_message="Contributions: Contribution is not OPEN") %}
@@ -288,7 +285,7 @@ func test_cannot_assign_contribution_to_non_eligible_contributor{
     let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(ID1, PROJECT_ID, 3)
     %{ expect_revert(error_message="Contributions: Contributor is not eligible") %}
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
@@ -307,7 +304,7 @@ func test_can_assign_gated_contribution_eligible_contributor{
     let gated_contribution_id = ContributionId(2)
     let contributor_id = Uint256(1, 0)
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     # Create a non-gated contribution
     let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0)
 
@@ -336,7 +333,7 @@ func test_contribution_creation_with_invalid_project_id_is_reverted{
     fixture.initialize()
 
     %{
-        stop_prank = start_prank(ids.FEEDER)
+        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT)
         expect_revert(error_message="Contributions: Invalid project ID")
     %}
     let (_) = contributions.new_contribution(ID1, 0, 0)
@@ -352,7 +349,7 @@ func test_contribution_creation_with_invalid_contribution_count_is_reverted{
     fixture.initialize()
 
     %{
-        stop_prank = start_prank(ids.FEEDER)
+        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT)
         expect_revert(error_message="Contributions: Invalid contribution count required")
     %}
     let (_) = contributions.new_contribution(ID1, PROJECT_ID, -1)
@@ -367,14 +364,14 @@ func test_anyone_cannot_add_contribution{
 }():
     fixture.initialize()
 
-    %{ expect_revert(error_message="Contributions: FEEDER role required") %}
+    %{ expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role required") %}
     let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0)
 
     return ()
 end
 
 @view
-func test_feeder_can_unassign_contribution_from_contributor{
+func test_lead_can_unassign_contribution_from_contributor{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     fixture.initialize()
@@ -382,7 +379,7 @@ func test_feeder_can_unassign_contribution_from_contributor{
     let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(1000000 * PROJECT_ID + 1, PROJECT_ID, 0)
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     contributions.unassign_contributor_from_contribution(contribution_id)
@@ -412,12 +409,12 @@ func test_anyone_cannot_unassign_contribution_from_contributor{
     let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0)
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{
         stop_prank() 
-        expect_revert(error_message="Contributions: FEEDER role required")
+        expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role required")
     %}
     contributions.unassign_contributor_from_contribution(contribution_id)
 
@@ -434,7 +431,7 @@ func test_cannot_unassign_from_non_existent_contribution{
     let contributor_id = Uint256(1, 0)
 
     %{
-        stop_prank = start_prank(ids.FEEDER) 
+        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) 
         expect_revert(error_message="Contributions: Contribution does not exist")
     %}
     contributions.unassign_contributor_from_contribution(contribution_id)
@@ -451,7 +448,7 @@ func test_cannot_unassign_contribution_if_not_assigned{
 
     let contribution_id = ContributionId(1)
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0)
     %{ expect_revert(error_message="Contributions: Contribution is not ASSIGNED") %}
     contributions.unassign_contributor_from_contribution(contribution_id)
@@ -461,7 +458,7 @@ func test_cannot_unassign_contribution_if_not_assigned{
 end
 
 @view
-func test_feeder_can_validate_assigned_contribution{
+func test_lead_can_validate_assigned_contribution{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     fixture.initialize()
@@ -469,7 +466,7 @@ func test_feeder_can_validate_assigned_contribution{
     let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0)
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     contributions.validate_contribution(contribution_id)
@@ -498,12 +495,12 @@ func test_anyone_cannot_validate_contribution{
     let contribution_id = ContributionId(1)
     let contributor_id = Uint256(1, 0)
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0)
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id)
     %{
         stop_prank() 
-        expect_revert(error_message="Contributions: FEEDER role required")
+        expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role required")
     %}
     contributions.validate_contribution(contribution_id)
 
@@ -519,7 +516,7 @@ func test_cannot_validate_non_existent_contribution{
     let contribution_id = ContributionId(1)
 
     %{
-        stop_prank = start_prank(ids.FEEDER) 
+        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) 
         expect_revert(error_message="Contributions: Contribution does not exist")
     %}
     contributions.validate_contribution(contribution_id)
@@ -536,7 +533,7 @@ func test_cannot_validate_contribution_if_not_assigned{
 
     let contribution_id = ContributionId(1)
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0)
     %{ expect_revert(error_message="Contributions: Contribution is not ASSIGNED") %}
     contributions.validate_contribution(contribution_id)
@@ -546,7 +543,7 @@ func test_cannot_validate_contribution_if_not_assigned{
 end
 
 @view
-func test_feeder_can_modify_contribution_count_required{
+func test_lead_can_modify_contribution_count_required{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     fixture.initialize()
@@ -555,7 +552,7 @@ func test_feeder_can_modify_contribution_count_required{
     let contributor_id = Uint256(1, 0)
     let validator_account = 'validator'
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0)
     contributions.modify_contribution_count_required(contribution_id, 3)
     %{ stop_prank() %}
@@ -583,11 +580,11 @@ func test_anyone_cannot_modify_contribution_count_required{
     let contributor_id = Uint256(1, 0)
     let validator_account = 'validator'
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(ID1, PROJECT_ID, 0)
     %{ 
         stop_prank ()
-        expect_revert(error_message="Contributions: FEEDER role require")
+        expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role require")
     %}
     contributions.modify_contribution_count_required(contribution_id, 3)
 
@@ -615,7 +612,7 @@ func test_anyone_can_list_open_contributions{
     alloc_locals
     fixture.initialize()
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let contribution1_id = ContributionId(1)
     let (contribution1) = contributions.new_contribution(
         ID1, PROJECT_ID, 0
@@ -644,7 +641,7 @@ func test_anyone_can_list_assigned_contributions{
 
     let contributor_id = Uint256(1, 0)
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let contribution1_id = ContributionId(1)
     let (contribution1) = contributions.new_contribution(
         ID1, PROJECT_ID, 0
@@ -682,8 +679,14 @@ func test_anyone_can_list_contributions_eligible_to_contributor{
     fixture.validate_two_contributions(contributor_id)
 
     # Create different contributions
+    %{ stop_prank = start_prank(ids.ADMIN) %}
+    access_control.grant_lead_contributor_role_for_project('OnlyDust', LEAD_CONTRIBUTOR_ACCOUNT)
+    %{ stop_prank() %}
+    %{ stop_prank = start_prank(ids.ADMIN) %}
+    access_control.grant_lead_contributor_role_for_project('Briq', LEAD_CONTRIBUTOR_ACCOUNT)
+    %{ stop_prank() %}
 
-    %{ stop_prank = start_prank(ids.FEEDER) %}
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let contribution_id = ContributionId(3)  # 'open non-gated'
     let (contribution1) = contributions.new_contribution(
         1000000 * 'OnlyDust' + 1, 'OnlyDust', 0
@@ -731,7 +734,7 @@ namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         contributions.initialize(ADMIN)
         %{ stop_prank = start_prank(ids.ADMIN) %}
-        access_control.grant_feeder_role(FEEDER)
+        access_control.grant_lead_contributor_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
         %{ stop_prank() %}
         return ()
     end
@@ -742,7 +745,11 @@ namespace fixture:
         let contribution_id = ContributionId(1)
         let gated_contribution_id = ContributionId(2)
 
-        %{ stop_prank = start_prank(ids.FEEDER) %}
+        %{ stop_prank = start_prank(ids.ADMIN) %}
+        access_control.grant_lead_contributor_role_for_project('Random', LEAD_CONTRIBUTOR_ACCOUNT)
+        %{ stop_prank() %}
+
+        %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
         # Create a non-gated contribution
         let (contribution) = contributions.new_contribution(
             1000000 * 'Random' + 1, 'Random', 0
