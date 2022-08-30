@@ -67,7 +67,7 @@ func ContributionCreated(contribution_id: felt, project_id: felt, issue_number: 
 end
 
 @event
-func ContributionRemoved(contribution_id: felt):
+func ContributionDeleted(contribution_id: felt):
 end
 
 @event
@@ -223,20 +223,19 @@ namespace contributions:
         return (contribution)
     end
 
-    # Remove a contribution for a given token id
-    func remove_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    # Remove a contribution for a given contribution_id
+    func delete_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         contribution_id : ContributionId 
     ):
-        alloc_locals
-
         internal.only_feeder()
+        status_access.only_open(contribution_id)
 
         # Update storage
         contribution_status_.write(contribution_id, Status.NONE)
         contribution_gate_.write(contribution_id, 0)
         contribution_project_id.write(contribution_id, 0)
 
-        ContributionRemoved.emit(contribution_id.inner)
+        ContributionDeleted.emit(contribution_id.inner)
 
         return ()
     end
