@@ -125,6 +125,34 @@ func test_anyone_cannot_delete_contribution{
 end
 
 @view
+func test_only_open_delete_contribution{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    alloc_locals
+
+    fixture.initialize()
+
+    let contributor_test = Uint256(1, 0)
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    let (local contribution1) = contributions.new_contribution(1000000 * PROJECT_ID +1, PROJECT_ID, 0)
+    let (contribution2) = contributions.new_contribution(1000000 * PROJECT_ID + 2, PROJECT_ID, 0)
+    %{ stop_prank() %}
+
+    %{
+        expect_revert(error_message="Contributions: Contribution is not OPEN")
+    %}
+
+    %{ stop_prank = start_prank(ids.FEEDER) %}
+    # set status to ASSIGNED
+    contributions.assign_contributor_to_contribution(contribution1.id, contributor_test)
+    contributions.delete_contribution(contribution1.id)
+    %{ stop_prank() %}
+
+    return ()
+end
+
+@view
 func test_feeder_can_assign_contribution_to_contributor{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
