@@ -223,7 +223,7 @@ namespace contributions:
         return (contribution)
     end
 
-    # Remove a contribution for a given contribution_id
+    # Delete a contribution for a given contribution_id
     func delete_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         contribution_id : ContributionId 
     ):

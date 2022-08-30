@@ -86,7 +86,6 @@ func test_feeder_can_delete_contribution{
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
     let (local contribution1) = contributions.new_contribution(1000000 * PROJECT_ID +1, PROJECT_ID, 0)
-    let (contribution2) = contributions.new_contribution(1000000 * PROJECT_ID + 2, PROJECT_ID, 0)
     contributions.delete_contribution(contribution1.id)
     %{ stop_prank() %}
 
@@ -112,7 +111,6 @@ func test_anyone_cannot_delete_contribution{
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
     let (local contribution1) = contributions.new_contribution(1000000 * PROJECT_ID +1, PROJECT_ID, 0)
-    let (contribution2) = contributions.new_contribution(1000000 * PROJECT_ID + 2, PROJECT_ID, 0)
     %{ stop_prank() %}
 
     %{
@@ -136,7 +134,6 @@ func test_only_open_delete_contribution{
 
     %{ stop_prank = start_prank(ids.FEEDER) %}
     let (local contribution1) = contributions.new_contribution(1000000 * PROJECT_ID +1, PROJECT_ID, 0)
-    let (contribution2) = contributions.new_contribution(1000000 * PROJECT_ID + 2, PROJECT_ID, 0)
     %{ stop_prank() %}
 
     %{
