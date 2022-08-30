@@ -141,7 +141,7 @@ namespace contributions:
         alloc_locals
 
         access_control.only_feeder()
-        
+
         with_attr error_message("Contributions: Invalid project ID ({project_id})"):
             assert_nn(project_id)
             assert_not_zero(project_id)
@@ -556,7 +556,6 @@ namespace internal:
         else:
             tempvar contributions_len = contributions_len
         end
-
 
         return (contributions_len)
     end

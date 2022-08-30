@@ -20,6 +20,7 @@ const PROJECT_ID = 'MyProject'
 const ID1 = 1000000 * PROJECT_ID + 1
 const ID2 = 1000000 * PROJECT_ID + 2
 const LEAD_CONTRIBUTOR_ID = 42
+const LEAD_CONTRIBUTOR_ADDRESS = 'lead'
 
 @view
 func test_lead_contributor_can_be_added_and_removed{
@@ -42,7 +43,7 @@ func test_lead_contributor_can_be_added_and_removed{
 end
 
 @view
-func test_new_contribution_can_be_added{
+func test_new_contribution_can_be_added_by_feeder {
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     alloc_locals
@@ -76,6 +77,26 @@ func test_new_contribution_can_be_added{
         {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
         {"name": "ContributionCreated", "data": {"contribution_id": 2, "project_id": ids.PROJECT_ID,  "issue_number": 2, "gate": 0}},
     )%}
+    return ()
+end
+
+
+@view
+func test_new_contribution_can_be_added_by_lead_contributor {
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    alloc_locals
+
+    fixture.initialize()
+
+    %{ stop_prank = start_prank(ids.ADMIN) %}
+    contributions.add_lead_contributor_for_project(PROJECT_ID, Uint256(LEAD_CONTRIBUTOR_ID, 0))
+    %{ stop_prank() %}
+
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ADDRESS) %}
+    contributions.new_contribution(1000000 * PROJECT_ID +1, PROJECT_ID, 0)
+    %{ stop_prank() %}
+
     return ()
 end
 
