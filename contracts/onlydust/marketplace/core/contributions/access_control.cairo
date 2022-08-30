@@ -101,12 +101,18 @@ namespace access_control:
         return ()
     end
 
-    func only_lead_contributor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    func only_lead_contributor_or_feeder{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         project_id : felt, contributor_id : Uint256):
-        let (is_member) = role_member_by_contributor_and_key_.read(Role.LEAD_CONTRIBUTOR, project_id, contributor_id)
-        with_attr error_message("Contributions: LEAD_CONTRIBUTOR role required"):
-            assert_not_zero(is_member)
+        alloc_locals
+
+        let (caller_address) = get_caller_address()
+        let (local is_feeder) = AccessControl.has_role(Role.FEEDER, caller_address)
+        let (is_lead_contributor) = internal.is_lead_contributor(project_id, contributor_id)
+
+        with_attr error_message("Contributions: LEAD_CONTRIBUTOR or FEEDER role required"):
+            assert_not_zero(is_feeder + is_lead_contributor)
         end
+        
         return()
     end
 end
@@ -116,5 +122,10 @@ namespace internal:
         let (caller_address) = get_caller_address()
         assert_not_zero(caller_address - address)
         return ()
+    end
+
+    func is_lead_contributor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(project_id : felt, contributor_id : Uint256) -> (is_lead_contributor : felt):
+        let (is_member) = role_member_by_contributor_and_key_.read(Role.LEAD_CONTRIBUTOR, project_id, contributor_id)
+        return (is_member)
     end
 end
