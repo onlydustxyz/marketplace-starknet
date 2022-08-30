@@ -7,6 +7,7 @@ from onlydust.marketplace.core.contributions.access_control import (access_contr
 const ADMIN = 'admin'
 const PROJECT_ID = 'MyProject'
 const RANDOM_ADDRESS = 'rand'
+const FEEDER = 'feeder'
 
 @view
 func test_admin_cannot_revoke_himself{
@@ -178,11 +179,7 @@ func test_default_to_feeder_role_if_not_lead_contributor {
 
     fixture.initialize()
 
-    %{ stop_prank = start_prank(ids.ADMIN) %}
-    access_control.grant_feeder_role(RANDOM_ADDRESS)
-    %{ stop_prank() %}
-
-    %{ stop_prank = start_prank(ids.RANDOM_ADDRESS) %}
+    %{ stop_prank = start_prank(ids.FEEDER) %}
     access_control.only_lead_contributor_or_feeder(PROJECT_ID, CONTRIBUTOR_ID)
     %{ stop_prank() %}
 
@@ -192,6 +189,11 @@ end
 namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         access_control.initialize(ADMIN)
+
+        %{ stop_prank = start_prank(ids.ADMIN) %}
+        access_control.grant_feeder_role(FEEDER)
+        %{ stop_prank() %}
+    
         return ()
     end
 end
