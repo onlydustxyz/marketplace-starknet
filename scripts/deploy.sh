@@ -233,6 +233,8 @@ deploy_all_contracts() {
         echo "CONTRIBUTIONS_ADDRESS=$CONTRIBUTIONS_ADDRESS"
     ) | tee >&2 $CACHE_FILE
 
+    ask "Do you want to setup the contracts (for a first deployment)" || return 
+
     log_info "Setting profile contract inside registry"
     send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function set_profile_contract --inputs $PROFILE_ADDRESS"
 
