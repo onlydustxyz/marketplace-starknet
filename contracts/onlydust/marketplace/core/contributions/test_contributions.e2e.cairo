@@ -164,6 +164,13 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
         assert_contribution_that.status_is(Status.NONE)
     end
 
+    # Check open contribution deleted 
+    with contributions:
+        let (contribs_len, contribs) = contributions_access.all_open_contributions()
+    end
+
+    assert 0 = contribs_len
+
     return ()
 end
 
