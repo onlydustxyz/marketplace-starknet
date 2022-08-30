@@ -352,7 +352,7 @@ namespace contributions:
         return (contributions_len, contributions)
     end
 
-    func add_lead_contributor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    func add_lead_contributor_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         project_id : felt, contributor_id : Uint256
     ):
         access_control.grant_lead_contributor_role_for_project(project_id, contributor_id)
@@ -360,7 +360,7 @@ namespace contributions:
         return ()
     end
 
-    func remove_lead_contributor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    func remove_lead_contributor_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         project_id : felt, contributor_id : Uint256
     ):
         access_control.revoke_lead_contributor_role_for_project(project_id, contributor_id)

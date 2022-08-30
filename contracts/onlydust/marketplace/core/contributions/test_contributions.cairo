@@ -19,6 +19,27 @@ const REGISTRY = 'registry'
 const PROJECT_ID = 'MyProject'
 const ID1 = 1000000 * PROJECT_ID + 1
 const ID2 = 1000000 * PROJECT_ID + 2
+const LEAD_CONTRIBUTOR_ID = 42
+
+@view
+func test_lead_contributor_can_be_added_and_removed{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+    %{ stop_prank = start_prank(ids.ADMIN) %}
+    contributions.add_lead_contributor_for_project(PROJECT_ID, Uint256(LEAD_CONTRIBUTOR_ID, 0))
+    contributions.remove_lead_contributor_for_project(PROJECT_ID, Uint256(LEAD_CONTRIBUTOR_ID, 0))
+    %{ stop_prank() %}
+
+    %{ 
+        expect_events(
+            { "name": "LeadContributorAdded", "data": { "project_id": ids.PROJECT_ID,  "contributor_id": { "high": 0, "low": ids.LEAD_CONTRIBUTOR_ID} }},
+            { "name": "LeadContributorRemoved", "data": { "project_id": ids.PROJECT_ID,  "contributor_id": { "high": 0, "low": ids.LEAD_CONTRIBUTOR_ID} }},
+        )
+    %}
+
+    return ()
+end
 
 @view
 func test_new_contribution_can_be_added{
