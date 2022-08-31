@@ -38,12 +38,8 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
 
     # Create two contributions and assign them a contibutor
     with contributions:
-        contributions_access.new_contribution(
-            PROJECT_ID * 1000000 + 1, PROJECT_ID, 0
-        )
-        contributions_access.new_contribution(
-            PROJECT_ID * 1000000 + 2, PROJECT_ID, 0
-        )
+        contributions_access.new_contribution(PROJECT_ID, 1, 0)
+        contributions_access.new_contribution(PROJECT_ID, 2, 0)
 
         contributions_access.assign_contributor_to_contribution(
             UNASSIGNED_CONTRIBUTION_ID, CONTRIBUTOR_ID
@@ -165,14 +161,14 @@ namespace contributions_access:
     }(
         contribution_id : felt,
         project_id : felt,
-        contribution_count_required : felt,
+        gate : felt,
     ):
         %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
         IContributions.new_contribution(
             contributions,
             contribution_id,
             project_id,
-            contribution_count_required,
+            gate,
         )
         %{ stop_prank() %}
         return ()
@@ -224,7 +220,7 @@ namespace contributions_access:
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
     }(contribution_id : ContributionId, count : felt):
         %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
-        IContributions.modify_contribution_count_required(contributions, contribution_id, count)
+        IContributions.modify_gate(contributions, contribution_id, count)
         %{ stop_prank() %}
         return ()
     end

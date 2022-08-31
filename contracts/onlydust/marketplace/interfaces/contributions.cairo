@@ -7,7 +7,7 @@ from onlydust.marketplace.core.contributions.library import Contribution, Contri
 @contract_interface
 namespace IContributions:
     func new_contribution(
-        id : felt, project_id : felt, contribution_count_required : felt
+        project_id : felt, issue_number: felt, gate : felt
     ) -> (contribution : Contribution):
     end
 
@@ -40,7 +40,7 @@ namespace IContributions:
     func validate_contribution(contribution_id : ContributionId):
     end
 
-    func modify_contribution_count_required(contribution_id : ContributionId, contribution_count_required : felt):
+    func modify_gate(contribution_id : ContributionId, gate : felt):
     end
 
     func grant_admin_role(address : felt):

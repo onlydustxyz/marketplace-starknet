@@ -37,7 +37,7 @@ struct DeprecatedContribution:
     member project_id : felt
     member status : felt
     member contributor_id : Uint256
-    member contribution_count_required : felt
+    member gate : felt
     member validator_account : felt
 end
 
@@ -137,24 +137,19 @@ namespace contributions:
 
     # Add a contribution for a given token id
     func new_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        old_composite_id : felt, project_id : felt, contribution_count_required : felt
+        project_id : felt, issue_number: felt, gate: felt
     ) -> (contribution : Contribution):
         alloc_locals
 
         project_access.assert_project_id_is_valid(project_id)
         access_control.only_lead_contributor(project_id)
 
-        with_attr error_message("Contributions: Invalid contribution count required"):
-            let (count_sign) = sign(contribution_count_required)
-            assert 0 = count_sign * (1 - count_sign)
-            assert_nn(contribution_count_required)
+        with_attr error_message("Contributions: Invalid gate"):
+            let (gate_sign) = sign(gate)
+            assert 0 = gate_sign * (1 - gate_sign)
+            assert_nn(gate)
         end
         
-        let issue_number = old_composite_id - project_id * 1000000
-        with_attr error_message("Contributions: Invalid id {old_composite_id}, must be project_id * 1000000 + issue_number"):
-            assert_nn(issue_number)
-            assert_not_zero(issue_number)
-        end
         github_access.only_new(project_id, issue_number)
 
         let (contribution_count) = contribution_count_.read()
@@ -163,18 +158,18 @@ namespace contributions:
 
         # Update storage
         contribution_status_.write(id, Status.OPEN)
-        contribution_gate_.write(id, contribution_count_required)
+        contribution_gate_.write(id, gate)
         contribution_project_id.write(id, project_id)
         contribution_count_.write(new_count)
         github_ids_to_contribution_id.write(project_id, issue_number, id)
         
-        ContributionCreated.emit(new_count, project_id, issue_number, contribution_count_required)
+        ContributionCreated.emit(new_count, project_id, issue_number, gate)
         
         let contribution = Contribution(
             id,
             project_id,
             Status.OPEN,
-            contribution_count_required,
+            gate,
             Uint256(0, 0),
         )
 
@@ -262,8 +257,8 @@ namespace contributions:
     end
 
     # Modify a contribution count required
-    func modify_contribution_count_required{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        contribution_id : ContributionId, contribution_count_required : felt
+    func modify_gate{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contribution_id : ContributionId, gate : felt
     ):
         let (project_id) = project_access.find_contribution_project(contribution_id)
         access_control.only_lead_contributor(project_id)
@@ -271,10 +266,10 @@ namespace contributions:
         status_access.only_open(contribution_id) 
         
         # Update storage
-        contribution_gate_.write(contribution_id, contribution_count_required)
+        contribution_gate_.write(contribution_id, gate)
 
         # Emit event
-        ContributionGateChanged.emit(contribution_id.inner, contribution_count_required)
+        ContributionGateChanged.emit(contribution_id.inner, gate)
         
         return ()
     end
