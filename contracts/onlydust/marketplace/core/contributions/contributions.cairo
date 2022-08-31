@@ -114,10 +114,10 @@ end
 
 @external
 func new_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    id : felt, project_id : felt, contribution_count_required : felt 
+    project_id : felt, issue_number: felt, gate : felt 
 ) -> (contribution : Contribution):
     return contributions.new_contribution(
-        id, project_id, contribution_count_required 
+        project_id, issue_number, gate 
     )
 end
 
@@ -152,10 +152,10 @@ func validate_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ran
 end
 
 @external
-func modify_contribution_count_required{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    contribution_id : ContributionId, contribution_count_required : felt
+func modify_gate{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    contribution_id : ContributionId, gate : felt
 ):
-    return contributions.modify_contribution_count_required(contribution_id, contribution_count_required)
+    return contributions.modify_gate(contribution_id, gate)
 end
 
 @external

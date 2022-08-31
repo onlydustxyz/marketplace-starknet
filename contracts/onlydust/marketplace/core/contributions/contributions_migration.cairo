@@ -68,11 +68,11 @@ func migrate_single_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin
     let id = ContributionId(index+1)
 
     contribution_status_.write(id, el[0].status +1)
-    contribution_gate_.write(id, el[0].contribution_count_required)
+    contribution_gate_.write(id, el[0].gate)
     contribution_project_id.write(id, el[0].project_id)
 
     github_ids_to_contribution_id.write(el[0].project_id, issue_number, id)
-    ContributionCreated.emit(index+1, el[0].project_id, issue_number, el[0].contribution_count_required)
+    ContributionCreated.emit(index+1, el[0].project_id, issue_number, el[0].gate)
 
     if el[0].status == DeprecatedStatus.OPEN:
         return ()        

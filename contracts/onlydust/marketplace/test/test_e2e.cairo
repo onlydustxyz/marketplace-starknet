@@ -62,8 +62,8 @@ func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
 
     let (contributions) = contributions_access.deployed()
     with contributions:
-        contributions_access.new_contribution(ID1, PROJECT_ID, 0)
-        contributions_access.new_contribution(ID2, PROJECT_ID, 0)
+        contributions_access.new_contribution(PROJECT_ID, 1, 0)
+        contributions_access.new_contribution(PROJECT_ID, 2, 0)
 
         let contributor_id = user.contributor_id
         contributions_access.assign_contributor_to_contribution(ContributionId(1), contributor_id)
@@ -126,16 +126,16 @@ namespace contributions_access:
     func new_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
     }(
-        old_contribution_id : felt,
         project_id : felt,
-        contribution_count_required : felt,
+        issue_number: felt,
+        gate : felt,
     ):
         %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
         IContributions.new_contribution(
             contributions,
-            old_contribution_id,
             project_id,
-            contribution_count_required,
+            issue_number,
+            gate,
         )
         %{ stop_prank() %}
         return ()
