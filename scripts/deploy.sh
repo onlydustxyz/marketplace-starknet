@@ -213,9 +213,6 @@ deploy_all_contracts() {
     registerers=$(echo $REGISTERER_ACCOUNTS | tr "," "\n")
     print Registerer accounts: $registerers
 
-    feeders=$(echo $FEEDER_ACCOUNTS | tr "," "\n")
-    print Feeder accounts: $feeders
-
     ask "Are you OK to deploy with those parameters" || return 
 
     if [ -z $PROFILE_ADDRESS ]; then
@@ -247,13 +244,6 @@ deploy_all_contracts() {
         log_info "Granting 'REGISTERER' role to $registerer"
         send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $registerer"
     done
-
-    for feeder in $feeders
-    do
-        log_info "Granting 'FEEDER' role to $feeder"
-        send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $CONTRIBUTIONS_ADDRESS --abi ./build/contributions_abi.json --function grant_feeder_role --inputs $feeder"
-    done
-
 }
 
 ### ARGUMENT PARSING

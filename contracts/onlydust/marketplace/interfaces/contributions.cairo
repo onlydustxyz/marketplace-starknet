@@ -49,12 +49,6 @@ namespace IContributions:
     func revoke_admin_role(address : felt):
     end
 
-    func grant_feeder_role(address : felt):
-    end
-
-    func revoke_feeder_role(address : felt):
-    end
-
     func add_lead_contributor_for_project(project_id : felt, lead_contributor_account: felt):
     end
 

@@ -174,9 +174,7 @@ end
 namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         contributions.initialize(ADMIN)
-        %{ stop_prank = start_prank(ids.ADMIN) %}
-        access_control.grant_feeder_role(FEEDER)
-        %{ stop_prank() %}
+
         return ()
     end
 end

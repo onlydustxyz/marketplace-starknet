@@ -99,20 +99,6 @@ func revoke_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_c
 end
 
 @external
-func grant_feeder_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    address : felt
-):
-    return access_control.grant_feeder_role(address)
-end
-
-@external
-func revoke_feeder_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    address : felt
-):
-    return access_control.revoke_feeder_role(address)
-end
-
-@external
 func new_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     id : felt, project_id : felt, contribution_count_required : felt 
 ) -> (contribution : Contribution):
