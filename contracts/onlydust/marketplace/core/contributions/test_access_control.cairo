@@ -7,7 +7,6 @@ from onlydust.marketplace.core.contributions.access_control import (access_contr
 const ADMIN = 'admin'
 const PROJECT_ID = 'MyProject'
 const RANDOM_ADDRESS = 'rand'
-const FEEDER = 'feeder'
 
 @view
 func test_admin_cannot_revoke_himself{
@@ -83,28 +82,22 @@ func test_admin_can_grant_and_revoke_roles{
     fixture.initialize()
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    access_control.grant_feeder_role(RANDOM_ADDRESS)
+    access_control.grant_lead_contributor_role_for_project(1, RANDOM_ADDRESS)
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.RANDOM_ADDRESS) %}
-    access_control.only_feeder()
+    access_control.only_lead_contributor(1)
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    access_control.revoke_feeder_role(RANDOM_ADDRESS)
-    %{
-        stop_prank() 
-        expect_events(
-            {"name": "RoleGranted", "data": [ids.Role.FEEDER, ids.RANDOM_ADDRESS, ids.ADMIN]},
-            {"name": "RoleRevoked", "data": [ids.Role.FEEDER, ids.RANDOM_ADDRESS, ids.ADMIN]}
-        )
-    %}
+    access_control.revoke_lead_contributor_role_for_project(1, RANDOM_ADDRESS)
+    %{ stop_prank() %}
 
     %{
         stop_prank = start_prank(ids.RANDOM_ADDRESS) 
-        expect_revert(error_message='Contributions: FEEDER role required')
+        expect_revert(error_message='Contributions: LEAD_CONTRIBUTOR role required')
     %}
-    access_control.only_feeder()
+    access_control.only_lead_contributor(1)
     %{ stop_prank() %}
 
     return ()
@@ -181,10 +174,6 @@ namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         access_control.initialize(ADMIN)
 
-        %{ stop_prank = start_prank(ids.ADMIN) %}
-        access_control.grant_feeder_role(FEEDER)
-        %{ stop_prank() %}
-    
         return ()
     end
 end

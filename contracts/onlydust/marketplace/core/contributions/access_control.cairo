@@ -14,7 +14,7 @@ from openzeppelin.access.accesscontrol import AccessControl
 struct Role:
     # Keep ADMIN role first of this list as 0 is the default admin value to manage roles in AccessControl library
     member ADMIN : felt  # can assign/revoke roles
-    member FEEDER : felt  # can interact with all contributions
+    member _UNUSED: felt
     member LEAD_CONTRIBUTOR : felt # can add interact with contributions on its project
 end
 
@@ -53,30 +53,6 @@ namespace access_control:
             internal.assert_not_caller(address)
         end
         AccessControl.revoke_role(Role.ADMIN, address)
-        return ()
-    end
-
-    # Grant the FEEDER role to a given address
-    func grant_feeder_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        address : felt
-    ):
-        AccessControl.grant_role(Role.FEEDER, address)
-        return ()
-    end
-
-    # Revoke the FEEDER role from a given address
-    func revoke_feeder_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        address : felt
-    ):
-        AccessControl.revoke_role(Role.FEEDER, address)
-        return ()
-    end
-
-    func only_feeder{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-        with_attr error_message("Contributions: FEEDER role required"):
-            AccessControl.assert_only_role(Role.FEEDER)
-        end
-
         return ()
     end
 
