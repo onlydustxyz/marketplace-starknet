@@ -9,7 +9,7 @@ from starkware.cairo.common.hash import hash2
 from starkware.starknet.common.syscalls import get_caller_address
 
 from onlydust.stream.default_implementation import stream
-from onlydust.marketplace.core.contributions.access_control import access_control
+from onlydust.marketplace.core.contributions.access_control import access_control, LeadContributorAdded, LeadContributorRemoved
 
 #
 # Enums
@@ -78,14 +78,6 @@ end
 
 @event
 func ContributionGateChanged(contribution_id : felt, gate : felt):
-end
-
-@event
-func LeadContributorAdded(project_id : felt, lead_contributor_account: felt):
-end
-
-@event
-func LeadContributorRemoved(project_id : felt, lead_contributor_account: felt):
 end
 
 #

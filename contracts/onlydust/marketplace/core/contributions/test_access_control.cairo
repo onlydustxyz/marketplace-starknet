@@ -97,9 +97,15 @@ func test_admin_can_grant_and_revoke_roles{
         stop_prank = start_prank(ids.RANDOM_ADDRESS) 
         expect_revert(error_message='Contributions: LEAD_CONTRIBUTOR role required')
     %}
+    
     access_control.only_lead_contributor(1)
-    %{ stop_prank() %}
-
+    %{
+        stop_prank() 
+        expect_events(
+            {"name": "LeadContributorAdded", "data": [1, ids.RANDOM_ADDRESS]},
+            {"name": "LeadContributorRemoved", "data": [1, ids.RANDOM_ADDRESS]}
+        )
+    %}
     return ()
 end
 

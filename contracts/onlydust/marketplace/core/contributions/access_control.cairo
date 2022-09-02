@@ -25,6 +25,14 @@ end
 func has_role_by_project_and_account_(role : felt, project: felt, account: felt) -> (has_role: felt):
 end
 
+@event
+func LeadContributorAdded(project_id : felt, lead_contributor_account: felt):
+end
+
+@event
+func LeadContributorRemoved(project_id : felt, lead_contributor_account: felt):
+end
+
 #
 # Functions
 #
