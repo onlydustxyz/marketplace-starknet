@@ -31,24 +31,3 @@ jobs:
         run: pip install cairo-lang==0.9.1
       - name: Check files formatting
         run: find contracts/ -name "*.cairo" -print0 | xargs -0 echo cairo-format -c
-  static-analysis:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Python setup
-        uses: actions/setup-python@v3
-        with:
-          python-version: '3.8'
-
-      - name: Install Amarna
-        run: git clone https://github.com/crytic/amarna.git && cd amarna && pip install -e .
-
-      - name: Run Amarna static analysis
-        run: amarna contracts/ -o out.sarif
-
-      - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v1
-        with:
-          sarif_file: out.sarif
