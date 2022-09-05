@@ -37,7 +37,7 @@ func LeadContributorRemoved(project_id : felt, lead_contributor_account : felt):
 end
 
 @event
-func ProjectMemberAdded(project_id : felt, contributor_account : felt):
+func ProjectMemberAdded(project_id : felt, contributor_account : felt, contributor_id : Uint256):
 end
 
 #

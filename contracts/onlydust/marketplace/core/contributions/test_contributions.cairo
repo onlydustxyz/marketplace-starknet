@@ -721,15 +721,22 @@ func test_lead_can_add_member_to_project{
 }():
     fixture.initialize()
 
-    let contributor_acount = 'contributor'
+    let contributor_account = 'contributor'
+    tempvar registry_contract = REGISTRY
 
-    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
-    contributions.add_member_for_project(PROJECT_ID, contributor_acount)
-    %{ stop_prank() %}
+    %{
+        stop_mock = mock_call(ids.registry_contract, "get_user_information", [12345, 42, 0, 0])
+        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT)
+    %}
+    contributions.add_member_for_project(PROJECT_ID, contributor_account)
+    %{
+        stop_prank()
+        stop_mock()
+    %}
 
     %{
         expect_events(
-            { "name": "ProjectMemberAdded", "data": { "project_id": ids.PROJECT_ID,  "contributor_account":  ids.contributor_acount }},
+            { "name": "ProjectMemberAdded", "data": { "project_id": ids.PROJECT_ID,  "contributor_account":  ids.contributor_account, "contributor_id": {"low": 42, "high": 0} }},
         )
     %}
     return ()
@@ -738,6 +745,7 @@ end
 namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         contributions.initialize(ADMIN)
+        contributions.set_registry_contract_address(REGISTRY)
         %{ stop_prank = start_prank(ids.ADMIN) %}
         access_control.grant_lead_contributor_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
         %{ stop_prank() %}

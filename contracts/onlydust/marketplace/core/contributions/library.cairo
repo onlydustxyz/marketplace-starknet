@@ -15,6 +15,8 @@ from onlydust.marketplace.core.contributions.access_control import (
     LeadContributorRemoved,
     ProjectMemberAdded,
 )
+from onlydust.marketplace.interfaces.registry import IRegistry
+from onlydust.marketplace.core.registry.library import UserInformation
 
 #
 # Enums
@@ -91,6 +93,10 @@ end
 # Storage
 #
 @storage_var
+func registry_contract_address_() -> (address : felt):
+end
+
+@storage_var
 func contribution_project_id(contribution_id : ContributionId) -> (project_id : felt):
 end
 
@@ -134,6 +140,16 @@ namespace contributions:
     #
     # Write
     #
+
+    func set_registry_contract_address{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(address : felt):
+        with_attr error_message("Contributions: Invalid registry contract address"):
+            assert_not_zero(address)
+        end
+        registry_contract_address_.write(address)
+        return ()
+    end
 
     # Add a contribution for a given token id
     func new_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
@@ -272,6 +288,13 @@ namespace contributions:
     # Read Only
     #
 
+    func registry_contract_address{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }() -> (address : felt):
+        let (address) = registry_contract_address_.read()
+        return (address)
+    end
+
     # Get the contribution details
     func contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         contribution_id : ContributionId
@@ -365,7 +388,16 @@ namespace contributions:
         project_id : felt, contributor_account : felt
     ):
         access_control.grant_member_role_for_project(project_id, contributor_account)
-        ProjectMemberAdded.emit(project_id, contributor_account)
+
+        let (registry_contract) = registry_contract_address()
+        let (user_info : UserInformation) = IRegistry.get_user_information(
+            registry_contract, contributor_account
+        )
+        with_attr error_message("Contributions: Unknown contributor {contributor_account}"):
+            assert_not_zero(user_info.profile_contract)
+        end
+
+        ProjectMemberAdded.emit(project_id, contributor_account, user_info.contributor_id)
         return ()
     end
 end
