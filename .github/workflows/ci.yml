@@ -30,4 +30,4 @@ jobs:
       - name: Install dependencies
         run: pip install cairo-lang==0.9.1
       - name: Check files formatting
-        run: find contracts/ -name "*.cairo" -print0 | xargs -0 echo cairo-format -c
+        run: find contracts/ -name "*.cairo" -print0 | xargs -0 cairo-format -c

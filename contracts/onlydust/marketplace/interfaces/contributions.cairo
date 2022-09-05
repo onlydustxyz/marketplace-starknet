@@ -6,9 +6,9 @@ from onlydust.marketplace.core.contributions.library import Contribution, Contri
 
 @contract_interface
 namespace IContributions:
-    func new_contribution(
-        project_id : felt, issue_number: felt, gate : felt
-    ) -> (contribution : Contribution):
+    func new_contribution(project_id : felt, issue_number : felt, gate : felt) -> (
+        contribution : Contribution
+    ):
     end
 
     func delete_contribution(contribution_id : ContributionId):
@@ -31,7 +31,9 @@ namespace IContributions:
     ):
     end
 
-    func assign_contributor_to_contribution(contribution_id : ContributionId, contributor_id : Uint256):
+    func assign_contributor_to_contribution(
+        contribution_id : ContributionId, contributor_id : Uint256
+    ):
     end
 
     func unassign_contributor_from_contribution(contribution_id : ContributionId):
@@ -49,9 +51,9 @@ namespace IContributions:
     func revoke_admin_role(address : felt):
     end
 
-    func add_lead_contributor_for_project(project_id : felt, lead_contributor_account: felt):
+    func add_lead_contributor_for_project(project_id : felt, lead_contributor_account : felt):
     end
 
-    func remove_lead_contributor_for_project(project_id : felt, lead_contributor_account: felt):
+    func remove_lead_contributor_for_project(project_id : felt, lead_contributor_account : felt):
     end
 end

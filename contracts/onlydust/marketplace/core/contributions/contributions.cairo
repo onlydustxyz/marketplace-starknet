@@ -4,7 +4,11 @@ from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from openzeppelin.upgrades.library import Proxy
 
-from onlydust.marketplace.core.contributions.library import contributions, Contribution, ContributionId
+from onlydust.marketplace.core.contributions.library import (
+    contributions,
+    Contribution,
+    ContributionId,
+)
 from onlydust.marketplace.core.contributions.access_control import access_control
 
 # DO NOT REMOVE THOSE IMPORTS
@@ -100,20 +104,16 @@ end
 
 @external
 func new_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    project_id : felt, issue_number: felt, gate : felt 
+    project_id : felt, issue_number : felt, gate : felt
 ) -> (contribution : Contribution):
-    return contributions.new_contribution(
-        project_id, issue_number, gate 
-    )
+    return contributions.new_contribution(project_id, issue_number, gate)
 end
 
 @external
 func delete_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     contribution_id : ContributionId
 ):
-    return contributions.delete_contribution(
-        contribution_id
-    )
+    return contributions.delete_contribution(contribution_id)
 end
 
 @external
@@ -145,16 +145,15 @@ func modify_gate{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_p
 end
 
 @external
-func add_lead_contributor_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    project_id : felt, lead_contributor_account: felt
-):
+func add_lead_contributor_for_project{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}(project_id : felt, lead_contributor_account : felt):
     return contributions.add_lead_contributor_for_project(project_id, lead_contributor_account)
 end
 
 @external
-func remove_lead_contributor_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    project_id : felt, lead_contributor_account: felt
-):
+func remove_lead_contributor_for_project{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}(project_id : felt, lead_contributor_account : felt):
     return contributions.remove_lead_contributor_for_project(project_id, lead_contributor_account)
 end
-

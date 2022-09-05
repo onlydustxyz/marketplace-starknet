@@ -14,23 +14,25 @@ from openzeppelin.access.accesscontrol import AccessControl
 struct Role:
     # Keep ADMIN role first of this list as 0 is the default admin value to manage roles in AccessControl library
     member ADMIN : felt  # can assign/revoke roles
-    member _UNUSED: felt
-    member LEAD_CONTRIBUTOR : felt # can add interact with contributions on its project
+    member _UNUSED : felt
+    member LEAD_CONTRIBUTOR : felt  # can add interact with contributions on its project
 end
 
 #
 # Storage
 #
 @storage_var
-func has_role_by_project_and_account_(role : felt, project: felt, account: felt) -> (has_role: felt):
+func has_role_by_project_and_account_(role : felt, project : felt, account : felt) -> (
+    has_role : felt
+):
 end
 
 @event
-func LeadContributorAdded(project_id : felt, lead_contributor_account: felt):
+func LeadContributorAdded(project_id : felt, lead_contributor_account : felt):
 end
 
 @event
-func LeadContributorRemoved(project_id : felt, lead_contributor_account: felt):
+func LeadContributorRemoved(project_id : felt, lead_contributor_account : felt):
 end
 
 #
@@ -72,22 +74,29 @@ namespace access_control:
         return ()
     end
 
-    func grant_lead_contributor_role_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        project_id : felt, lead_contributor_account: felt):
+    func grant_lead_contributor_role_for_project{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(project_id : felt, lead_contributor_account : felt):
         only_admin()
-        has_role_by_project_and_account_.write(Role.LEAD_CONTRIBUTOR, project_id, lead_contributor_account, TRUE)
+        has_role_by_project_and_account_.write(
+            Role.LEAD_CONTRIBUTOR, project_id, lead_contributor_account, TRUE
+        )
         return ()
     end
 
-    func revoke_lead_contributor_role_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        project_id : felt, lead_contributor_account: felt):
+    func revoke_lead_contributor_role_for_project{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(project_id : felt, lead_contributor_account : felt):
         only_admin()
-        has_role_by_project_and_account_.write(Role.LEAD_CONTRIBUTOR, project_id, lead_contributor_account, FALSE)
+        has_role_by_project_and_account_.write(
+            Role.LEAD_CONTRIBUTOR, project_id, lead_contributor_account, FALSE
+        )
         return ()
     end
 
     func only_lead_contributor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        project_id : felt):
+        project_id : felt
+    ):
         alloc_locals
 
         let (caller_address) = get_caller_address()
@@ -96,8 +105,8 @@ namespace access_control:
         with_attr error_message("Contributions: LEAD_CONTRIBUTOR role required"):
             assert_not_zero(is_lead_contributor)
         end
-        
-        return()
+
+        return ()
     end
 end
 
@@ -108,8 +117,12 @@ namespace internal:
         return ()
     end
 
-    func is_lead_contributor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(project_id : felt, account: felt) -> (is_lead_contributor : felt):
-        let (is_member) = has_role_by_project_and_account_.read(Role.LEAD_CONTRIBUTOR, project_id, account)
+    func is_lead_contributor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        project_id : felt, account : felt
+    ) -> (is_lead_contributor : felt):
+        let (is_member) = has_role_by_project_and_account_.read(
+            Role.LEAD_CONTRIBUTOR, project_id, account
+        )
         return (is_member)
     end
 end

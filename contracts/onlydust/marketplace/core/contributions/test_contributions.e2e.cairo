@@ -4,11 +4,11 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
 from onlydust.marketplace.interfaces.contributions import IContributions
-from onlydust.marketplace.core.contributions.library import Contribution, Status, ContributionId 
+from onlydust.marketplace.core.contributions.library import Contribution, Status, ContributionId
 from onlydust.marketplace.test.libraries.contributions import assert_contribution_that
 
 const ADMIN = 'admin'
-const LEAD_CONTRIBUTOR_ACCOUNT = 'LeadContributor' 
+const LEAD_CONTRIBUTOR_ACCOUNT = 'LeadContributor'
 const PROJECT_ID = 'MyProject'
 
 #
@@ -22,7 +22,9 @@ func __setup__{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
         ids.contributions_contract = context.contributions_contract
         stop_prank = start_prank(ids.ADMIN, ids.contributions_contract)
     %}
-    IContributions.add_lead_contributor_for_project(contributions_contract, PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
+    IContributions.add_lead_contributor_for_project(
+        contributions_contract, PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT
+    )
     %{ stop_prank() %}
     return ()
 end
@@ -34,7 +36,7 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
     let CONTRIBUTOR_ID = Uint256(12, 0)
 
     let UNASSIGNED_CONTRIBUTION_ID = ContributionId(1)
-    let VALIDATED_CONTRIBUTION_ID =  ContributionId(2)
+    let VALIDATED_CONTRIBUTION_ID = ContributionId(2)
 
     # Create two contributions and assign them a contibutor
     with contributions:
@@ -113,7 +115,6 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
         assert_contribution_that.status_is(Status.OPEN)
     end
 
-
     # Check validate contribution works
     with contributions:
         contributions_access.validate_contribution(VALIDATED_CONTRIBUTION_ID)
@@ -125,8 +126,8 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
         assert_contribution_that.project_id_is(PROJECT_ID)
         assert_contribution_that.status_is(Status.COMPLETED)
     end
-    
-    #Check delete contribution works
+
+    # Check delete contribution works
     with contributions:
         contributions_access.delete_contribution(UNASSIGNED_CONTRIBUTION_ID)
         let (contribution) = contributions_access.contribution(UNASSIGNED_CONTRIBUTION_ID)
@@ -136,7 +137,7 @@ func test_contributions_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
         assert_contribution_that.status_is(Status.NONE)
     end
 
-    # Check open contribution deleted 
+    # Check open contribution deleted
     with contributions:
         let (contribs_len, contribs) = contributions_access.all_open_contributions()
     end
@@ -158,31 +159,18 @@ namespace contributions_access:
 
     func new_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(
-        contribution_id : felt,
-        project_id : felt,
-        gate : felt,
-    ):
+    }(contribution_id : felt, project_id : felt, gate : felt):
         %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
-        IContributions.new_contribution(
-            contributions,
-            contribution_id,
-            project_id,
-            gate,
-        )
+        IContributions.new_contribution(contributions, contribution_id, project_id, gate)
         %{ stop_prank() %}
         return ()
     end
 
     func delete_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(
-        contribution_id : ContributionId
-    ):
+    }(contribution_id : ContributionId):
         %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
-        IContributions.delete_contribution(
-            contributions, contribution_id
-        )
+        IContributions.delete_contribution(contributions, contribution_id)
         %{ stop_prank() %}
         return ()
     end
