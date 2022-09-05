@@ -16,6 +16,7 @@ struct Role:
     member ADMIN : felt  # can assign/revoke roles
     member _UNUSED : felt
     member LEAD_CONTRIBUTOR : felt  # can add interact with contributions on its project
+    member PROJECT_MEMBER : felt  # can claim contributions directly (no need to be assigned by the lead contributor)
 end
 
 #
@@ -33,6 +34,10 @@ end
 
 @event
 func LeadContributorRemoved(project_id : felt, lead_contributor_account : felt):
+end
+
+@event
+func ProjectMemberAdded(project_id : felt, contributor_account : felt):
 end
 
 #
@@ -108,6 +113,16 @@ namespace access_control:
 
         return ()
     end
+
+    func grant_member_role_for_project{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(project_id : felt, contributor_account : felt):
+        only_lead_contributor(project_id)
+        has_role_by_project_and_account_.write(
+            Role.PROJECT_MEMBER, project_id, contributor_account, TRUE
+        )
+        return ()
+    end
 end
 
 namespace internal:
@@ -120,9 +135,9 @@ namespace internal:
     func is_lead_contributor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         project_id : felt, account : felt
     ) -> (is_lead_contributor : felt):
-        let (is_member) = has_role_by_project_and_account_.read(
+        let (is_lead_contributor) = has_role_by_project_and_account_.read(
             Role.LEAD_CONTRIBUTOR, project_id, account
         )
-        return (is_member)
+        return (is_lead_contributor)
     end
 end

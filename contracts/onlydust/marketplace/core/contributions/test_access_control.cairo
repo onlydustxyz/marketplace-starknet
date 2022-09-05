@@ -5,6 +5,7 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from onlydust.marketplace.core.contributions.access_control import access_control, Role
 
 const ADMIN = 'admin'
+const LEAD_CONTRIBUTOR_ACCOUNT = 'lead_contributor'
 const PROJECT_ID = 'MyProject'
 const RANDOM_ADDRESS = 'rand'
 
@@ -113,16 +114,16 @@ end
 func test_only_admin_can_grant_lead_contributor_role{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
-    let LEAD_CONTRIBUTOR_ACCOUNT = 'lead_contributor'
+    let NEW_LEAD_CONTRIBUTOR_ACCOUNT = 'lead_contributor'
 
     fixture.initialize()
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    access_control.grant_lead_contributor_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
+    access_control.grant_lead_contributor_role_for_project(PROJECT_ID, NEW_LEAD_CONTRIBUTOR_ACCOUNT)
     %{ stop_prank() %}
 
     %{ expect_revert(error_message="Contributions: ADMIN role required") %}
-    access_control.grant_lead_contributor_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
+    access_control.grant_lead_contributor_role_for_project(PROJECT_ID, NEW_LEAD_CONTRIBUTOR_ACCOUNT)
 
     return ()
 end
@@ -131,16 +132,20 @@ end
 func test_only_admin_can_revoke_lead_contributor_role{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
-    let LEAD_CONTRIBUTOR_ACCOUNT = 'lead_contributor'
+    let NEW_LEAD_CONTRIBUTOR_ACCOUNT = 'lead_contributor'
 
     fixture.initialize()
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    access_control.revoke_lead_contributor_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
+    access_control.revoke_lead_contributor_role_for_project(
+        PROJECT_ID, NEW_LEAD_CONTRIBUTOR_ACCOUNT
+    )
     %{ stop_prank() %}
 
     %{ expect_revert(error_message="Contributions: ADMIN role required") %}
-    access_control.revoke_lead_contributor_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
+    access_control.revoke_lead_contributor_role_for_project(
+        PROJECT_ID, NEW_LEAD_CONTRIBUTOR_ACCOUNT
+    )
 
     return ()
 end
@@ -151,22 +156,24 @@ func test_only_lead_contributor_revert_if_no_permission{
 }():
     fixture.initialize()
 
-    const LEAD_CONTRIBUTOR_ACCOUNT = 'lead_contributor'
+    const NEW_LEAD_CONTRIBUTOR_ACCOUNT = 'lead_contributor'
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    access_control.grant_lead_contributor_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
+    access_control.grant_lead_contributor_role_for_project(PROJECT_ID, NEW_LEAD_CONTRIBUTOR_ACCOUNT)
     %{ stop_prank() %}
 
-    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
+    %{ stop_prank = start_prank(ids.NEW_LEAD_CONTRIBUTOR_ACCOUNT) %}
     access_control.only_lead_contributor(PROJECT_ID)
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    access_control.revoke_lead_contributor_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
+    access_control.revoke_lead_contributor_role_for_project(
+        PROJECT_ID, NEW_LEAD_CONTRIBUTOR_ACCOUNT
+    )
     %{ stop_prank() %}
 
     %{
-        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT)
+        stop_prank = start_prank(ids.NEW_LEAD_CONTRIBUTOR_ACCOUNT)
         expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role required")
     %}
     access_control.only_lead_contributor(PROJECT_ID)
@@ -175,10 +182,38 @@ func test_only_lead_contributor_revert_if_no_permission{
     return ()
 end
 
+@view
+func test_only_lead_contributor_can_grant_member_role{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize_with_lead_contributor()
+
+    const NEW_PROJECT_MEMBER = 'member'
+
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
+    access_control.grant_member_role_for_project(PROJECT_ID, NEW_PROJECT_MEMBER)
+    %{ stop_prank() %}
+
+    %{ expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role required") %}
+    access_control.grant_member_role_for_project(PROJECT_ID, NEW_PROJECT_MEMBER)
+
+    return ()
+end
+
 namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         access_control.initialize(ADMIN)
 
+        return ()
+    end
+
+    func initialize_with_lead_contributor{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }():
+        access_control.initialize(ADMIN)
+        %{ stop_prank = start_prank(ids.ADMIN) %}
+        access_control.grant_lead_contributor_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
+        %{ stop_prank() %}
         return ()
     end
 end
