@@ -2,7 +2,7 @@
 
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from onlydust.marketplace.core.contributions.access_control import (access_control, Role)
+from onlydust.marketplace.core.contributions.access_control import access_control, Role
 
 const ADMIN = 'admin'
 const PROJECT_ID = 'MyProject'
@@ -97,7 +97,7 @@ func test_admin_can_grant_and_revoke_roles{
         stop_prank = start_prank(ids.RANDOM_ADDRESS) 
         expect_revert(error_message='Contributions: LEAD_CONTRIBUTOR role required')
     %}
-    
+
     access_control.only_lead_contributor(1)
     %{
         stop_prank() 
@@ -144,7 +144,6 @@ func test_only_admin_can_revoke_lead_contributor_role{
 
     return ()
 end
-
 
 @view
 func test_only_lead_contributor_revert_if_no_permission{

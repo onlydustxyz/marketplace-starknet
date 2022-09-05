@@ -40,7 +40,9 @@ func __setup__{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
     IRegistry.set_profile_contract(registry, profile_contract)
     IRegistry.grant_registerer_role(registry, REGISTERER)
     IProfile.grant_minter_role(profile_contract, registry)
-    IContributions.add_lead_contributor_for_project(contributions_contract, PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
+    IContributions.add_lead_contributor_for_project(
+        contributions_contract, PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT
+    )
     %{ [stop_prank() for stop_prank in stop_pranks] %}
 
     return ()
@@ -125,18 +127,9 @@ namespace contributions_access:
 
     func new_contribution{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(
-        project_id : felt,
-        issue_number: felt,
-        gate : felt,
-    ):
+    }(project_id : felt, issue_number : felt, gate : felt):
         %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
-        IContributions.new_contribution(
-            contributions,
-            project_id,
-            issue_number,
-            gate,
-        )
+        IContributions.new_contribution(contributions, project_id, issue_number, gate)
         %{ stop_prank() %}
         return ()
     end

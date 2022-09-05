@@ -28,7 +28,7 @@ func test_lead_contributor_can_be_added_and_removed{
     contributions.remove_lead_contributor_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
     %{ stop_prank() %}
 
-    %{ 
+    %{
         expect_events(
             { "name": "LeadContributorAdded", "data": { "project_id": ids.PROJECT_ID,  "lead_contributor_account":  ids.LEAD_CONTRIBUTOR_ACCOUNT }},
             { "name": "LeadContributorRemoved", "data": { "project_id": ids.PROJECT_ID,  "lead_contributor_account": ids.LEAD_CONTRIBUTOR_ACCOUNT }},
@@ -39,7 +39,7 @@ func test_lead_contributor_can_be_added_and_removed{
 end
 
 @view
-func lead_can_test_new_contribution_can_be_added {
+func lead_can_test_new_contribution_can_be_added{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     alloc_locals
@@ -69,16 +69,17 @@ func lead_can_test_new_contribution_can_be_added {
         assert_contribution_that.status_is(Status.OPEN)
     end
 
-    %{ expect_events(
-        {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
-        {"name": "ContributionCreated", "data": {"contribution_id": 2, "project_id": ids.PROJECT_ID,  "issue_number": 2, "gate": 0}},
-    )%}
+    %{
+        expect_events(
+               {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
+               {"name": "ContributionCreated", "data": {"contribution_id": 2, "project_id": ids.PROJECT_ID,  "issue_number": 2, "gate": 0}},
+           )
+    %}
     return ()
 end
 
-
 @view
-func test_new_contribution_can_be_added_by_lead_contributor {
+func test_new_contribution_can_be_added_by_lead_contributor{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     alloc_locals
@@ -104,7 +105,7 @@ func test_same_contribution_cannot_be_added_twice{
 
     fixture.initialize()
 
-    %{ 
+    %{
         stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT)
         expect_revert(error_message="Contributions: Contribution already exist")
     %}
@@ -133,9 +134,11 @@ func test_feeder_can_delete_contribution{
         assert_contribution_that.status_is(Status.NONE)
     end
 
-    %{ expect_events(
-        {"name": "ContributionDeleted", "data": {"contribution_id": 1}}
-    )%}
+    %{
+        expect_events(
+               {"name": "ContributionDeleted", "data": {"contribution_id": 1}}
+           )
+    %}
 
     return ()
 end
@@ -152,9 +155,7 @@ func test_anyone_cannot_delete_contribution{
     let (local contribution1) = contributions.new_contribution(PROJECT_ID, 1, 0)
     %{ stop_prank() %}
 
-    %{
-        expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role required")
-    %}
+    %{ expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role required") %}
     contributions.delete_contribution(contribution1.id)
 
     return ()
@@ -174,9 +175,7 @@ func test_only_open_delete_contribution{
     let (local contribution1) = contributions.new_contribution(PROJECT_ID, 1, 0)
     %{ stop_prank() %}
 
-    %{
-        expect_revert(error_message="Contributions: Contribution is not OPEN")
-    %}
+    %{ expect_revert(error_message="Contributions: Contribution is not OPEN") %}
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     # set status to ASSIGNED
@@ -207,10 +206,12 @@ func test_lead_can_assign_contribution_to_contributor{
         assert_contribution_that.contributor_is(contributor_id)
     end
 
-    %{ expect_events(
-        {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": 1, "high": 0}}},
-    )%}
+    %{
+        expect_events(
+               {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
+               {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": 1, "high": 0}}},
+           )
+    %}
     return ()
 end
 
@@ -387,11 +388,13 @@ func test_lead_can_unassign_contribution_from_contributor{
         assert_contribution_that.contributor_is(Uint256(0, 0))
     end
 
-    %{ expect_events(
-        {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID, "issue_number": 1, "gate": 0}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": 1, "high": 0}}},
-        {"name": "ContributionUnassigned", "data": {"contribution_id": 1}},
-    )%}
+    %{
+        expect_events(
+               {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID, "issue_number": 1, "gate": 0}},
+               {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": 1, "high": 0}}},
+               {"name": "ContributionUnassigned", "data": {"contribution_id": 1}},
+           )
+    %}
 
     return ()
 end
@@ -473,11 +476,13 @@ func test_lead_can_validate_assigned_contribution{
         assert_contribution_that.status_is(Status.COMPLETED)
     end
 
-    %{ expect_events(
-        {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
-        {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": 1, "high": 0}}},
-        {"name": "ContributionValidated", "data": {"contribution_id": 1}},
-    )%}
+    %{
+        expect_events(
+               {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
+               {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": 1, "high": 0}}},
+               {"name": "ContributionValidated", "data": {"contribution_id": 1}},
+           )
+    %}
 
     return ()
 end
@@ -539,9 +544,7 @@ func test_cannot_validate_contribution_if_not_assigned{
 end
 
 @view
-func test_lead_can_modify_gate{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-}():
+func test_lead_can_modify_gate{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
     fixture.initialize()
 
     let contribution_id = ContributionId(1)
@@ -558,10 +561,12 @@ func test_lead_can_modify_gate{
         assert_contribution_that.gate_is(3)
     end
 
-    %{ expect_events(
-        {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
-        {"name": "ContributionGateChanged", "data": {"contribution_id": 1, "gate": 3}},
-    )%}
+    %{
+        expect_events(
+               {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
+               {"name": "ContributionGateChanged", "data": {"contribution_id": 1, "gate": 3}},
+           )
+    %}
 
     return ()
 end
@@ -578,7 +583,7 @@ func test_anyone_cannot_modify_gate{
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(PROJECT_ID, 1, 0)
-    %{ 
+    %{
         stop_prank ()
         expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role require")
     %}

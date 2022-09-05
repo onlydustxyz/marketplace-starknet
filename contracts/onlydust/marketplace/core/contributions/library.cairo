@@ -9,7 +9,11 @@ from starkware.cairo.common.hash import hash2
 from starkware.starknet.common.syscalls import get_caller_address
 
 from onlydust.stream.default_implementation import stream
-from onlydust.marketplace.core.contributions.access_control import access_control, LeadContributorAdded, LeadContributorRemoved
+from onlydust.marketplace.core.contributions.access_control import (
+    access_control,
+    LeadContributorAdded,
+    LeadContributorRemoved,
+)
 
 #
 # Enums
@@ -42,7 +46,7 @@ struct DeprecatedContribution:
 end
 
 struct ContributionId:
-    member inner: felt
+    member inner : felt
 end
 
 struct Contribution:
@@ -57,15 +61,17 @@ end
 # Events
 #
 @event
-func ContributionCreated(contribution_id: felt, project_id: felt, issue_number: felt, gate: felt):
+func ContributionCreated(
+    contribution_id : felt, project_id : felt, issue_number : felt, gate : felt
+):
 end
 
 @event
-func ContributionDeleted(contribution_id: felt):
+func ContributionDeleted(contribution_id : felt):
 end
 
 @event
-func ContributionAssigned(contribution_id: felt, contributor_id: Uint256):
+func ContributionAssigned(contribution_id : felt, contributor_id : Uint256):
 end
 
 @event
@@ -108,9 +114,10 @@ func past_contributions_(contributor_id : Uint256) -> (contribution_count : felt
 end
 
 @storage_var
-func github_ids_to_contribution_id(project_id : felt, issue_numer : felt) -> (contribution_id : ContributionId):
+func github_ids_to_contribution_id(project_id : felt, issue_numer : felt) -> (
+    contribution_id : ContributionId
+):
 end
-
 
 #
 # Functions
@@ -129,7 +136,7 @@ namespace contributions:
 
     # Add a contribution for a given token id
     func new_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        project_id : felt, issue_number: felt, gate: felt
+        project_id : felt, issue_number : felt, gate : felt
     ) -> (contribution : Contribution):
         alloc_locals
 
@@ -141,7 +148,7 @@ namespace contributions:
             assert 0 = gate_sign * (1 - gate_sign)
             assert_nn(gate)
         end
-        
+
         github_access.only_new(project_id, issue_number)
 
         let (contribution_count) = contribution_count_.read()
@@ -154,23 +161,17 @@ namespace contributions:
         contribution_project_id.write(id, project_id)
         contribution_count_.write(new_count)
         github_ids_to_contribution_id.write(project_id, issue_number, id)
-        
+
         ContributionCreated.emit(new_count, project_id, issue_number, gate)
-        
-        let contribution = Contribution(
-            id,
-            project_id,
-            Status.OPEN,
-            gate,
-            Uint256(0, 0),
-        )
+
+        let contribution = Contribution(id, project_id, Status.OPEN, gate, Uint256(0, 0))
 
         return (contribution)
     end
 
     # Delete a contribution for a given contribution_id
     func delete_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        contribution_id : ContributionId 
+        contribution_id : ContributionId
     ):
         let (project_id) = project_access.find_contribution_project(contribution_id)
         access_control.only_lead_contributor(project_id)
@@ -192,10 +193,10 @@ namespace contributions:
     }(contribution_id : ContributionId, contributor_id : Uint256):
         let (project_id) = project_access.find_contribution_project(contribution_id)
         access_control.only_lead_contributor(project_id)
-        
+
         status_access.only_open(contribution_id)
         gating.assert_contributor_is_eligible(contribution_id, contributor_id)
-        
+
         # Update storage
         contribution_status_.write(contribution_id, Status.ASSIGNED)
         contribution_contributor_.write(contribution_id, contributor_id)
@@ -213,7 +214,7 @@ namespace contributions:
         let (project_id) = project_access.find_contribution_project(contribution_id)
         access_control.only_lead_contributor(project_id)
 
-       status_access.only_assigned(contribution_id) 
+        status_access.only_assigned(contribution_id)
 
         # Update storage
         contribution_contributor_.write(contribution_id, Uint256(0, 0))
@@ -232,12 +233,12 @@ namespace contributions:
         let (project_id) = project_access.find_contribution_project(contribution_id)
         access_control.only_lead_contributor(project_id)
 
-        status_access.only_assigned(contribution_id) 
-        
+        status_access.only_assigned(contribution_id)
+
         # Update storage
         contribution_status_.write(contribution_id, Status.COMPLETED)
 
-        # Increase contributor contribution_count 
+        # Increase contributor contribution_count
         let (contributor_id) = contribution_contributor_.read(contribution_id)
         let (past_contributions) = past_contributions_.read(contributor_id)
         past_contributions_.write(contributor_id, past_contributions + 1)
@@ -255,14 +256,14 @@ namespace contributions:
         let (project_id) = project_access.find_contribution_project(contribution_id)
         access_control.only_lead_contributor(project_id)
 
-        status_access.only_open(contribution_id) 
-        
+        status_access.only_open(contribution_id)
+
         # Update storage
         contribution_gate_.write(contribution_id, gate)
 
         # Emit event
         ContributionGateChanged.emit(contribution_id.inner, gate)
-        
+
         return ()
     end
 
@@ -341,75 +342,74 @@ namespace contributions:
         return (contributions_len, contributions)
     end
 
-    func add_lead_contributor_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        project_id : felt, lead_contributor_account: felt 
-    ):
+    func add_lead_contributor_for_project{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(project_id : felt, lead_contributor_account : felt):
         access_control.grant_lead_contributor_role_for_project(project_id, lead_contributor_account)
         LeadContributorAdded.emit(project_id, lead_contributor_account)
         return ()
     end
 
-    func remove_lead_contributor_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        project_id : felt, lead_contributor_account: felt
-    ):
-        access_control.revoke_lead_contributor_role_for_project(project_id, lead_contributor_account)
+    func remove_lead_contributor_for_project{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(project_id : felt, lead_contributor_account : felt):
+        access_control.revoke_lead_contributor_role_for_project(
+            project_id, lead_contributor_account
+        )
         LeadContributorRemoved.emit(project_id, lead_contributor_account)
         return ()
     end
-
 end
 
 namespace project_access:
-    func assert_project_id_is_valid{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(project_id: felt):
+    func assert_project_id_is_valid{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(project_id : felt):
         with_attr error_message("Contributions: Invalid project ID ({project_id})"):
             assert_nn(project_id)
             assert_not_zero(project_id)
         end
         return ()
     end
-    
-    func find_contribution_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(contribution_id: ContributionId) -> (project_id: felt):
+
+    func find_contribution_project{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(contribution_id : ContributionId) -> (project_id : felt):
         let (project_id) = contribution_project_id.read(contribution_id)
         with_attr error_message("Contributions: Contribution does not exist"):
             assert_not_zero(project_id)
         end
 
-        return (project_id) 
+        return (project_id)
     end
 end
 
 namespace gating:
     func is_contributor_eligible{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        gate: felt, contributor_id : Uint256
+        gate : felt, contributor_id : Uint256
     ) -> (result : felt):
         alloc_locals
         let (past_contribution_count) = past_contributions_.read(contributor_id)
         let (result) = is_le(gate, past_contribution_count)
         return (result=result)
     end
-    
-     func assert_contributor_is_eligible{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-    }(
-        contribution_id: ContributionId, contributor_id : Uint256
-    ):
+
+    func assert_contributor_is_eligible{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(contribution_id : ContributionId, contributor_id : Uint256):
         let (gate) = contribution_gate_.read(contribution_id)
         let (is_eligible) = is_contributor_eligible(gate, contributor_id)
         with_attr error_message("Contributions: Contributor is not eligible"):
             assert 1 = is_eligible
         end
         return ()
-    end    
+    end
 end
 
 namespace github_access:
-    func only_new{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-    }(project_id: felt, issue_number: felt):
+    func only_new{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        project_id : felt, issue_number : felt
+    ):
         let (id) = github_ids_to_contribution_id.read(project_id, issue_number)
         let inner = id.inner
         with_attr error_message("Contributions: Contribution already exist with id {id}"):
@@ -417,15 +417,12 @@ namespace github_access:
         end
         return ()
     end
-    
 end
 
 namespace status_access:
-    func only_open{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-    }(contribution_id : ContributionId):
+    func only_open{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contribution_id : ContributionId
+    ):
         alloc_locals
         let (status) = contribution_status_.read(contribution_id)
         internal.status_is_not_none(status)
@@ -434,12 +431,10 @@ namespace status_access:
         end
         return ()
     end
-    
-    func only_assigned{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-    }(contribution_id : ContributionId):
+
+    func only_assigned{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contribution_id : ContributionId
+    ):
         alloc_locals
         let (status) = contribution_status_.read(contribution_id)
         internal.status_is_not_none(status)
@@ -448,32 +443,23 @@ namespace status_access:
         end
         return ()
     end
-    
 end
 
 namespace contribution_access:
-    func build{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-    }(contribution_id : ContributionId) -> (contribution: Contribution):
+    func build{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contribution_id : ContributionId
+    ) -> (contribution : Contribution):
         let (status) = contribution_status_.read(contribution_id)
         let (gate) = contribution_gate_.read(contribution_id)
         let (contributor) = contribution_contributor_.read(contribution_id)
         let (project_id) = contribution_project_id.read(contribution_id)
-        
-        let contribution = Contribution(
-            contribution_id,
-            project_id,
-            status,
-            gate,
-            contributor
-        )
+
+        let contribution = Contribution(contribution_id, project_id, status, gate, contributor)
         return (contribution)
     end
 
     func is_open{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        contribution: Contribution* 
+        contribution : Contribution*
     ) -> (is_open : felt):
         if contribution.status == Status.OPEN:
             return (is_open=1)
@@ -483,7 +469,7 @@ namespace contribution_access:
 end
 
 namespace internal:
-    func status_is_not_none(status: felt):
+    func status_is_not_none(status : felt):
         with_attr error_message("Contributions: Contribution does not exist"):
             assert_not_zero(status)
         end
@@ -551,7 +537,7 @@ namespace internal:
         let (contributions_len) = fetch_contribution_eligible_to_loop(
             contribution_index - 1, contributions, contributor_id
         )
-        
+
         let contribution_id = ContributionId(contribution_index)
 
         let (contribution) = contribution_access.build(contribution_id)
