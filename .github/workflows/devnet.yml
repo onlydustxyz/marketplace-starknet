@@ -51,13 +51,13 @@ jobs:
         working-directory: onlydust-starknet-accounts
         run: |
           ./scripts/deploy-e2e-tests-devnet.sh
-          [ -f $GITHUB_WORKSPACE/scripts/.env.local ] && rm $GITHUB_WORKSPACE/scripts/.env.local
-          cp ./build/deployed_accounts.txt $GITHUB_WORKSPACE/scripts/.env.local
-          cat $GITHUB_WORKSPACE/scripts/.env.local
+          [ -f $GITHUB_WORKSPACE/scripts/configuration/.env.local ] && rm $GITHUB_WORKSPACE/scripts/configuration/.env.local
+          cp ./build/deployed_accounts.txt $GITHUB_WORKSPACE/scripts/configuration/.env.local
+          cat $GITHUB_WORKSPACE/scripts/configuration/.env.local
 
       - name: Deploy smart contracts
         run: |
-          [ -f ./build/deployed_contracts_local.txt ] && rm ./build/deployed_contracts_local.txt
+          [ -f $GITHUB_WORKSPACE/scripts/configuration/deployed_contracts_local.txt ] && rm $GITHUB_WORKSPACE/scripts/configuration/deployed_contracts_local.txt
           ./scripts/deploy.sh -a local_admin -p local -y
 
       - name: Create devnet dump
@@ -80,4 +80,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: devnet-contracts-artifact
-          path: ./build/deployed_contracts_local.txt
+          path: ./scripts/configuration/deployed_contracts_local.txt

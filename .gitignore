@@ -8,6 +8,7 @@ env
 venv
 .idea
 logs.json
+deployed_contracts_local.txt
 
 # vscode
 .vscode

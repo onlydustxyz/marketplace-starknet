@@ -3,7 +3,7 @@
 ### CONSTANTS
 SCRIPT_DIR=`readlink -f $0 | xargs dirname`
 ROOT=`readlink -f $SCRIPT_DIR/..`
-CACHE_FILE_BASE=$ROOT/build/deployed_contracts
+CACHE_FILE_BASE=$ROOT/scripts/configuration/deployed_contracts
 STARKNET_ACCOUNTS_FILE=$HOME/.starknet_accounts/starknet_open_zeppelin_accounts.json
 PROTOSTAR_TOML_FILE=$ROOT/protostar.toml
 STARKNET_VERSION="0.9.1"
@@ -268,7 +268,7 @@ export STARKNET_WALLET=starkware.starknet.wallets.open_zeppelin.OpenZeppelinAcco
 [ -z "$PROFILE" ] && exit_error "Profile is mandatory (use -p option)"
 
 CACHE_FILE="${CACHE_FILE_BASE}_$PROFILE.txt"
-source "./scripts/.env.$PROFILE"
+source "./scripts/configuration/.env.$PROFILE"
 
 ADMIN_ADDRESS=`get_account_address $ADMIN_ACCOUNT`
 [ -z $ADMIN_ADDRESS ] && exit_error "Unable to determine account address"
