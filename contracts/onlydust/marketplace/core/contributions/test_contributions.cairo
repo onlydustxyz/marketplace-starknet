@@ -715,6 +715,26 @@ func test_anyone_can_list_contributions_eligible_to_contributor{
     return ()
 end
 
+@view
+func test_lead_can_add_member_to_project{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+
+    let contributor_acount = 'contributor'
+
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
+    contributions.add_member_for_project(PROJECT_ID, contributor_acount)
+    %{ stop_prank() %}
+
+    %{
+        expect_events(
+            { "name": "ProjectMemberAdded", "data": { "project_id": ids.PROJECT_ID,  "contributor_account":  ids.contributor_acount }},
+        )
+    %}
+    return ()
+end
+
 namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         contributions.initialize(ADMIN)
