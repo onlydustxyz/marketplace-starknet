@@ -30,7 +30,7 @@ func __setup__{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
     %{
         ids.registry = deploy_contract("./contracts/onlydust/marketplace/core/registry/registry.cairo", [ids.ADMIN]).contract_address 
         ids.profile_contract = deploy_contract("./contracts/onlydust/marketplace/core/profile/profile.cairo", [ids.ADMIN]).contract_address 
-        ids.contributions_contract = deploy_contract("./contracts/onlydust/marketplace/core/contributions/contributions.cairo", [ids.ADMIN]).contract_address 
+        ids.contributions_contract = deploy_contract("./contracts/onlydust/marketplace/core/contributions/contributions.cairo", [ids.ADMIN, ids.registry]).contract_address 
 
         context.registry = ids.registry
         context.contributions_contract = ids.contributions_contract

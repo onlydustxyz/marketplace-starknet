@@ -4,10 +4,12 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
 from onlydust.marketplace.interfaces.contributions import IContributions
+from onlydust.marketplace.interfaces.registry import IRegistry
 from onlydust.marketplace.core.contributions.library import Contribution, Status, ContributionId
 from onlydust.marketplace.test.libraries.contributions import assert_contribution_that
 
 const ADMIN = 'admin'
+const REGISTRY = 'registry'
 const LEAD_CONTRIBUTOR_ACCOUNT = 'LeadContributor'
 const PROJECT_ID = 'MyProject'
 
@@ -18,7 +20,7 @@ const PROJECT_ID = 'MyProject'
 func __setup__{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
     tempvar contributions_contract
     %{
-        context.contributions_contract = deploy_contract("./contracts/onlydust/marketplace/core/contributions/contributions.cairo", [ids.ADMIN]).contract_address
+        context.contributions_contract = deploy_contract("./contracts/onlydust/marketplace/core/contributions/contributions.cairo", [ids.ADMIN, ids.REGISTRY]).contract_address
         ids.contributions_contract = context.contributions_contract
         stop_prank = start_prank(ids.ADMIN, ids.contributions_contract)
     %}

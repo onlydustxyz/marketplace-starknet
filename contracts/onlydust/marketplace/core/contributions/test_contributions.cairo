@@ -742,10 +742,41 @@ func test_lead_can_add_member_to_project{
     return ()
 end
 
+@view
+func test_get_registry_contract{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    ):
+    fixture.initialize()
+
+    let (address) = contributions.registry_contract_address()
+    assert REGISTRY = address
+
+    return ()
+end
+
+@view
+func test_only_admin_can_set_registry_contract{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize()
+    const NEW_REGISTRY = 'new-registry'
+
+    %{ stop_prank = start_prank(ids.ADMIN) %}
+    contributions.set_registry_contract_address(NEW_REGISTRY)
+    %{ stop_prank() %}
+
+    let (address) = contributions.registry_contract_address()
+    assert NEW_REGISTRY = address
+
+    # Reverts if called by a non-admin
+    %{ expect_revert(error_message="Contributions: ADMIN role required") %}
+    contributions.set_registry_contract_address('foo')
+
+    return ()
+end
+
 namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-        contributions.initialize(ADMIN)
-        contributions.set_registry_contract_address(REGISTRY)
+        contributions.initialize(ADMIN, REGISTRY)
         %{ stop_prank = start_prank(ids.ADMIN) %}
         access_control.grant_lead_contributor_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
         %{ stop_prank() %}

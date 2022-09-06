@@ -26,17 +26,19 @@ from onlydust.marketplace.library.migration_library import (
 # Constructor
 #
 @constructor
-func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(admin : felt):
-    contributions.initialize(admin)
+func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    admin : felt, registry_contract : felt
+):
+    contributions.initialize(admin, registry_contract)
     return ()
 end
 
 @external
 func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    proxy_admin : felt
+    proxy_admin : felt, registry_contract : felt
 ):
     migratable_proxy.initializer(proxy_admin)
-    contributions.initialize(proxy_admin)
+    contributions.initialize(proxy_admin, registry_contract)
     return ()
 end
 
@@ -82,6 +84,13 @@ func eligible_contributions{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
     contributor_id : Uint256
 ) -> (contributions_len : felt, contributions : Contribution*):
     return contributions.eligible_contributions(contributor_id)
+end
+
+@view
+func registry_contract_address{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    ) -> (registry_contract : felt):
+    let (address : felt) = contributions.registry_contract_address()
+    return (address)
 end
 
 #
@@ -163,4 +172,11 @@ func add_member_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
     project_id : felt, contributor_account : felt
 ):
     return contributions.add_member_for_project(project_id, contributor_account)
+end
+
+@external
+func set_registry_contract_address{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}(registry_contract : felt):
+    return contributions.set_registry_contract_address(registry_contract)
 end

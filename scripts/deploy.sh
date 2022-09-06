@@ -125,13 +125,13 @@ send_declare_contract_transaction() {
 deploy_proxy() {
     path_to_implementation=$1
     implementation_class_hash=$2
-    admin_address=$3
+    initializer_inputs=$3
 
     # deploy proxy
     PROXY_ADDRESS=`send_transaction "starknet $NETWORK_OPT deploy --no_wallet --contract ./build/proxy.json --inputs $implementation_class_hash"` || exit_error
 
     # initialize contract and set admin
-    RESULT=`send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $PROXY_ADDRESS --abi $path_to_implementation --function initializer --inputs $admin_address"` || exit_error
+    RESULT=`send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $PROXY_ADDRESS --abi $path_to_implementation --function initializer --inputs $initializer_inputs"` || exit_error
 
     echo $PROXY_ADDRESS
 }
@@ -158,13 +158,14 @@ update_proxified_contract_with_migration() {
 deploy_proxified_contract() {
     contract=$1
     proxy_address=$2
+    initializer_inputs=$3
 
     log_info "Declaring contract class..."
     implementation_class_hash=`send_declare_contract_transaction "starknet declare $NETWORK_OPT --contract ./build/${contract}.json"` || exit_error
 
     if [ -z $proxy_address ]; then
         log_info "Deploying proxy contract..."
-        proxy_address=`deploy_proxy ./build/${contract}_abi.json $implementation_class_hash $ADMIN_ADDRESS` || exit_error
+        proxy_address=`deploy_proxy ./build/${contract}_abi.json $implementation_class_hash "$initializer_inputs"` || exit_error
     else
 
         migration_file_path="./build/${contract}_migration.json"
@@ -225,7 +226,7 @@ deploy_all_contracts() {
         REGISTRY_ADDRESS=`send_transaction "starknet $NETWORK_OPT deploy --no_wallet --contract ./build/registry.json --inputs $ADMIN_ADDRESS"` || exit_error
     fi
 
-    CONTRIBUTIONS_ADDRESS=`deploy_proxified_contract "contributions" "$CONTRIBUTIONS_ADDRESS"` || exit_error
+    CONTRIBUTIONS_ADDRESS=`deploy_proxified_contract "contributions" "$CONTRIBUTIONS_ADDRESS" "$ADMIN_ADDRESS $REGISTRY_ADDRESS"` || exit_error
 
     (
         echo "PROFILE_ADDRESS=$PROFILE_ADDRESS"
@@ -237,6 +238,9 @@ deploy_all_contracts() {
 
     log_info "Setting profile contract inside registry"
     send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function set_profile_contract --inputs $PROFILE_ADDRESS"
+
+    log_info "Setting registry contract inside contributions"
+    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $CONTRIBUTIONS_ADDRESS --abi ./build/contributions_abi.json --function set_registry_contract_address --inputs $REGISTRY_ADDRESS"
 
     log_info "Granting 'MINTER' role to the registry"
     send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $PROFILE_ADDRESS --abi ./build/profile_abi.json --function grant_minter_role --inputs $REGISTRY_ADDRESS"

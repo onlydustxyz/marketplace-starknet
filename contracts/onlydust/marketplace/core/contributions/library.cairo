@@ -131,9 +131,10 @@ end
 #
 namespace contributions:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        admin : felt
+        admin : felt, registry_contract : felt
     ):
         access_control.initialize(admin)
+        internal.set_registry_contract_address(registry_contract)
         return ()
     end
 
@@ -143,11 +144,9 @@ namespace contributions:
 
     func set_registry_contract_address{
         syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-    }(address : felt):
-        with_attr error_message("Contributions: Invalid registry contract address"):
-            assert_not_zero(address)
-        end
-        registry_contract_address_.write(address)
+    }(registry_contract : felt):
+        access_control.only_admin()
+        internal.set_registry_contract_address(registry_contract)
         return ()
     end
 
@@ -510,6 +509,16 @@ namespace contribution_access:
 end
 
 namespace internal:
+    func set_registry_contract_address{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(address : felt):
+        with_attr error_message("Contributions: Invalid registry contract address"):
+            assert_not_zero(address)
+        end
+        registry_contract_address_.write(address)
+        return ()
+    end
+
     func status_is_not_none(status : felt):
         with_attr error_message("Contributions: Contribution does not exist"):
             assert_not_zero(status)
