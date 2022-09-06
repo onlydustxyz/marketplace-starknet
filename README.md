@@ -124,7 +124,7 @@ curl -H "Content-Type: application/json" -X GET "http://127.0.0.1:5050/account_b
 ### 3. Configure the back-ends to use the 2d nonce accounts
 Update the `ACCOUNT_ADDRESS` environment variable in `.env.example` file for **both** repositories.
 
-Update the `.env.local` file in `marketplace-smart-contracts` repository.
+Update the `.env.local` file in `marketplace-starknet` repository.
 
 ### 4. Deploy the smart contracts
 First, remove the local cache file:
