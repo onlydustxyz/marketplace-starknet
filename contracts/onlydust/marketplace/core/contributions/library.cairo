@@ -14,6 +14,7 @@ from onlydust.marketplace.core.contributions.access_control import (
     LeadContributorAdded,
     LeadContributorRemoved,
     ProjectMemberAdded,
+    ProjectMemberRemoved,
 )
 
 #
@@ -366,6 +367,14 @@ namespace contributions:
     ):
         access_control.grant_member_role_for_project(project_id, contributor_account)
         ProjectMemberAdded.emit(project_id, contributor_account)
+        return ()
+    end
+
+    func remove_member_for_project{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(project_id : felt, contributor_account : felt):
+        access_control.revoke_member_role_for_project(project_id, contributor_account)
+        ProjectMemberRemoved.emit(project_id, contributor_account)
         return ()
     end
 end

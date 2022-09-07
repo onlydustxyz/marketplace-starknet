@@ -164,3 +164,10 @@ func add_member_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
 ):
     return contributions.add_member_for_project(project_id, contributor_account)
 end
+
+@external
+func remove_member_for_project{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    project_id : felt, contributor_account : felt
+):
+    return contributions.remove_member_for_project(project_id, contributor_account)
+end

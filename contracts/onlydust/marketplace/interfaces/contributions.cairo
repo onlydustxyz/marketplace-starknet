@@ -59,4 +59,7 @@ namespace IContributions:
 
     func add_member_for_project(project_id : felt, contributor_account : felt):
     end
+
+    func remove_member_for_project(project_id : felt, contributor_account : felt):
+    end
 end
