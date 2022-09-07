@@ -12,7 +12,7 @@ from onlydust.marketplace.test.libraries.contributions import assert_contributio
 
 const ADMIN = 'onlydust'
 const REGISTERER = 'register'
-const CONTRIBUTOR = '0xdead'
+const CONTRIBUTOR = '0xcontributor'
 const GITHUB_ID = 'user123'
 const PROJECT_ID = 'MyProject'
 const ID1 = 1000000 * PROJECT_ID + 1
@@ -76,6 +76,16 @@ func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
         let (count, contribs) = contributions_access.all_contributions()
     end
 
+    %{
+        expect_events(
+               {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
+               {"name": "ContributionCreated", "data": {"contribution_id": 2, "project_id": ids.PROJECT_ID,  "issue_number": 2, "gate": 0}},
+               {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": ids.user.contributor_id.low, "high": ids.user.contributor_id.high}}},
+               {"name": "ContributionAssigned", "data": {"contribution_id": 2, "contributor_id": {"low": ids.user.contributor_id.low, "high": ids.user.contributor_id.high}}},
+               {"name": "ContributionUnassigned", "data": {"contribution_id": 2}},
+           )
+    %}
+
     assert 2 = count
 
     let contribution = contribs[0]
@@ -92,6 +102,16 @@ func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
         assert_contribution_that.project_id_is(PROJECT_ID)
         assert_contribution_that.status_is(Status.OPEN)
     end
+
+    with contributions:
+        contributions_access.add_member_for_project(PROJECT_ID, CONTRIBUTOR)
+    end
+
+    %{
+        expect_events(
+            { "name": "ProjectMemberAdded", "data": { "project_id": ids.PROJECT_ID,  "contributor_account":  ids.CONTRIBUTOR }},
+        )
+    %}
 
     return ()
 end
@@ -164,6 +184,15 @@ namespace contributions_access:
     }(contribution_id : ContributionId):
         %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
         IContributions.unassign_contributor_from_contribution(contributions, contribution_id)
+        %{ stop_prank() %}
+        return ()
+    end
+
+    func add_member_for_project{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
+    }(project_id : felt, contributor_account : felt):
+        %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
+        IContributions.add_member_for_project(contributions, project_id, contributor_account)
         %{ stop_prank() %}
         return ()
     end
