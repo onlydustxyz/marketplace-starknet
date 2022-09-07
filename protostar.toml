@@ -33,7 +33,4 @@ profile = ["./contracts/onlydust/marketplace/core/profile/profile.cairo"]
 contributions = [
     "./contracts/onlydust/marketplace/core/contributions/contributions.cairo",
 ]
-contributions_migration = [
-    "./contracts/onlydust/marketplace/core/contributions/contributions_migration.cairo",
-]
 proxy = ["./lib/cairo_contracts/src/openzeppelin/upgrades/Proxy.cairo"]
