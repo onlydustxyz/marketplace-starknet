@@ -200,6 +200,24 @@ func test_only_lead_contributor_can_grant_member_role{
     return ()
 end
 
+@view
+func test_only_lead_contributor_can_revoke_member_role{
+    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+}():
+    fixture.initialize_with_lead_contributor()
+
+    const NEW_PROJECT_MEMBER = 'member'
+
+    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
+    access_control.revoke_member_role_for_project(PROJECT_ID, NEW_PROJECT_MEMBER)
+    %{ stop_prank() %}
+
+    %{ expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role required") %}
+    access_control.revoke_member_role_for_project(PROJECT_ID, NEW_PROJECT_MEMBER)
+
+    return ()
+end
+
 namespace fixture:
     func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         access_control.initialize(ADMIN)

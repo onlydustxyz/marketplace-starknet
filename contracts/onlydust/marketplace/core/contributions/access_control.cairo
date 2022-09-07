@@ -40,6 +40,10 @@ end
 func ProjectMemberAdded(project_id : felt, contributor_account : felt):
 end
 
+@event
+func ProjectMemberRemoved(project_id : felt, contributor_account : felt):
+end
+
 #
 # Functions
 #
@@ -120,6 +124,16 @@ namespace access_control:
         only_lead_contributor(project_id)
         has_role_by_project_and_account_.write(
             Role.PROJECT_MEMBER, project_id, contributor_account, TRUE
+        )
+        return ()
+    end
+
+    func revoke_member_role_for_project{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(project_id : felt, contributor_account : felt):
+        only_lead_contributor(project_id)
+        has_role_by_project_and_account_.write(
+            Role.PROJECT_MEMBER, project_id, contributor_account, FALSE
         )
         return ()
     end

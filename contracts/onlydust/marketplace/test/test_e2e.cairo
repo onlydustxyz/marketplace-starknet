@@ -113,6 +113,16 @@ func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
         )
     %}
 
+    with contributions:
+        contributions_access.remove_member_for_project(PROJECT_ID, CONTRIBUTOR)
+    end
+
+    %{
+        expect_events(
+            { "name": "ProjectMemberRemoved", "data": { "project_id": ids.PROJECT_ID,  "contributor_account":  ids.CONTRIBUTOR }},
+        )
+    %}
+
     return ()
 end
 
@@ -193,6 +203,15 @@ namespace contributions_access:
     }(project_id : felt, contributor_account : felt):
         %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
         IContributions.add_member_for_project(contributions, project_id, contributor_account)
+        %{ stop_prank() %}
+        return ()
+    end
+
+    func remove_member_for_project{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
+    }(project_id : felt, contributor_account : felt):
+        %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
+        IContributions.remove_member_for_project(contributions, project_id, contributor_account)
         %{ stop_prank() %}
         return ()
     end
