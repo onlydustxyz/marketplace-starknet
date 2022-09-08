@@ -801,7 +801,7 @@ func test_anyone_cannot_claim_contribution{
     let (_) = contributions.new_contribution(PROJECT_ID, 1, 0)
     %{
         stop_prank() 
-        expect_revert(error_message="Contributions: PROJECT_MEMBER role required")
+        expect_revert(error_message="Contributions: PROJECT_MEMBER or LEAD_CONTRIBUTOR role required")
     %}
     contributions.claim_contribution(contribution_id, contributor_id)
 
