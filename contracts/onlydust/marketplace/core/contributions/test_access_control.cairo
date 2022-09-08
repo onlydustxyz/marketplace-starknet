@@ -219,7 +219,7 @@ func test_only_lead_contributor_can_revoke_member_role{
 end
 
 @view
-func test_only_project_member_revert_if_no_permission{
+func test_only_project_member_or_lead_contributor_revert_if_no_permission{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     fixture.initialize_with_lead_contributor()
@@ -227,11 +227,19 @@ func test_only_project_member_revert_if_no_permission{
     const NEW_PROJECT_MEMBER = 'member'
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
+    # With role LEAD_CONTRIBUTOR
+    access_control.only_project_member_or_lead_contributor(PROJECT_ID)
+
+    # With role LEAD_CONTRIBUTOR and PROJECT_MEMBER
+    access_control.grant_member_role_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT)
+    access_control.only_project_member_or_lead_contributor(PROJECT_ID)
+
     access_control.grant_member_role_for_project(PROJECT_ID, NEW_PROJECT_MEMBER)
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.NEW_PROJECT_MEMBER) %}
-    access_control.only_project_member(PROJECT_ID)
+    # With role PROJECT_MEMBER
+    access_control.only_project_member_or_lead_contributor(PROJECT_ID)
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
@@ -240,9 +248,9 @@ func test_only_project_member_revert_if_no_permission{
 
     %{
         stop_prank = start_prank(ids.NEW_PROJECT_MEMBER)
-        expect_revert(error_message="Contributions: PROJECT_MEMBER role required")
+        expect_revert(error_message="Contributions: PROJECT_MEMBER or LEAD_CONTRIBUTOR role required")
     %}
-    access_control.only_project_member(PROJECT_ID)
+    access_control.only_project_member_or_lead_contributor(PROJECT_ID)
     %{ stop_prank() %}
 
     return ()

@@ -273,7 +273,7 @@ namespace contributions:
         contribution_id : ContributionId, contributor_id : Uint256
     ):
         let (project_id) = project_access.find_contribution_project(contribution_id)
-        access_control.only_project_member(project_id)
+        access_control.only_project_member_or_lead_contributor(project_id)
 
         internal.assign_contributor_to_contribution(contribution_id, contributor_id)
 
