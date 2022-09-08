@@ -39,6 +39,9 @@ namespace IContributions:
     func unassign_contributor_from_contribution(contribution_id : ContributionId):
     end
 
+    func claim_contribution(contribution_id : ContributionId, contributor_id : Uint256):
+    end
+
     func validate_contribution(contribution_id : ContributionId):
     end
 

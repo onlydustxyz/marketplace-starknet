@@ -81,6 +81,10 @@ func ContributionUnassigned(contribution_id : felt):
 end
 
 @event
+func ContributionClaimed(contribution_id : felt, contributor_id : Uint256):
+end
+
+@event
 func ContributionValidated(contribution_id : felt):
 end
 
@@ -196,12 +200,7 @@ namespace contributions:
         let (project_id) = project_access.find_contribution_project(contribution_id)
         access_control.only_lead_contributor(project_id)
 
-        status_access.only_open(contribution_id)
-        gating.assert_contributor_is_eligible(contribution_id, contributor_id)
-
-        # Update storage
-        contribution_status_.write(contribution_id, Status.ASSIGNED)
-        contribution_contributor_.write(contribution_id, contributor_id)
+        internal.assign_contributor_to_contribution(contribution_id, contributor_id)
 
         # Emit event
         ContributionAssigned.emit(contribution_id.inner, contributor_id)
@@ -265,6 +264,21 @@ namespace contributions:
 
         # Emit event
         ContributionGateChanged.emit(contribution_id.inner, gate)
+
+        return ()
+    end
+
+    # Claim (self-assign) a contributor to a contribution
+    func claim_contribution{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        contribution_id : ContributionId, contributor_id : Uint256
+    ):
+        let (project_id) = project_access.find_contribution_project(contribution_id)
+        access_control.only_project_member(project_id)
+
+        internal.assign_contributor_to_contribution(contribution_id, contributor_id)
+
+        # Emit event
+        ContributionClaimed.emit(contribution_id.inner, contributor_id)
 
         return ()
     end
@@ -570,5 +584,19 @@ namespace internal:
         end
 
         return (contributions_len)
+    end
+
+    # Assign a contributor to a contribution without doing access role check, nor emitting any event
+    func assign_contributor_to_contribution{
+        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
+    }(contribution_id : ContributionId, contributor_id : Uint256):
+        status_access.only_open(contribution_id)
+        gating.assert_contributor_is_eligible(contribution_id, contributor_id)
+
+        # Update storage
+        contribution_status_.write(contribution_id, Status.ASSIGNED)
+        contribution_contributor_.write(contribution_id, contributor_id)
+
+        return ()
     end
 end

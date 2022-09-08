@@ -137,6 +137,21 @@ namespace access_control:
         )
         return ()
     end
+
+    func only_project_member{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        project_id : felt
+    ):
+        alloc_locals
+
+        let (caller_address) = get_caller_address()
+        let (is_project_member) = internal.is_project_member(project_id, caller_address)
+
+        with_attr error_message("Contributions: PROJECT_MEMBER role required"):
+            assert_not_zero(is_project_member)
+        end
+
+        return ()
+    end
 end
 
 namespace internal:
@@ -153,5 +168,14 @@ namespace internal:
             Role.LEAD_CONTRIBUTOR, project_id, account
         )
         return (is_lead_contributor)
+    end
+
+    func is_project_member{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        project_id : felt, account : felt
+    ) -> (is_project_member : felt):
+        let (is_project_member) = has_role_by_project_and_account_.read(
+            Role.PROJECT_MEMBER, project_id, account
+        )
+        return (is_project_member)
     end
 end
