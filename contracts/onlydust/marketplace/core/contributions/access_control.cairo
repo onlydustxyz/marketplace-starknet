@@ -6,177 +6,175 @@ from starkware.cairo.common.math import assert_not_zero
 from starkware.starknet.common.syscalls import get_caller_address
 from starkware.cairo.common.bool import TRUE, FALSE
 
-from openzeppelin.access.accesscontrol import AccessControl
+from openzeppelin.access.accesscontrol.library import AccessControl
 
-#
-# Enums
-#
-struct Role:
-    # Keep ADMIN role first of this list as 0 is the default admin value to manage roles in AccessControl library
-    member ADMIN : felt  # can assign/revoke roles
-    member _UNUSED : felt
-    member LEAD_CONTRIBUTOR : felt  # can add interact with contributions on its project
-    member PROJECT_MEMBER : felt  # can claim contributions directly (no need to be assigned by the lead contributor)
-end
+//
+// Enums
+//
+struct Role {
+    // Keep ADMIN role first of this list as 0 is the default admin value to manage roles in AccessControl library
+    ADMIN: felt,  // can assign/revoke roles
+    _UNUSED: felt,
+    LEAD_CONTRIBUTOR: felt,  // can add interact with contributions on its project
+    PROJECT_MEMBER: felt,  // can claim contributions directly (no need to be assigned by the lead contributor)
+}
 
-#
-# Storage
-#
+//
+// Storage
+//
 @storage_var
-func has_role_by_project_and_account_(role : felt, project : felt, account : felt) -> (
-    has_role : felt
-):
-end
+func has_role_by_project_and_account_(role: felt, project: felt, account: felt) -> (
+    has_role: felt
+) {
+}
 
 @event
-func LeadContributorAdded(project_id : felt, lead_contributor_account : felt):
-end
+func LeadContributorAdded(project_id: felt, lead_contributor_account: felt) {
+}
 
 @event
-func LeadContributorRemoved(project_id : felt, lead_contributor_account : felt):
-end
+func LeadContributorRemoved(project_id: felt, lead_contributor_account: felt) {
+}
 
 @event
-func ProjectMemberAdded(project_id : felt, contributor_account : felt):
-end
+func ProjectMemberAdded(project_id: felt, contributor_account: felt) {
+}
 
 @event
-func ProjectMemberRemoved(project_id : felt, contributor_account : felt):
-end
+func ProjectMemberRemoved(project_id: felt, contributor_account: felt) {
+}
 
-#
-# Functions
-#
-namespace access_control:
-    func initialize{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        admin : felt
-    ):
-        AccessControl.initializer()
-        AccessControl._grant_role(Role.ADMIN, admin)
-        return ()
-    end
+//
+// Functions
+//
+namespace access_control {
+    func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(admin: felt) {
+        AccessControl.initializer();
+        AccessControl._grant_role(Role.ADMIN, admin);
+        return ();
+    }
 
-    # Grant the ADMIN role to a given address
-    func grant_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        address : felt
-    ):
-        AccessControl.grant_role(Role.ADMIN, address)
-        return ()
-    end
+    // Grant the ADMIN role to a given address
+    func grant_admin_role{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        address: felt
+    ) {
+        AccessControl.grant_role(Role.ADMIN, address);
+        return ();
+    }
 
-    # Revoke the ADMIN role from a given address
-    func revoke_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        address : felt
-    ):
-        with_attr error_message("Contributions: Cannot self renounce to ADMIN role"):
-            internal.assert_not_caller(address)
-        end
-        AccessControl.revoke_role(Role.ADMIN, address)
-        return ()
-    end
+    // Revoke the ADMIN role from a given address
+    func revoke_admin_role{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        address: felt
+    ) {
+        with_attr error_message("Contributions: Cannot self renounce to ADMIN role") {
+            internal.assert_not_caller(address);
+        }
+        AccessControl.revoke_role(Role.ADMIN, address);
+        return ();
+    }
 
-    func only_admin{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-        with_attr error_message("Contributions: ADMIN role required"):
-            AccessControl.assert_only_role(Role.ADMIN)
-        end
+    func only_admin{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+        with_attr error_message("Contributions: ADMIN role required") {
+            AccessControl.assert_only_role(Role.ADMIN);
+        }
 
-        return ()
-    end
+        return ();
+    }
 
     func grant_lead_contributor_role_for_project{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-    }(project_id : felt, lead_contributor_account : felt):
-        only_admin()
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+    }(project_id: felt, lead_contributor_account: felt) {
+        only_admin();
         has_role_by_project_and_account_.write(
             Role.LEAD_CONTRIBUTOR, project_id, lead_contributor_account, TRUE
-        )
-        return ()
-    end
+        );
+        return ();
+    }
 
     func revoke_lead_contributor_role_for_project{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-    }(project_id : felt, lead_contributor_account : felt):
-        only_admin()
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+    }(project_id: felt, lead_contributor_account: felt) {
+        only_admin();
         has_role_by_project_and_account_.write(
             Role.LEAD_CONTRIBUTOR, project_id, lead_contributor_account, FALSE
-        )
-        return ()
-    end
+        );
+        return ();
+    }
 
-    func only_lead_contributor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        project_id : felt
-    ):
-        alloc_locals
+    func only_lead_contributor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        project_id: felt
+    ) {
+        alloc_locals;
 
-        let (caller_address) = get_caller_address()
-        let (is_lead_contributor) = internal.is_lead_contributor(project_id, caller_address)
+        let (caller_address) = get_caller_address();
+        let (is_lead_contributor) = internal.is_lead_contributor(project_id, caller_address);
 
-        with_attr error_message("Contributions: LEAD_CONTRIBUTOR role required"):
-            assert_not_zero(is_lead_contributor)
-        end
+        with_attr error_message("Contributions: LEAD_CONTRIBUTOR role required") {
+            assert_not_zero(is_lead_contributor);
+        }
 
-        return ()
-    end
+        return ();
+    }
 
     func grant_member_role_for_project{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-    }(project_id : felt, contributor_account : felt):
-        only_lead_contributor(project_id)
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+    }(project_id: felt, contributor_account: felt) {
+        only_lead_contributor(project_id);
         has_role_by_project_and_account_.write(
             Role.PROJECT_MEMBER, project_id, contributor_account, TRUE
-        )
-        return ()
-    end
+        );
+        return ();
+    }
 
     func revoke_member_role_for_project{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-    }(project_id : felt, contributor_account : felt):
-        only_lead_contributor(project_id)
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+    }(project_id: felt, contributor_account: felt) {
+        only_lead_contributor(project_id);
         has_role_by_project_and_account_.write(
             Role.PROJECT_MEMBER, project_id, contributor_account, FALSE
-        )
-        return ()
-    end
+        );
+        return ();
+    }
 
     func only_project_member_or_lead_contributor{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
-    }(project_id : felt):
-        alloc_locals
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+    }(project_id: felt) {
+        alloc_locals;
 
-        let (caller_address) = get_caller_address()
-        let (is_project_member) = internal.is_project_member(project_id, caller_address)
-        let (is_lead_contributor) = internal.is_lead_contributor(project_id, caller_address)
+        let (caller_address) = get_caller_address();
+        let (is_project_member) = internal.is_project_member(project_id, caller_address);
+        let (is_lead_contributor) = internal.is_lead_contributor(project_id, caller_address);
 
-        with_attr error_message("Contributions: PROJECT_MEMBER or LEAD_CONTRIBUTOR role required"):
-            assert_not_zero(is_project_member + is_lead_contributor)
-        end
+        with_attr error_message("Contributions: PROJECT_MEMBER or LEAD_CONTRIBUTOR role required") {
+            assert_not_zero(is_project_member + is_lead_contributor);
+        }
 
-        return ()
-    end
-end
+        return ();
+    }
+}
 
-namespace internal:
-    func assert_not_caller{syscall_ptr : felt*}(address : felt):
-        let (caller_address) = get_caller_address()
-        assert_not_zero(caller_address - address)
-        return ()
-    end
+namespace internal {
+    func assert_not_caller{syscall_ptr: felt*}(address: felt) {
+        let (caller_address) = get_caller_address();
+        assert_not_zero(caller_address - address);
+        return ();
+    }
 
-    func is_lead_contributor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        project_id : felt, account : felt
-    ) -> (is_lead_contributor : felt):
+    func is_lead_contributor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        project_id: felt, account: felt
+    ) -> (is_lead_contributor: felt) {
         let (is_lead_contributor) = has_role_by_project_and_account_.read(
             Role.LEAD_CONTRIBUTOR, project_id, account
-        )
-        return (is_lead_contributor)
-    end
+        );
+        return (is_lead_contributor,);
+    }
 
-    func is_project_member{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        project_id : felt, account : felt
-    ) -> (is_project_member : felt):
+    func is_project_member{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        project_id: felt, account: felt
+    ) -> (is_project_member: felt) {
         let (is_project_member) = has_role_by_project_and_account_.read(
             Role.PROJECT_MEMBER, project_id, account
-        )
-        return (is_project_member)
-    end
-end
+        );
+        return (is_project_member,);
+    }
+}

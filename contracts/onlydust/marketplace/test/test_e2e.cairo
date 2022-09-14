@@ -10,23 +10,23 @@ from onlydust.marketplace.core.contributions.library import Contribution, Status
 from onlydust.marketplace.test.libraries.user import assert_user_that
 from onlydust.marketplace.test.libraries.contributions import assert_contribution_that
 
-const ADMIN = 'onlydust'
-const REGISTERER = 'register'
-const CONTRIBUTOR = '0xcontributor'
-const GITHUB_ID = 'user123'
-const PROJECT_ID = 'MyProject'
-const ID1 = 1000000 * PROJECT_ID + 1
-const ID2 = 1000000 * PROJECT_ID + 2
-const LEAD_CONTRIBUTOR_ACCOUNT = 'LeadContributor'
+const ADMIN = 'onlydust';
+const REGISTERER = 'register';
+const CONTRIBUTOR = '0xcontributor';
+const GITHUB_ID = 'user123';
+const PROJECT_ID = 'MyProject';
+const ID1 = 1000000 * PROJECT_ID + 1;
+const ID2 = 1000000 * PROJECT_ID + 2;
+const LEAD_CONTRIBUTOR_ACCOUNT = 'LeadContributor';
 
-#
-# Tests
-#
+//
+// Tests
+//
 @view
-func __setup__{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-    tempvar registry
-    tempvar profile_contract
-    tempvar contributions_contract
+func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    tempvar registry;
+    tempvar profile_contract;
+    tempvar contributions_contract;
     %{
         ids.registry = deploy_contract("./contracts/onlydust/marketplace/core/registry/registry.cairo", [ids.ADMIN]).contract_address 
         ids.profile_contract = deploy_contract("./contracts/onlydust/marketplace/core/profile/profile.cairo", [ids.ADMIN]).contract_address 
@@ -37,44 +37,44 @@ func __setup__{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
     %}
 
     %{ stop_pranks = [start_prank(ids.ADMIN, contract) for contract in [ids.registry, ids.profile_contract, ids.contributions_contract] ] %}
-    IRegistry.set_profile_contract(registry, profile_contract)
-    IRegistry.grant_registerer_role(registry, REGISTERER)
-    IProfile.grant_minter_role(profile_contract, registry)
+    IRegistry.set_profile_contract(registry, profile_contract);
+    IRegistry.grant_registerer_role(registry, REGISTERER);
+    IProfile.grant_minter_role(profile_contract, registry);
     IContributions.add_lead_contributor_for_project(
         contributions_contract, PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT
-    )
+    );
     %{ [stop_prank() for stop_prank in stop_pranks] %}
 
-    return ()
-end
+    return ();
+}
 
 @view
-func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
-    alloc_locals
+func test_e2e{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    alloc_locals;
 
-    let (registry) = registry_access.deployed()
+    let (registry) = registry_access.deployed();
 
-    with registry:
-        let (local user) = registry_access.register_github_identifier(CONTRIBUTOR, GITHUB_ID)
-    end
+    with registry {
+        let (local user) = registry_access.register_github_identifier(CONTRIBUTOR, GITHUB_ID);
+    }
 
-    with user:
-        assert_user_that.github_identifier_is(GITHUB_ID)
-    end
+    with user {
+        assert_user_that.github_identifier_is(GITHUB_ID);
+    }
 
-    let (contributions) = contributions_access.deployed()
-    with contributions:
-        contributions_access.new_contribution(PROJECT_ID, 1, 0)
-        contributions_access.new_contribution(PROJECT_ID, 2, 0)
+    let (contributions) = contributions_access.deployed();
+    with contributions {
+        contributions_access.new_contribution(PROJECT_ID, 1, 0);
+        contributions_access.new_contribution(PROJECT_ID, 2, 0);
 
-        let contributor_id = user.contributor_id
-        contributions_access.assign_contributor_to_contribution(ContributionId(1), contributor_id)
+        let contributor_id = user.contributor_id;
+        contributions_access.assign_contributor_to_contribution(ContributionId(1), contributor_id);
 
-        contributions_access.assign_contributor_to_contribution(ContributionId(2), contributor_id)
-        contributions_access.unassign_contributor_from_contribution(ContributionId(2))
+        contributions_access.assign_contributor_to_contribution(ContributionId(2), contributor_id);
+        contributions_access.unassign_contributor_from_contribution(ContributionId(2));
 
-        let (count, contribs) = contributions_access.all_contributions()
-    end
+        let (count, contribs) = contributions_access.all_contributions();
+    }
 
     %{
         expect_events(
@@ -86,26 +86,26 @@ func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
            )
     %}
 
-    assert 2 = count
+    assert 2 = count;
 
-    let contribution = contribs[0]
-    with contribution:
-        assert_contribution_that.id_is(ContributionId(1))
-        assert_contribution_that.project_id_is(PROJECT_ID)
-        assert_contribution_that.status_is(Status.ASSIGNED)
-        assert_contribution_that.contributor_is(contributor_id)
-    end
+    let contribution = contribs[0];
+    with contribution {
+        assert_contribution_that.id_is(ContributionId(1));
+        assert_contribution_that.project_id_is(PROJECT_ID);
+        assert_contribution_that.status_is(Status.ASSIGNED);
+        assert_contribution_that.contributor_is(contributor_id);
+    }
 
-    let contribution = contribs[1]
-    with contribution:
-        assert_contribution_that.id_is(ContributionId(2))
-        assert_contribution_that.project_id_is(PROJECT_ID)
-        assert_contribution_that.status_is(Status.OPEN)
-    end
+    let contribution = contribs[1];
+    with contribution {
+        assert_contribution_that.id_is(ContributionId(2));
+        assert_contribution_that.project_id_is(PROJECT_ID);
+        assert_contribution_that.status_is(Status.OPEN);
+    }
 
-    with contributions:
-        contributions_access.add_member_for_project(PROJECT_ID, CONTRIBUTOR)
-    end
+    with contributions {
+        contributions_access.add_member_for_project(PROJECT_ID, CONTRIBUTOR);
+    }
 
     %{
         expect_events(
@@ -113,9 +113,9 @@ func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
         )
     %}
 
-    with contributions:
-        contributions_access.remove_member_for_project(PROJECT_ID, CONTRIBUTOR)
-    end
+    with contributions {
+        contributions_access.remove_member_for_project(PROJECT_ID, CONTRIBUTOR);
+    }
 
     %{
         expect_events(
@@ -123,96 +123,96 @@ func test_e2e{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
         )
     %}
 
-    return ()
-end
+    return ();
+}
 
-#
-# Libraries
-#
-namespace registry_access:
-    func deployed() -> (registry : felt):
-        tempvar registry
+//
+// Libraries
+//
+namespace registry_access {
+    func deployed() -> (registry: felt) {
+        tempvar registry;
         %{ ids.registry = context.registry %}
-        return (registry)
-    end
+        return (registry,);
+    }
 
     func register_github_identifier{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, registry : felt
-    }(contributor : felt, identifier : felt) -> (user : UserInformation):
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, registry: felt
+    }(contributor: felt, identifier: felt) -> (user: UserInformation) {
         %{ stop_prank = start_prank(ids.REGISTERER, ids.registry) %}
-        IRegistry.register_github_identifier(registry, contributor, identifier)
+        IRegistry.register_github_identifier(registry, contributor, identifier);
         %{ stop_prank() %}
 
-        let (user) = IRegistry.get_user_information(registry, contributor)
-        return (user)
-    end
-end
+        let (user) = IRegistry.get_user_information(registry, contributor);
+        return (user,);
+    }
+}
 
-namespace contributions_access:
-    func deployed() -> (contributions_contract : felt):
-        tempvar contributions_contract
+namespace contributions_access {
+    func deployed() -> (contributions_contract: felt) {
+        tempvar contributions_contract;
         %{ ids.contributions_contract = context.contributions_contract %}
-        return (contributions_contract)
-    end
+        return (contributions_contract,);
+    }
 
     func new_contribution{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(project_id : felt, issue_number : felt, gate : felt):
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, contributions: felt
+    }(project_id: felt, issue_number: felt, gate: felt) {
         %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
-        IContributions.new_contribution(contributions, project_id, issue_number, gate)
+        IContributions.new_contribution(contributions, project_id, issue_number, gate);
         %{ stop_prank() %}
-        return ()
-    end
+        return ();
+    }
 
     func all_contributions{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }() -> (contribs_len, contribs : Contribution*):
-        let (contribs_len, contribs) = IContributions.all_contributions(contributions)
-        return (contribs_len, contribs)
-    end
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, contributions: felt
+    }() -> (contribs_len: felt, contribs: Contribution*) {
+        let (contribs_len, contribs) = IContributions.all_contributions(contributions);
+        return (contribs_len, contribs);
+    }
 
     func contribution{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(contribution_id : ContributionId) -> (contribution : Contribution):
-        let (contribution) = IContributions.contribution(contributions, contribution_id)
-        return (contribution)
-    end
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, contributions: felt
+    }(contribution_id: ContributionId) -> (contribution: Contribution) {
+        let (contribution) = IContributions.contribution(contributions, contribution_id);
+        return (contribution,);
+    }
 
     func assign_contributor_to_contribution{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(contribution_id : ContributionId, contributor_id : Uint256):
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, contributions: felt
+    }(contribution_id: ContributionId, contributor_id: Uint256) {
         %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
         IContributions.assign_contributor_to_contribution(
             contributions, contribution_id, contributor_id
-        )
+        );
         %{ stop_prank() %}
-        return ()
-    end
+        return ();
+    }
 
     func unassign_contributor_from_contribution{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(contribution_id : ContributionId):
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, contributions: felt
+    }(contribution_id: ContributionId) {
         %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
-        IContributions.unassign_contributor_from_contribution(contributions, contribution_id)
+        IContributions.unassign_contributor_from_contribution(contributions, contribution_id);
         %{ stop_prank() %}
-        return ()
-    end
+        return ();
+    }
 
     func add_member_for_project{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(project_id : felt, contributor_account : felt):
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, contributions: felt
+    }(project_id: felt, contributor_account: felt) {
         %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
-        IContributions.add_member_for_project(contributions, project_id, contributor_account)
+        IContributions.add_member_for_project(contributions, project_id, contributor_account);
         %{ stop_prank() %}
-        return ()
-    end
+        return ();
+    }
 
     func remove_member_for_project{
-        syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, contributions : felt
-    }(project_id : felt, contributor_account : felt):
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, contributions: felt
+    }(project_id: felt, contributor_account: felt) {
         %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT, ids.contributions) %}
-        IContributions.remove_member_for_project(contributions, project_id, contributor_account)
+        IContributions.remove_member_for_project(contributions, project_id, contributor_account);
         %{ stop_prank() %}
-        return ()
-    end
-end
+        return ();
+    }
+}

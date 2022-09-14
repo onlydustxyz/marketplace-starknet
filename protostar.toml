@@ -33,4 +33,4 @@ profile = ["./contracts/onlydust/marketplace/core/profile/profile.cairo"]
 contributions = [
     "./contracts/onlydust/marketplace/core/contributions/contributions.cairo",
 ]
-proxy = ["./lib/cairo_contracts/src/openzeppelin/upgrades/Proxy.cairo"]
+proxy = ["./lib/cairo_contracts/src/openzeppelin/upgrades/presets/Proxy.cairo"]
