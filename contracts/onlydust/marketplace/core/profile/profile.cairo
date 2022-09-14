@@ -5,70 +5,70 @@ from starkware.cairo.common.uint256 import Uint256
 
 from onlydust.marketplace.core.profile.library import profile
 
-#
-# Constructor
-#
+//
+// Constructor
+//
 @constructor
-func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(owner : felt):
-    profile.initialize(owner)
-    return ()
-end
+func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(owner: felt) {
+    profile.initialize(owner);
+    return ();
+}
 
-#
-# Views
-#
+//
+// Views
+//
 @view
-func name{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (name : felt):
-    return profile.name()
-end
-
-@view
-func symbol{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (symbol : felt):
-    return profile.symbol()
-end
+func name{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (name: felt) {
+    return profile.name();
+}
 
 @view
-func ownerOf{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    tokenId : Uint256
-) -> (owner : felt):
-    return profile.ownerOf(tokenId)
-end
+func symbol{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (symbol: felt) {
+    return profile.symbol();
+}
 
-#
-# Externals
-#
+@view
+func ownerOf{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(tokenId: Uint256) -> (
+    owner: felt
+) {
+    return profile.ownerOf(tokenId);
+}
 
-@external
-func mint{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(to : felt) -> (
-    tokenId : Uint256
-):
-    return profile.mint(to)
-end
+//
+// Externals
+//
 
 @external
-func grant_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    address : felt
-):
-    return profile.grant_admin_role(address)
-end
+func mint{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(to: felt) -> (
+    tokenId: Uint256
+) {
+    return profile.mint(to);
+}
 
 @external
-func revoke_admin_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    address : felt
-):
-    return profile.revoke_admin_role(address)
-end
+func grant_admin_role{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    address: felt
+) {
+    return profile.grant_admin_role(address);
+}
 
 @external
-func grant_minter_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    address : felt
-):
-    return profile.grant_minter_role(address)
-end
+func revoke_admin_role{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    address: felt
+) {
+    return profile.revoke_admin_role(address);
+}
 
 @external
-func revoke_minter_role{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    address : felt
-):
-    return profile.revoke_minter_role(address)
-end
+func grant_minter_role{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    address: felt
+) {
+    return profile.grant_minter_role(address);
+}
+
+@external
+func revoke_minter_role{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    address: felt
+) {
+    return profile.revoke_minter_role(address);
+}

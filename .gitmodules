@@ -1,7 +1,8 @@
-[submodule "cairo_streams"]
-	url = https://github.com/onlydustxyz/cairo-streams
-	path = lib/cairo_streams
 [submodule "cairo_contracts"]
 	url = https://github.com/OpenZeppelin/cairo-contracts
 	path = lib/cairo_contracts
-	branch = refs/heads/v0.2.1
+	branch = refs/heads/v0.4.0b
+[submodule "cairo_streams"]
+	url = https://github.com/onlydustxyz/cairo-streams
+	path = lib/cairo_streams
+	branch = refs/heads/cairo-0.10
