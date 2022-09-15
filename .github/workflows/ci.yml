@@ -10,7 +10,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install protostar
         run: |
-          curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash -s -- -v 0.3.2
+          curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash -s -- -v 0.4.2
       - name: Update env variables
         run: |
           source /home/runner/.bashrc | bash
@@ -28,6 +28,6 @@ jobs:
         with:
           python-version: "3.9"
       - name: Install dependencies
-        run: pip install cairo-lang==0.9.1
+        run: pip install cairo-lang==0.10.0
       - name: Check files formatting
         run: find contracts/ -name "*.cairo" -print0 | xargs -0 cairo-format -c
