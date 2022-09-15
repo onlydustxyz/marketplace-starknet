@@ -1,11 +1,6 @@
 name: Build devnet dump for end-to-end tests
 
-on:
-  push:
-    branches:
-      - "main"
-    tags:
-      - "*"
+on: workflow_dispatch
 
 jobs:
   build-devnet-dump:
@@ -27,11 +22,11 @@ jobs:
           python-version: "3.9"
 
       - name: Install starknet
-        run: pip install cairo-lang==0.9.1
+        run: pip install cairo-lang==0.10.0
 
       - name: Install protostar
         run: |
-          curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash -s -- -v 0.3.2
+          curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/install.sh | bash -s -- -v 0.4.2
           echo "/home/runner/.protostar/dist/protostar" >> $GITHUB_PATH
 
       - name: Install smart-contracts dependencies
