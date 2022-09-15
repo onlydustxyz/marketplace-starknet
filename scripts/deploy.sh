@@ -6,7 +6,7 @@ ROOT=`readlink -f $SCRIPT_DIR/..`
 CACHE_FILE_BASE=$ROOT/scripts/configuration/deployed_contracts
 STARKNET_ACCOUNTS_FILE=$HOME/.starknet_accounts/starknet_open_zeppelin_accounts.json
 PROTOSTAR_TOML_FILE=$ROOT/protostar.toml
-STARKNET_VERSION="0.9.1"
+STARKNET_VERSION="0.10.0"
 
 ### FUNCTIONS
 . $SCRIPT_DIR/logging.sh # Logging utilities
