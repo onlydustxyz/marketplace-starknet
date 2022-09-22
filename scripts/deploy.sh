@@ -160,7 +160,7 @@ deploy_proxified_contract() {
     proxy_address=$2
 
     log_info "Declaring contract class..."
-    implementation_class_hash=`send_declare_contract_transaction "starknet declare $NETWORK_OPT --contract ./build/${contract}.json"` || exit_error
+    implementation_class_hash=`send_declare_contract_transaction "starknet declare $ACCOUNT_OPT $NETWORK_OPT --contract ./build/${contract}.json"` || exit_error
 
     if [ -z $proxy_address ]; then
         log_info "Deploying proxy contract..."
