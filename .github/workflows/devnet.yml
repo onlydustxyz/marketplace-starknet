@@ -34,11 +34,11 @@ jobs:
       - name: Start devnet
         run: |
           DUMP_PATH=$GITHUB_WORKSPACE/devnet-dump BASE_TAG=0.3.1 docker-compose -f ./scripts/docker/docker-compose.yml up --build -d
-          mkdir $HOME/.starknet_accounts
-          cp ./.github/workflows/devnet-dump-assets/starknet_open_zeppelin_accounts.json $HOME/.starknet_accounts/starknet_open_zeppelin_accounts.json
 
       - name: Deploy smart contracts
         run: |
+          mkdir $HOME/.starknet_accounts
+          cp ./.github/workflows/devnet-dump-assets/starknet_open_zeppelin_accounts.json $HOME/.starknet_accounts/starknet_open_zeppelin_accounts.json
           [ -f $GITHUB_WORKSPACE/scripts/configuration/deployed_contracts_local.txt ] && rm $GITHUB_WORKSPACE/scripts/configuration/deployed_contracts_local.txt
           ./scripts/deploy.sh -a local_admin -p local -y
 
