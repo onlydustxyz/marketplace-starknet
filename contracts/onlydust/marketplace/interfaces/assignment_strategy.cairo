@@ -2,17 +2,17 @@
 
 @contract_interface
 namespace IAssignmentStrategy {
-    func can_assign(contributor_account) -> felt {
+    func can_assign(contributor_account) -> (res: felt) {
     }
     func on_assigned(contributor_account) {
     }
 
-    func can_unassign(contributor_account) -> felt {
+    func can_unassign(contributor_account) -> (res: felt) {
     }
     func on_unassigned(contributor_account) {
     }
 
-    func can_validate(contributor_account) -> felt {
+    func can_validate(contributor_account) -> (res: felt) {
     }
     func on_validated(contributor_account) {
     }

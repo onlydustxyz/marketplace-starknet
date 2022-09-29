@@ -8,9 +8,6 @@ namespace IContribution {
     func unassign(contributor_account) {
     }
 
-    func claim() {
-    }
-
     func validate(contributor_account) {
     }
 }
