@@ -14,7 +14,6 @@ from onlydust.marketplace.core.contributions.access_control import access_contro
 from onlydust.marketplace.test.libraries.contributions import assert_contribution_that
 
 const ADMIN = 'admin';
-const REGISTRY = 'registry';
 const PROJECT_ID = 'MyProject';
 const LEAD_CONTRIBUTOR_ACCOUNT = 'lead';
 const PROJECT_MEMBER_ACCOUNT = 'member';
@@ -118,7 +117,7 @@ func test_same_contribution_cannot_be_added_twice{
 }
 
 @view
-func test_feeder_can_delete_contribution{
+func test_lead_contributor_can_delete_contribution{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
     alloc_locals;

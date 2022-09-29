@@ -5,8 +5,6 @@
 NEW_ADMIN=0x379fe3432e28f6a53afbd9d90251a46eff164f845fad5e2418c466f14ed727a
 
 CONTRIBUTIONS_ADDRESS=0x011d60f34d8e7b674833d86aa85afbe234baad95ae6ca3d9cb5c4bcd164b7358
-REGISTRY_ADDRESS=0x04e16efc9bc2d8d40ecb73d3d69e3e2d6f0fc3e2e6e9b7601310fdfa7dd6c7cf
-PROFILE_ADDRESS=0x004176872b71583cb9bc3671db28f26e7f426a7c0764613a0838bb99ef373aa6
 
 
 ### FUNCTIONS
@@ -73,19 +71,6 @@ done
 echo "---------------------------------------------------------------------------------"
 echo "Change proxy admin of Contributions to $NEW_ADMIN"
 tx_hash=`send_transaction "starknet invoke --account $ACCOUNT --network alpha-goerli --address $CONTRIBUTIONS_ADDRESS --abi build/contributions_abi.json --function set_proxy_admin --inputs $NEW_ADMIN"` || exit_error
-
-
-# Add admin to the Profile contract
-echo "---------------------------------------------------------------------------------"
-echo "Add admin to the Profile contract to $NEW_ADMIN"
-tx_hash=`send_transaction "starknet invoke --account $ACCOUNT --network alpha-goerli --address $PROFILE_ADDRESS --abi build/profile_abi.json --function grant_admin_role --inputs $NEW_ADMIN"` || exit_error
-
-
-# Add admin to the Registry contract
-echo "---------------------------------------------------------------------------------"
-echo "Add admin to the Registry contract to $NEW_ADMIN"
-tx_hash=`send_transaction "starknet invoke --account $ACCOUNT --network alpha-goerli --address $REGISTRY_ADDRESS --abi build/registry_abi.json --function grant_admin_role --inputs $NEW_ADMIN"` || exit_error
-
 
 # Add admin to the Contribution contract
 echo "---------------------------------------------------------------------------------"

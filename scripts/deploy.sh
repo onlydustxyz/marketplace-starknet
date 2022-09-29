@@ -210,42 +210,13 @@ deploy_all_contracts() {
     print Admin account address: $ADMIN_ADDRESS
     print Network option: $NETWORK_OPT
 
-    registerers=$(echo $REGISTERER_ACCOUNTS | tr "," "\n")
-    print Registerer accounts: $registerers
-
     ask "Are you OK to deploy with those parameters" || return 
-
-    if [ -z $PROFILE_ADDRESS ]; then
-        log_info "Deploying profile contract..."
-        PROFILE_ADDRESS=`send_transaction "starknet $NETWORK_OPT deploy --no_wallet --contract ./build/profile.json --inputs $ADMIN_ADDRESS"` || exit_error
-    fi
-
-    if [ -z $REGISTRY_ADDRESS ]; then
-        log_info "Deploying registry contract..."
-        REGISTRY_ADDRESS=`send_transaction "starknet $NETWORK_OPT deploy --no_wallet --contract ./build/registry.json --inputs $ADMIN_ADDRESS"` || exit_error
-    fi
 
     CONTRIBUTIONS_ADDRESS=`deploy_proxified_contract "contributions" "$CONTRIBUTIONS_ADDRESS"` || exit_error
 
     (
-        echo "PROFILE_ADDRESS=$PROFILE_ADDRESS"
-        echo "REGISTRY_ADDRESS=$REGISTRY_ADDRESS"
         echo "CONTRIBUTIONS_ADDRESS=$CONTRIBUTIONS_ADDRESS"
     ) | tee >&2 $CACHE_FILE
-
-    ask "Do you want to setup the contracts (for a first deployment)" || return 
-
-    log_info "Setting profile contract inside registry"
-    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function set_profile_contract --inputs $PROFILE_ADDRESS"
-
-    log_info "Granting 'MINTER' role to the registry"
-    send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $PROFILE_ADDRESS --abi ./build/profile_abi.json --function grant_minter_role --inputs $REGISTRY_ADDRESS"
-
-    for registerer in $registerers
-    do
-        log_info "Granting 'REGISTERER' role to $registerer"
-        send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $REGISTRY_ADDRESS --abi ./build/registry_abi.json --function grant_registerer_role --inputs $registerer"
-    done
 }
 
 ### ARGUMENT PARSING
@@ -268,7 +239,6 @@ export STARKNET_WALLET=starkware.starknet.wallets.open_zeppelin.OpenZeppelinAcco
 [ -z "$PROFILE" ] && exit_error "Profile is mandatory (use -p option)"
 
 CACHE_FILE="${CACHE_FILE_BASE}_$PROFILE.txt"
-source "./scripts/configuration/.env.$PROFILE"
 
 ADMIN_ADDRESS=`get_account_address $ADMIN_ACCOUNT`
 [ -z $ADMIN_ADDRESS ] && exit_error "Unable to determine account address"
