@@ -2,7 +2,7 @@
 
 @contract_interface
 namespace IOnlyDust {
-    func is_admin(account) -> felt {
+    func is_admin(account) -> (res: felt) {
     }
 
     func allow_strategy(class_hash) {
@@ -11,7 +11,7 @@ namespace IOnlyDust {
     func disallow_strategy(class_hash) {
         // admin_only
     }
-    func is_allowed(class_hash) {
+    func is_allowed(class_hash) -> (res: felt) {
     }
 
     func new_project(project_hash, calldata_len: felt, calldata: felt*) {
