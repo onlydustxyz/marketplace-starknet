@@ -9,21 +9,22 @@
 //
 
 @external
-func initialize(project_contract) {}
+func initialize(project_contract) {
+}
 
 @external
 func can_assign(contributor_account) {
-    // check project_contract.is_lead_contributor(get_caller_address()) or 
+    // check project_contract.is_lead_contributor(get_caller_address()) or
     // project_contract.is_member(contributor_account) and get_caller_address() == contributor_account
 }
 
 @external
 func can_unassign(contributor_account) {
-    // check project_contract.is_lead_contributor(get_caller_address()) or 
+    // check project_contract.is_lead_contributor(get_caller_address()) or
     // project_contract.is_member(contributor_account) and get_caller_address() == contributor_account
 }
 
 @external
 func can_validate(contributor_account) {
-    // check project_contract.is_lead_contributor(get_caller_address()) 
+    // check project_contract.is_lead_contributor(get_caller_address())
 }

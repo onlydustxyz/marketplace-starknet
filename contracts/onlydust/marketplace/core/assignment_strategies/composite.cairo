@@ -9,4 +9,5 @@
 //
 
 @external
-func initialize(strategies_len, strategies : felt*) {}
+func initialize(strategies_len, strategies: felt*) {
+}

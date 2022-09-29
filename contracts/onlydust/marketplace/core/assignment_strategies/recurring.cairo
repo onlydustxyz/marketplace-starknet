@@ -6,7 +6,7 @@
 // not using this strategy means infinite contribution
 //
 
-// 
+//
 // STRATEGY IMPLEMENTATION
 //
 
