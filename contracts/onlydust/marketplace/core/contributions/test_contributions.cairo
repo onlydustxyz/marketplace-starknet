@@ -51,24 +51,6 @@ func lead_can_test_new_contribution_can_be_added{
     let (contribution2) = contributions.new_contribution(PROJECT_ID, 2, 0);
     %{ stop_prank() %}
 
-    let (count, contribs) = contributions.all_contributions();
-
-    assert 2 = count;
-
-    let contribution = contribs[0];
-    with contribution {
-        assert_contribution_that.id_is(contribution1.id);
-        assert_contribution_that.project_id_is(contribution1.project_id);
-        assert_contribution_that.status_is(Status.OPEN);
-    }
-
-    let contribution = contribs[1];
-    with contribution {
-        assert_contribution_that.id_is(contribution2.id);
-        assert_contribution_that.project_id_is(contribution2.project_id);
-        assert_contribution_that.status_is(Status.OPEN);
-    }
-
     %{
         expect_events(
                {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
@@ -128,11 +110,6 @@ func test_lead_contributor_can_delete_contribution{
     let (local contribution1) = contributions.new_contribution(PROJECT_ID, 1, 0);
     contributions.delete_contribution(contribution1.id);
     %{ stop_prank() %}
-
-    let (contribution) = contributions.contribution(contribution1.id);
-    with contribution {
-        assert_contribution_that.status_is(Status.NONE);
-    }
 
     %{
         expect_events(
@@ -199,12 +176,6 @@ func test_lead_can_assign_contribution_to_contributor{
     let (contribution) = contributions.new_contribution(PROJECT_ID, 1, 0);
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id);
     %{ stop_prank() %}
-
-    let (contribution) = contributions.contribution(contribution_id);
-    with contribution {
-        assert_contribution_that.status_is(Status.ASSIGNED);
-        assert_contribution_that.contributor_is(contributor_id);
-    }
 
     %{
         expect_events(
@@ -382,12 +353,6 @@ func test_lead_can_unassign_contribution_from_contributor{
     contributions.unassign_contributor_from_contribution(contribution_id);
     %{ stop_prank() %}
 
-    let (contribution) = contributions.contribution(contribution_id);
-    with contribution {
-        assert_contribution_that.status_is(Status.OPEN);
-        assert_contribution_that.contributor_is(Uint256(0, 0));
-    }
-
     %{
         expect_events(
                {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID, "issue_number": 1, "gate": 0}},
@@ -471,11 +436,6 @@ func test_lead_can_validate_assigned_contribution{
     contributions.validate_contribution(contribution_id);
     %{ stop_prank() %}
 
-    let (contribution) = contributions.contribution(contribution_id);
-    with contribution {
-        assert_contribution_that.status_is(Status.COMPLETED);
-    }
-
     %{
         expect_events(
                {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
@@ -556,11 +516,6 @@ func test_lead_can_modify_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, r
     contributions.modify_gate(contribution_id, 3);
     %{ stop_prank() %}
 
-    let (contribution) = contributions.contribution(contribution_id);
-    with contribution {
-        assert_contribution_that.gate_is(3);
-    }
-
     %{
         expect_events(
                {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
@@ -602,115 +557,6 @@ func test_anyone_can_get_past_contributions_count{
 
     let (past_contribution_count) = contributions.past_contributions(contributor_id);
     assert 2 = past_contribution_count;
-
-    return ();
-}
-
-@view
-func test_anyone_can_list_open_contributions{
-    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
-}() {
-    alloc_locals;
-    fixture.initialize();
-
-    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
-    let contribution1_id = ContributionId(1);
-    let (contribution1) = contributions.new_contribution(PROJECT_ID, 1, 0);
-    contributions.assign_contributor_to_contribution(contribution1_id, Uint256(1, 0));
-
-    let contribution2_id = ContributionId(2);
-    let (local contribution2) = contributions.new_contribution(PROJECT_ID, 2, 0);
-    %{ stop_prank() %}
-
-    let (contribs_len, contribs) = contributions.all_open_contributions();
-    assert 1 = contribs_len;
-    assert contribution2 = contribs[0];
-
-    return ();
-}
-
-@view
-func test_anyone_can_list_assigned_contributions{
-    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
-}() {
-    alloc_locals;
-    fixture.initialize();
-
-    let contributor_id = Uint256(1, 0);
-
-    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
-    let contribution1_id = ContributionId(1);
-    let (contribution1) = contributions.new_contribution(PROJECT_ID, 1, 0);
-    contributions.assign_contributor_to_contribution(contribution1_id, contributor_id);
-
-    let contribution2_id = ContributionId(2);
-    let (local contribution2) = contributions.new_contribution(PROJECT_ID, 2, 0);
-    %{ stop_prank() %}
-
-    let (contribs_len, contribs) = contributions.assigned_contributions(contributor_id);
-    assert 1 = contribs_len;
-    let contribution = contribs[0];
-    with contribution {
-        assert_contribution_that.id_is(contribution1_id);
-        assert_contribution_that.project_id_is(PROJECT_ID);
-        assert_contribution_that.status_is(Status.ASSIGNED);
-        assert_contribution_that.contributor_is(contributor_id);
-    }
-
-    return ();
-}
-
-@view
-func test_anyone_can_list_contributions_eligible_to_contributor{
-    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
-}() {
-    alloc_locals;
-    fixture.initialize();
-
-    let contributor_id = Uint256('greg', '@onlydust');
-
-    fixture.validate_two_contributions(contributor_id);
-
-    // Create different contributions
-    %{ stop_prank = start_prank(ids.ADMIN) %}
-    access_control.grant_lead_contributor_role_for_project('OnlyDust', LEAD_CONTRIBUTOR_ACCOUNT);
-    %{ stop_prank() %}
-    %{ stop_prank = start_prank(ids.ADMIN) %}
-    access_control.grant_lead_contributor_role_for_project('Briq', LEAD_CONTRIBUTOR_ACCOUNT);
-    %{ stop_prank() %}
-
-    %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
-    let contribution_id = ContributionId(3);  // 'open non-gated'
-    let (contribution1) = contributions.new_contribution('OnlyDust', 1, 0);
-
-    let contribution_id = ContributionId(4);  // 'assigned non-gated'
-    let (local contribution2) = contributions.new_contribution('Briq', 1, 0);
-    contributions.assign_contributor_to_contribution(contribution_id, Uint256(1, 0));
-
-    let contribution_id = ContributionId(5);  // 'open gated'
-    let (local contribution3) = contributions.new_contribution('Briq', 2, 1);
-
-    let contribution_id = ContributionId(6);  // 'open gated too_high'
-    let (local contribution5) = contributions.new_contribution('Briq', 3, 3);
-
-    %{ stop_prank() %}
-
-    let (contribs_len, contribs) = contributions.eligible_contributions(contributor_id);
-    assert 5 = contribs_len;
-
-    let contribution = contribs[0];
-    with contribution {
-        assert_contribution_that.id_is(ContributionId(1));
-        assert_contribution_that.project_id_is('Random');
-        assert_contribution_that.contributor_is(contributor_id);
-    }
-
-    let contribution = contribs[2];
-    with contribution {
-        assert_contribution_that.id_is(ContributionId(3));
-        assert_contribution_that.project_id_is('OnlyDust');
-        assert_contribution_that.contributor_is(Uint256(0, 0));
-    }
 
     return ();
 }
@@ -771,12 +617,6 @@ func test_project_member_can_claim_contribution{
     %{ stop_prank = start_prank(ids.PROJECT_MEMBER_ACCOUNT) %}
     contributions.claim_contribution(contribution_id, contributor_id);
     %{ stop_prank() %}
-
-    let (contribution) = contributions.contribution(contribution_id);
-    with contribution {
-        assert_contribution_that.status_is(Status.ASSIGNED);
-        assert_contribution_that.contributor_is(contributor_id);
-    }
 
     %{
         expect_events(
