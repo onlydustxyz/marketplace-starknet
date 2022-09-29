@@ -171,6 +171,20 @@ func modify_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
     return ();
 }
 
+func delete{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    access_control.only_lead_contributor();
+    status_access.only_open();
+
+    // Update storage
+    contribution_status_.write(Status.NONE);
+
+    // Emit event
+    let (contribution_address) = get_contract_address();
+    ContributionDeleted.emit(contribution_address);
+
+    return ();
+}
+
 namespace access_control {
     func is_lead_contributor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         contributor_account: felt
