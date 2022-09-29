@@ -10,6 +10,7 @@ from onlydust.marketplace.core.github.contribution import (
     unassign,
     validate,
     modify_gate,
+    delete,
 )
 
 const ADMIN = 'admin';
@@ -223,6 +224,62 @@ func test_cannot_assign_when_already_assigned{
         stop_mock_oracle()
     %}
 
+    return ();
+}
+
+@view
+func test_cannot_assign_when_deleted{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() {
+    alloc_locals;
+    fixture.init();
+
+    %{
+        stop_mock_oracle = mock_call(ids.ORACLE, "past_contribution_count", [3])
+        stop_mock_project = mock_call(ids.PROJECT_CONTRACT, "is_lead_contributor", [1])
+        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT)
+    %}
+    delete();
+    %{ expect_revert(error_message="Contribution: Contribution is not OPEN") %}
+    assign(1111);
+    %{
+        stop_prank()
+        stop_mock_project()
+        stop_mock_oracle()
+    %}
+
+    return ();
+}
+
+@view
+func test_reassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    alloc_locals;
+    fixture.init();
+
+    let contributor_account = 42;
+
+    %{
+        stop_mock_oracle = mock_call(ids.ORACLE, "past_contribution_count", [3])
+        stop_mock_project = mock_call(ids.PROJECT_CONTRACT, "is_lead_contributor", [1])
+        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT)
+    %}
+    assign(contributor_account);
+    unassign(contributor_account);
+    assign(contributor_account);
+    %{
+        stop_prank()
+        stop_mock_project()
+        stop_mock_oracle()
+    %}
+
+    let (contract_address) = get_contract_address();
+    %{
+        expect_events(
+               {"name": "ContributionAssigned", "data": {"contribution_id": ids.contract_address, "contributor_id": {"low": ids.contributor_account, "high": 0}}},
+               {"name": "ContributionUnassigned", "data": {"contribution_id": ids.contract_address}},
+               {"name": "ContributionAssigned", "data": {"contribution_id": ids.contract_address, "contributor_id": {"low": ids.contributor_account, "high": 0}}},
+           )
+    %}
     return ();
 }
 
@@ -446,6 +503,73 @@ func test_cannot_modify_gate_when_not_open{
     %}
     assign(42);
     modify_gate(gate);
+    %{
+        stop_prank()
+        stop_mock_project()
+        stop_mock_oracle()
+    %}
+    return ();
+}
+
+@view
+func test_delete{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    alloc_locals;
+    fixture.init();
+
+    %{
+        stop_mock_project = mock_call(ids.PROJECT_CONTRACT, "is_lead_contributor", [1])
+        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT)
+    %}
+    delete();
+    %{
+        stop_prank()
+        stop_mock_project()
+    %}
+
+    let (contract_address) = get_contract_address();
+    %{
+        expect_events(
+               {"name": "ContributionDeleted", "data": {"contribution_id": ids.contract_address}},
+           )
+    %}
+    return ();
+}
+
+@view
+func test_cannot_delete_when_not_lead{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() {
+    alloc_locals;
+    fixture.init();
+
+    %{
+        stop_mock_project = mock_call(ids.PROJECT_CONTRACT, "is_lead_contributor", [0])
+        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT)
+        expect_revert(error_message="Contribution: LEAD_CONTRIBUTOR role required")
+    %}
+    delete();
+    %{
+        stop_prank()
+        stop_mock_project()
+    %}
+    return ();
+}
+
+@view
+func test_cannot_delete_when_not_open{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() {
+    alloc_locals;
+    fixture.init();
+
+    %{
+        stop_mock_oracle = mock_call(ids.ORACLE, "past_contribution_count", [3])
+        stop_mock_project = mock_call(ids.PROJECT_CONTRACT, "is_lead_contributor", [1])
+        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT)
+        expect_revert(error_message="Contribution: Contribution is not OPEN")
+    %}
+    assign(42);
+    delete();
     %{
         stop_prank()
         stop_mock_project()
