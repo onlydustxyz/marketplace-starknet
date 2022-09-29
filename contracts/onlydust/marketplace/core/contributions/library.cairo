@@ -283,75 +283,12 @@ namespace contributions {
     // Read Only
     //
 
-    // Get the contribution details
-    func contribution{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-        contribution_id: ContributionId
-    ) -> (contribution: Contribution) {
-        let (contribution) = contribution_access.build(contribution_id);
-        return (contribution,);
-    }
-
     // Get the number of past contributions for a given contributor
     func past_contributions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         contributor_id: Uint256
     ) -> (num_contributions: felt) {
         let (num_contributions) = past_contributions_.read(contributor_id);
         return (num_contributions,);
-    }
-
-    // Retrieve all contributions
-    func all_contributions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
-        contributions_len: felt, contributions: Contribution*
-    ) {
-        alloc_locals;
-        let (local contribution_count) = contribution_count_.read();
-        let (contributions: Contribution*) = alloc();
-        let (contributions_len) = internal.fetch_contribution_loop(
-            contribution_count, contributions
-        );
-        return (contributions_len, contributions);
-    }
-
-    // Retrieve all contributions in OPEN status
-    func all_open_contributions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-        ) -> (contributions_len: felt, contributions: Contribution*) {
-        alloc_locals;
-
-        // Get all contributions
-        let (contributions_len, contributions) = all_contributions();
-
-        // Filter to keep only open ones
-        let (contributions_len: felt, contributions: Contribution*) = stream.filter_struct(
-            contribution_access.is_open, contributions_len, contributions, Contribution.SIZE
-        );
-
-        return (contributions_len, contributions);
-    }
-
-    // Retrieve all contributions assigned to a given contributor
-    func assigned_contributions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-        contributor_id: Uint256
-    ) -> (contributions_len: felt, contributions: Contribution*) {
-        alloc_locals;
-        let (local contribution_count) = contribution_count_.read();
-        let (contributions: Contribution*) = alloc();
-        let (contributions_len) = internal.fetch_contribution_assigned_to_loop(
-            contribution_count, contributions, contributor_id
-        );
-        return (contributions_len, contributions);
-    }
-
-    // Retrieve all contributions a given contributor is eligible to
-    func eligible_contributions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-        contributor_id: Uint256
-    ) -> (contributions_len: felt, contributions: Contribution*) {
-        alloc_locals;
-        let (local contribution_count) = contribution_count_.read();
-        let (contributions: Contribution*) = alloc();
-        let (contributions_len) = internal.fetch_contribution_eligible_to_loop(
-            contribution_count, contributions, contributor_id
-        );
-        return (contributions_len, contributions);
     }
 
     func add_lead_contributor_for_project{

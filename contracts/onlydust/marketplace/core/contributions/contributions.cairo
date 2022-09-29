@@ -43,46 +43,12 @@ func initializer{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 //
 // Views
 //
-@view
-func contribution{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    contribution_id: ContributionId
-) -> (contribution: Contribution) {
-    return contributions.contribution(contribution_id);
-}
 
 @view
 func past_contributions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_id: Uint256
 ) -> (num_contributions: felt) {
     return contributions.past_contributions(contributor_id);
-}
-
-@view
-func all_contributions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
-    contributions_len: felt, contributions: Contribution*
-) {
-    return contributions.all_contributions();
-}
-
-@view
-func all_open_contributions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
-    contributions_len: felt, contributions: Contribution*
-) {
-    return contributions.all_open_contributions();
-}
-
-@view
-func assigned_contributions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    contributor_id: Uint256
-) -> (contributions_len: felt, contributions: Contribution*) {
-    return contributions.assigned_contributions(contributor_id);
-}
-
-@view
-func eligible_contributions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    contributor_id: Uint256
-) -> (contributions_len: felt, contributions: Contribution*) {
-    return contributions.eligible_contributions(contributor_id);
 }
 
 //
