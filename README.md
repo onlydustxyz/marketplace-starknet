@@ -27,8 +27,6 @@
 
 This repository contains the code for starknet smart contracts:
 
-* **registry**: To register a contributor into the platform (mint a profile and associate its different user ids like github)
-* **profile**: The non-transferrable NFT that will be used to identify contributions of a given contributor
 * **contributions**: The list of contributions
 
 ## 🎗️ Prerequisites
