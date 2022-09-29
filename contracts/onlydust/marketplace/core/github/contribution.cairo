@@ -124,6 +124,17 @@ func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
 func unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_account
 ) {
+    access_control.assert_can_unassign();
+    status_access.only_assigned();
+
+    // Update storage
+    contribution_status_.write(Status.OPEN);
+    contribution_contributor_.write(0);
+
+    // Emit event
+    let (contribution_address) = get_contract_address();
+    ContributionUnassigned.emit(contribution_address);
+
     return ();
 }
 
@@ -171,6 +182,17 @@ namespace access_control {
 
         with_attr error_message("Contribution: LEAD_CONTRIBUTOR or PROJECT_MEMBER role required") {
             assert 1 = 0;
+        }
+        return ();
+    }
+
+    func assert_can_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+        alloc_locals;
+        let (caller) = get_caller_address();
+        let (is_lead) = is_lead_contributor(caller);
+
+        with_attr error_message("Contribution: LEAD_CONTRIBUTOR role required") {
+            assert 1 = is_lead;
         }
         return ();
     }
