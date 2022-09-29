@@ -124,7 +124,7 @@ func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
 func unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_account
 ) {
-    access_control.assert_can_unassign();
+    access_control.only_lead_contributor();
     status_access.only_assigned();
 
     // Update storage
@@ -144,7 +144,7 @@ func unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
 func validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_account
 ) {
-    access_control.assert_can_validate();
+    access_control.only_lead_contributor();
     status_access.only_assigned();
 
     // Update storage
@@ -153,6 +153,20 @@ func validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     // Emit event
     let (contribution_address) = get_contract_address();
     ContributionValidated.emit(contribution_address);
+
+    return ();
+}
+
+func modify_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(gate: felt) {
+    access_control.only_lead_contributor();
+    status_access.only_open();
+
+    // Update storage
+    contribution_gate_.write(gate);
+
+    // Emit event
+    let (contribution_address) = get_contract_address();
+    ContributionGateChanged.emit(contribution_address, gate);
 
     return ();
 }
@@ -198,18 +212,7 @@ namespace access_control {
         return ();
     }
 
-    func assert_can_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-        alloc_locals;
-        let (caller) = get_caller_address();
-        let (is_lead) = is_lead_contributor(caller);
-
-        with_attr error_message("Contribution: LEAD_CONTRIBUTOR role required") {
-            assert 1 = is_lead;
-        }
-        return ();
-    }
-
-    func assert_can_validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    func only_lead_contributor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
         alloc_locals;
         let (caller) = get_caller_address();
         let (is_lead) = is_lead_contributor(caller);
