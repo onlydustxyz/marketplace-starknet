@@ -4,7 +4,7 @@
 // This strategy checks that the contributor is eligibible to a contribution
 //
 
-// 
+//
 // EVENTS
 //
 
@@ -12,7 +12,7 @@
 func ContributionGateChanged(contribution_account: felt, gate: felt) {
 }
 
-// 
+//
 // STRATEGY IMPLEMENTATION
 //
 
@@ -32,12 +32,12 @@ func on_validated() {
     // increase past_contributions_count(contributor_account)
 }
 
-// 
+//
 // MANAGEMENT FUNCTIONS
 //
 
 @external
-func change_gate(new_past_contributions_count_required){
+func change_gate(new_past_contributions_count_required) {
     ContributionGateChanged.emit(get_contract_address(), new_past_contributions_count_required);
     // set storage
 }

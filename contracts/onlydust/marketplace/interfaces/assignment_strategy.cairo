@@ -2,14 +2,20 @@
 
 @contract_interface
 namespace IAssignmentStrategy {
-    func can_assign(contributor_account) -> bool {}
-    func on_assigned(contributor_account) {}
+    func can_assign(contributor_account) -> felt {
+    }
+    func on_assigned(contributor_account) {
+    }
 
-    func can_unassign(contributor_account) -> bool {}
-    func on_unassigned(contributor_account) {}
+    func can_unassign(contributor_account) -> felt {
+    }
+    func on_unassigned(contributor_account) {
+    }
 
-    func can_validate(contributor_account) -> bool {}
-    func on_validated(contributor_account) {}
+    func can_validate(contributor_account) -> felt {
+    }
+    func on_validated(contributor_account) {
+    }
 }
 
 // Example of contribution creation with strategies
@@ -29,4 +35,3 @@ namespace IAssignmentStrategy {
 //     $composite_hash 4 $access_control $gated_hash $sequential_hash $recurring_hash
 
 // starknet invoke --abi gated.json --contract_address $contribution_contract --function set_past_contributions_count_required --inputs 2
-

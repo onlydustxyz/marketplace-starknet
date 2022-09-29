@@ -4,7 +4,7 @@
 // still allowing on going asssignments to complete
 //
 
-// 
+//
 // STRATEGY IMPLEMENTATION
 //
 
@@ -14,13 +14,13 @@ func can_assign(contributor_account) {
 }
 
 @external
-func lock(){
+func lock() {
     // set locked == true
     ContributionDeleted.emit(get_contract_address());
     return ();
 }
 
 @external
-func unlock(){
+func unlock() {
     // set locked == false
 }

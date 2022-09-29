@@ -6,12 +6,13 @@
 // when not using this strategy, and if coupled with a recurring strategy, a contributor can claim all available slots
 //
 
-// 
+//
 // STRATEGY IMPLEMENTATION
 //
 
 @external
-func initialize(max_parallel_count) {}
+func initialize(max_parallel_count) {
+}
 
 @external
 func can_assign(contributor_account) {
@@ -20,7 +21,7 @@ func can_assign(contributor_account) {
 
 @external
 func on_assigned(contributor_account) {
-    // increase slot(contributor_account) 
+    // increase slot(contributor_account)
 }
 
 @external
