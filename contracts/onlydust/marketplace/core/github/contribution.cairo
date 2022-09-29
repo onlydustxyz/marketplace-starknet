@@ -138,10 +138,22 @@ func unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     return ();
 }
 
+// !CAUTION!: in order to update past_contribution_count of the contributor, this function
+// must be called through the 'contributions' contract only.
 @external
 func validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_account
 ) {
+    access_control.assert_can_validate();
+    status_access.only_assigned();
+
+    // Update storage
+    contribution_status_.write(Status.COMPLETED);
+
+    // Emit event
+    let (contribution_address) = get_contract_address();
+    ContributionValidated.emit(contribution_address);
+
     return ();
 }
 
@@ -187,6 +199,17 @@ namespace access_control {
     }
 
     func assert_can_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+        alloc_locals;
+        let (caller) = get_caller_address();
+        let (is_lead) = is_lead_contributor(caller);
+
+        with_attr error_message("Contribution: LEAD_CONTRIBUTOR role required") {
+            assert 1 = is_lead;
+        }
+        return ();
+    }
+
+    func assert_can_validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
         alloc_locals;
         let (caller) = get_caller_address();
         let (is_lead) = is_lead_contributor(caller);

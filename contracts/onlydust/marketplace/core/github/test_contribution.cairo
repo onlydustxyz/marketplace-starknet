@@ -4,7 +4,7 @@ from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.starknet.common.syscalls import get_contract_address, get_caller_address
 
-from onlydust.marketplace.core.github.contribution import initialize, assign, unassign
+from onlydust.marketplace.core.github.contribution import initialize, assign, unassign, validate
 
 const ADMIN = 'admin';
 const REPO_ID = 'MyProject';
@@ -291,6 +291,85 @@ func test_cannot_unassign_when_not_assigned{
         expect_revert(error_message="Contribution: Contribution is not ASSIGNED")
     %}
     unassign(contributor_account);
+    %{
+        stop_prank()
+        stop_mock_project()
+        stop_mock_oracle()
+    %}
+    return ();
+}
+
+@view
+func test_validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    alloc_locals;
+    fixture.init();
+    let contributor_account = 42;
+
+    %{
+        stop_mock_oracle = mock_call(ids.ORACLE, "past_contribution_count", [3])
+        stop_mock_project = mock_call(ids.PROJECT_CONTRACT, "is_lead_contributor", [1])
+        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT)
+    %}
+    assign(contributor_account);
+    validate(contributor_account);
+    %{
+        stop_prank()
+        stop_mock_project()
+        stop_mock_oracle()
+    %}
+
+    let (contract_address) = get_contract_address();
+    %{
+        expect_events(
+               {"name": "ContributionValidated", "data": {"contribution_id": ids.contract_address}},
+           )
+    %}
+    return ();
+}
+
+@view
+func test_cannot_validate_when_not_lead{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() {
+    alloc_locals;
+    fixture.init();
+    let contributor_account = 42;
+
+    %{
+        stop_mock_oracle = mock_call(ids.ORACLE, "past_contribution_count", [3])
+        stop_mock_project = mock_call(ids.PROJECT_CONTRACT, "is_lead_contributor", [1])
+        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT)
+    %}
+    assign(contributor_account);
+    %{
+        stop_mock_project()
+        stop_mock_project = mock_call(ids.PROJECT_CONTRACT, "is_lead_contributor", [0])
+        expect_revert(error_message="Contribution: LEAD_CONTRIBUTOR role required")
+    %}
+    validate(contributor_account);
+    %{
+        stop_prank()
+        stop_mock_project()
+        stop_mock_oracle()
+    %}
+    return ();
+}
+
+@view
+func test_cannot_validate_when_not_assigned{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() {
+    alloc_locals;
+    fixture.init();
+    let contributor_account = 42;
+
+    %{
+        stop_mock_oracle = mock_call(ids.ORACLE, "past_contribution_count", [3])
+        stop_mock_project = mock_call(ids.PROJECT_CONTRACT, "is_lead_contributor", [1])
+        stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT)
+        expect_revert(error_message="Contribution: Contribution is not ASSIGNED")
+    %}
+    validate(contributor_account);
     %{
         stop_prank()
         stop_mock_project()
