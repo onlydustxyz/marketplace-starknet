@@ -159,7 +159,10 @@ deploy_proxified_contract() {
     contract=$1
     proxy_address=$2
 
-    log_info "Declaring contract class..."
+    log_info "Declaring github contribution contract class..."
+    implementation_class_hash=`send_declare_contract_transaction "starknet declare $ACCOUNT_OPT $NETWORK_OPT --contract ./build/github_contribution.json"` || exit_error
+
+    log_info "Declaring contributions contract class..."
     implementation_class_hash=`send_declare_contract_transaction "starknet declare $ACCOUNT_OPT $NETWORK_OPT --contract ./build/${contract}.json"` || exit_error
 
     if [ -z $proxy_address ]; then
