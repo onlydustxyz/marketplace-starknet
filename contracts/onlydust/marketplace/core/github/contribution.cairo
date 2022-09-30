@@ -34,11 +34,11 @@ func ContributionAssigned(contribution_id: felt, contributor_id: Uint256) {
 }
 
 @event
-func ContributionUnassigned(contribution_id: felt) {
+func ContributionClaimed(contribution_id: felt, contributor_id: Uint256) {
 }
 
 @event
-func ContributionClaimed(contribution_id: felt, contributor_id: Uint256) {
+func ContributionUnassigned(contribution_id: felt) {
 }
 
 @event
@@ -122,8 +122,12 @@ func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
 
     // Emit event
     let (contribution_address) = get_contract_address();
+    let (caller) = get_caller_address();
+    if (contributor_account == caller) {
+        ContributionClaimed.emit(contribution_address, Uint256(contributor_account, 0));
+        return ();
+    }
     ContributionAssigned.emit(contribution_address, Uint256(contributor_account, 0));
-
     return ();
 }
 

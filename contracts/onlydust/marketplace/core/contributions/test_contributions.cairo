@@ -217,7 +217,7 @@ func test_cannot_assign_non_existent_contribution{
 
     %{
         stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) 
-        expect_revert(error_message="Contributions: Contribution does not exist")
+        expect_revert()
     %}
     contributions.assign_contributor_to_contribution(contribution_id, contributor_id);
     %{ stop_prank() %}
@@ -396,7 +396,7 @@ func test_cannot_unassign_from_non_existent_contribution{
 
     %{
         stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) 
-        expect_revert(error_message="Contributions: Contribution does not exist")
+        expect_revert()
     %}
     contributions.unassign_contributor_from_contribution(contribution_id);
     %{ stop_prank() %}
@@ -478,7 +478,7 @@ func test_cannot_validate_non_existent_contribution{
 
     %{
         stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) 
-        expect_revert(error_message="Contributions: Contribution does not exist")
+        expect_revert()
     %}
     contributions.validate_contribution(contribution_id);
     %{ stop_prank() %}
@@ -657,7 +657,7 @@ func test_cannot_claim_non_existent_contribution{
 
     %{
         stop_prank = start_prank(ids.PROJECT_MEMBER_ACCOUNT) 
-        expect_revert(error_message="Contributions: Contribution does not exist")
+        expect_revert()
     %}
     contributions.claim_contribution(contribution_id, contributor_id);
     %{ stop_prank() %}
