@@ -27,6 +27,15 @@ from onlydust.marketplace.interfaces.contribution import IContribution
 
 @contract_interface
 namespace IGithubContribution {
+    func initialize(
+        contributor_oracle: felt,
+        project_contract: felt,
+        repo_id: felt,
+        issue_number: felt,
+        gate: felt,
+    ) {
+    }
+
     func modify_gate(gate: felt) {
     }
 
@@ -163,21 +172,29 @@ namespace contributions {
     func deploy_new_contribution{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         project_id: felt, issue_number: felt, gate: felt
     ) -> (contribution: Contribution) {
-        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x7b1b81add4d1ed1d9c34a66cfd89e703a506c9d35d9b3a85628f2a9797f7187;
+        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x7221fa3de5acf174f0809426b669ebc2d05fe465686554e15b8af9e4ad4c282;
         let (this) = get_contract_address();
         let (current_salt) = contributions_deploy_salt_.read();
 
         let (contract_address) = deploy(
             class_hash=GITHUB_CONTRIBUTION_CLASS_HASH,
             contract_address_salt=current_salt,
-            constructor_calldata_size=5,
-            constructor_calldata=cast(new (this, this, project_id, issue_number, gate,), felt*),
+            constructor_calldata_size=0,
+            constructor_calldata=new (),
             deploy_from_zero=FALSE,
         );
-        contributions_deploy_salt_.write(value=current_salt + 1);
-
         ContributionDeployed.emit(contract_address);
 
+        IGithubContribution.initialize(
+            contract_address,
+            contributor_oracle=this,
+            project_contract=this,
+            repo_id=project_id,
+            issue_number=issue_number,
+            gate=gate,
+        );
+
+        contributions_deploy_salt_.write(value=current_salt + 1);
         contribution_project_id.write(ContributionId(contract_address), project_id);
 
         let contribution = Contribution(
