@@ -136,6 +136,7 @@ namespace contributions {
     // Write
     //
 
+    // DEPRECATED - only used in unit tests to validate legacy way of creating contributions
     // Add a contribution for a given token id
     func new_contribution{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         project_id: felt, issue_number: felt, gate: felt

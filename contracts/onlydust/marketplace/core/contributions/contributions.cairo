@@ -23,6 +23,17 @@ from onlydust.marketplace.library.migration_library import (
 )
 
 //
+// STORAGE
+//
+@storage_var
+func contributions_deploy_salt_() -> (salt: felt) {
+}
+
+@event
+func ContributionDeployed(contract_address) {
+}
+
+//
 // Constructor
 //
 @constructor
@@ -74,7 +85,22 @@ func revoke_admin_role{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
 func new_contribution{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     project_id: felt, issue_number: felt, gate: felt
 ) -> (contribution: Contribution) {
-    return contributions.new_contribution(project_id, issue_number, gate);
+    const GITHUB_CONTRIBUTION_CLASS_HASH = 0x0;
+    let (this) = get_contract_address();
+    let (current_salt) = contributions_deploy_salt_.read();
+
+    let (contract_address) = deploy(
+        class_hash=GITHUB_CONTRIBUTION_CLASS_HASH,
+        contract_address_salt=current_salt,
+        constructor_calldata_size=5,
+        constructor_calldata=cast(new (this, this, project_id, issue_number, gate,), felt*),
+        deploy_from_zero=FALSE,
+    );
+    salt.write(value=current_salt + 1);
+
+    ContributionDeployed.emit(contract_address);
+
+    return Contribution(project_id, issue_number, gate);
 }
 
 @external

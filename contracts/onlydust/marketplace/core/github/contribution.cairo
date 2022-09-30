@@ -79,7 +79,14 @@ func contribution_gate_() -> (gate: felt) {
 //
 // Init
 //
-@external
+@constructor
+func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    contributor_oracle: felt, project_contract: felt, repo_id: felt, issue_number: felt, gate: felt
+) {
+    initialize(contributor_oracle, project_contract, repo_id, issue_number, gate);
+    return ();
+}
+
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_oracle: felt, project_contract: felt, repo_id: felt, issue_number: felt, gate: felt
 ) {
