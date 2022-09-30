@@ -102,7 +102,7 @@ func test_claim{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
     alloc_locals;
     fixture.init();
 
-    let contributor_account = 42;
+    let contributor_account = 0;  // must be 0 as `start_prank` does not change get_tx_info() result
 
     %{
         stop_mock_oracle = mock_call(ids.ORACLE, "past_contribution_count", [3])

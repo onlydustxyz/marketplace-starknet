@@ -4,7 +4,7 @@ from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.bool import TRUE, FALSE
-from starkware.starknet.common.syscalls import get_contract_address, get_caller_address
+from starkware.starknet.common.syscalls import get_contract_address, get_tx_info, TxInfo
 from openzeppelin.security.initializable.library import Initializable
 
 from onlydust.marketplace.interfaces.project import IProject
@@ -121,8 +121,8 @@ func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contribution_contributor_.write(contributor_account);
 
     // Emit event
+    let caller = internal.get_account_caller_address();
     let (contribution_address) = get_contract_address();
-    let (caller) = get_caller_address();
     if (contributor_account == caller) {
         ContributionClaimed.emit(contribution_address, Uint256(contributor_account, 0));
         return ();
@@ -219,7 +219,7 @@ namespace access_control {
         contributor_account: felt
     ) {
         alloc_locals;
-        let (caller) = get_caller_address();
+        let caller = internal.get_account_caller_address();
 
         let (is_lead) = is_lead_contributor(caller);
         if (is_lead == 1) {
@@ -239,7 +239,7 @@ namespace access_control {
 
     func only_lead_contributor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
         alloc_locals;
-        let (caller) = get_caller_address();
+        let caller = internal.get_account_caller_address();
         let (is_lead) = is_lead_contributor(caller);
 
         with_attr error_message("Contribution: LEAD_CONTRIBUTOR role required") {
@@ -291,5 +291,14 @@ namespace gating {
             assert 1 = is_eligible;
         }
         return ();
+    }
+}
+
+namespace internal {
+    func get_account_caller_address{
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+    }() -> felt {
+        let (tx_info: TxInfo*) = get_tx_info();
+        return tx_info.account_contract_address;
     }
 }
