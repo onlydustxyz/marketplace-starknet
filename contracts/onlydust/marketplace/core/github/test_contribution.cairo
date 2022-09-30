@@ -121,7 +121,7 @@ func test_claim{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
     let (contract_address) = get_contract_address();
     %{
         expect_events(
-               {"name": "ContributionAssigned", "data": {"contribution_id": ids.contract_address, "contributor_id": {"low": ids.contributor_account, "high": 0}}},
+               {"name": "ContributionClaimed", "data": {"contribution_id": ids.contract_address, "contributor_id": {"low": ids.contributor_account, "high": 0}}},
            )
     %}
     return ();
