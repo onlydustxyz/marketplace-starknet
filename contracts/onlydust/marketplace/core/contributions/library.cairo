@@ -7,7 +7,13 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math import assert_nn, assert_lt, assert_le, assert_not_zero, sign
 from starkware.cairo.common.math_cmp import is_not_zero, is_le
 from starkware.cairo.common.hash import hash2
-from starkware.starknet.common.syscalls import get_caller_address, get_contract_address, deploy
+from starkware.starknet.common.syscalls import (
+    get_caller_address,
+    get_contract_address,
+    deploy,
+    get_tx_info,
+    TxInfo,
+)
 
 from onlydust.stream.default_implementation import stream
 from onlydust.marketplace.core.contributions.access_control import (
@@ -363,7 +369,7 @@ namespace contributions {
         let contribution_exists = contribution_access.exists(contribution_id);
         if (contribution_exists == 0) {
             let contract_address = contribution_id.inner;
-            let (contributor_account) = get_caller_address();
+            let contributor_account = internal.get_account_caller_address();
             contribution_contributor_.write(contribution_id, contributor_id);
             IContribution.assign(contract_address, contributor_account);
             return ();
@@ -667,5 +673,12 @@ namespace internal {
         contribution_contributor_.write(contribution_id, contributor_id);
 
         return ();
+    }
+
+    func get_account_caller_address{
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+    }() -> felt {
+        let (tx_info: TxInfo*) = get_tx_info();
+        return tx_info.account_contract_address;
     }
 }

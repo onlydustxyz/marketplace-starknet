@@ -93,20 +93,35 @@ func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
 func set_caller_as_lead_contributor{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
+    alloc_locals;
     let (contributions_contract) = contributions_access.deployed();
+
     %{ stop_prank = start_prank(ids.ADMIN, ids.contributions_contract) %}
     IContributions.add_lead_contributor_for_project(
         contributions_contract, PROJECT_ID, CALLER_ACCOUNT
     );
+    %{ stop_prank() %}
+
+    %{ stop_prank = start_prank(ids.CALLER_ACCOUNT, ids.contributions_contract) %}
+    IContributions.remove_member_for_project(contributions_contract, PROJECT_ID, CALLER_ACCOUNT);
     %{ stop_prank() %}
     return ();
 }
 
 func set_caller_as_project_member{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     ) {
+    alloc_locals;
+    set_caller_as_lead_contributor();
     let (contributions_contract) = contributions_access.deployed();
-    %{ stop_prank = start_prank(ids.ADMIN, ids.contributions_contract) %}
+
+    %{ stop_prank = start_prank(ids.CALLER_ACCOUNT, ids.contributions_contract) %}
     IContributions.add_member_for_project(contributions_contract, PROJECT_ID, CALLER_ACCOUNT);
+    %{ stop_prank() %}
+
+    %{ stop_prank = start_prank(ids.ADMIN, ids.contributions_contract) %}
+    IContributions.remove_lead_contributor_for_project(
+        contributions_contract, PROJECT_ID, CALLER_ACCOUNT
+    );
     %{ stop_prank() %}
     return ();
 }
@@ -163,6 +178,46 @@ func test_contribution_lifetime_with_legacy_api{
                {"name": "ContributionAssigned", "data": {"contribution_id": ids.contribution2.id.inner, "contributor_id": {"low": ids.CONTRIBUTOR_ACCOUNT, "high": 0}}},
                {"name": "ContributionUnassigned", "data": {"contribution_id": ids.contribution2.id.inner}},
                {"name": "ContributionDeleted", "data": {"contribution_id": ids.contribution2.id.inner}},
+           )
+    %}
+    return ();
+}
+
+@view
+func test_contribution_claimed_with_legacy_api{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() {
+    alloc_locals;
+
+    let (local contributions_contract) = contributions_access.deployed();
+
+    set_caller_as_lead_contributor();
+
+    let (contribution1: Contribution) = IContributions.new_contribution(
+        contributions_contract, PROJECT_ID, 235, 0
+    );
+
+    set_caller_as_project_member();
+
+    let contribution_id = contribution1.id;
+    IContributions.claim_contribution(
+        contributions_contract, contribution_id, Uint256(CALLER_ACCOUNT, 0)
+    );
+
+    set_caller_as_lead_contributor();
+
+    IContributions.validate_contribution(contributions_contract, contribution_id);
+
+    let (count) = IContributorOracle.past_contribution_count(
+        contributions_contract, CALLER_ACCOUNT
+    );
+    assert count = 1;
+
+    %{
+        expect_events(
+               {"name": "ContributionCreated", "data": {"contribution_id": ids.contribution1.id.inner, "project_id": ids.PROJECT_ID,  "issue_number": 235, "gate": 0}},
+               {"name": "ContributionClaimed", "data": {"contribution_id": ids.contribution1.id.inner, "contributor_id": {"low": ids.CALLER_ACCOUNT, "high": 0}}},
+               {"name": "ContributionValidated", "data": {"contribution_id": ids.contribution1.id.inner}},
            )
     %}
     return ();
