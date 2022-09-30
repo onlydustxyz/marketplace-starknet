@@ -284,11 +284,11 @@ namespace contributions {
     //
 
     // Get the number of past contributions for a given contributor
-    func past_contributions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-        contributor_id: Uint256
-    ) -> (num_contributions: felt) {
-        let (num_contributions) = past_contributions_.read(contributor_id);
-        return (num_contributions,);
+    func past_contributions_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        contributor_account
+    ) -> felt {
+        let (count: felt) = past_contributions_.read(Uint256(contributor_account, 0));
+        return count;
     }
 
     func add_lead_contributor_for_project{

@@ -270,7 +270,8 @@ func test_can_assign_gated_contribution_eligible_contributor{
 
     let contribution_id = ContributionId(1);
     let gated_contribution_id = ContributionId(2);
-    let contributor_id = Uint256(1, 0);
+    let contributor_account = 1;
+    let contributor_id = Uint256(contributor_account, 0);
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     // Create a non-gated contribution
@@ -288,8 +289,7 @@ func test_can_assign_gated_contribution_eligible_contributor{
     contributions.validate_contribution(gated_contribution_id);
     %{ stop_prank() %}
 
-    let (past_contributions) = contributions.past_contributions(contributor_id);
-    assert 2 = past_contributions;
+    assert 2 = contributions.past_contributions_count(contributor_account);
 
     return ();
 }
@@ -552,11 +552,10 @@ func test_anyone_can_get_past_contributions_count{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
     fixture.initialize();
-    let contributor_id = Uint256('greg', '@onlydust');
-    fixture.validate_two_contributions(contributor_id);
+    let contributor_account = 'greg';
+    fixture.validate_two_contributions(Uint256(contributor_account, 0));
 
-    let (past_contribution_count) = contributions.past_contributions(contributor_id);
-    assert 2 = past_contribution_count;
+    assert 2 = contributions.past_contributions_count(contributor_account);
 
     return ();
 }
@@ -717,7 +716,8 @@ func test_can_claim_gated_contribution_as_eligible_contributor{
 
     let contribution_id = ContributionId(1);
     let gated_contribution_id = ContributionId(2);
-    let contributor_id = Uint256(1, 0);
+    let contributor_account = 1;
+    let contributor_id = Uint256(contributor_account, 0);
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     // Create a non-gated contribution
@@ -731,8 +731,7 @@ func test_can_claim_gated_contribution_as_eligible_contributor{
     contributions.validate_contribution(contribution_id);
     %{ stop_prank() %}
 
-    let (past_contributions) = contributions.past_contributions(contributor_id);
-    assert 1 = past_contributions;
+    assert 1 = contributions.past_contributions_count(contributor_account);
 
     %{ stop_prank = start_prank(ids.PROJECT_MEMBER_ACCOUNT) %}
     // Claim the gated contribution
@@ -782,8 +781,8 @@ namespace fixture {
         contributions.validate_contribution(gated_contribution_id);
         %{ stop_prank() %}
 
-        let (past_contributions) = contributions.past_contributions(contributor_id);
-        assert 2 = past_contributions;
+        let contributor_account = contributor_id.low;
+        assert 2 = contributions.past_contributions_count(contributor_account);
 
         return ();
     }
