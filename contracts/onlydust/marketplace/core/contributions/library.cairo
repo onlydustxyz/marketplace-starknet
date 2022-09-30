@@ -1,12 +1,13 @@
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.bool import FALSE
 from starkware.cairo.common.uint256 import Uint256, uint256_eq
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math import assert_nn, assert_lt, assert_le, assert_not_zero, sign
 from starkware.cairo.common.math_cmp import is_not_zero, is_le
 from starkware.cairo.common.hash import hash2
-from starkware.starknet.common.syscalls import get_caller_address
+from starkware.starknet.common.syscalls import get_caller_address, get_contract_address, deploy
 
 from onlydust.stream.default_implementation import stream
 from onlydust.marketplace.core.contributions.access_control import (
@@ -73,6 +74,10 @@ struct Contribution {
 // Events
 //
 @event
+func ContributionDeployed(contract_address) {
+}
+
+@event
 func ContributionCreated(contribution_id: felt, project_id: felt, issue_number: felt, gate: felt) {
 }
 
@@ -104,6 +109,10 @@ func ContributionGateChanged(contribution_id: felt, gate: felt) {
 // Storage
 //
 @storage_var
+func contributions_deploy_salt_() -> (salt: felt) {
+}
+
+@storage_var
 func contribution_project_id(contribution_id: ContributionId) -> (project_id: felt) {
 }
 
@@ -133,12 +142,6 @@ func github_ids_to_contribution_id(project_id: felt, issue_numer: felt) -> (
 ) {
 }
 
-@storage_var
-func contributions_contributor_account_from_contribution_contract(contribution_contract: felt) -> (
-    contributor_account: felt
-) {
-}
-
 //
 // Functions
 //
@@ -151,6 +154,35 @@ namespace contributions {
     //
     // Write
     //
+    func deploy_new_contribution{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        project_id: felt, issue_number: felt, gate: felt
+    ) -> (contribution: Contribution) {
+        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x7b1b81add4d1ed1d9c34a66cfd89e703a506c9d35d9b3a85628f2a9797f7187;
+        let (this) = get_contract_address();
+        let (current_salt) = contributions_deploy_salt_.read();
+
+        let (contract_address) = deploy(
+            class_hash=GITHUB_CONTRIBUTION_CLASS_HASH,
+            contract_address_salt=current_salt,
+            constructor_calldata_size=5,
+            constructor_calldata=cast(new (this, this, project_id, issue_number, gate,), felt*),
+            deploy_from_zero=FALSE,
+        );
+        contributions_deploy_salt_.write(value=current_salt + 1);
+
+        ContributionDeployed.emit(contract_address);
+
+        contribution_project_id.write(ContributionId(contract_address), project_id);
+
+        let contribution = Contribution(
+            id=ContributionId(contract_address),
+            project_id=project_id,
+            status=Status.OPEN,
+            gate=gate,
+            contributor_id=Uint256(0, 0),
+        );
+        return (contribution,);
+    }
 
     // DEPRECATED - only used in unit tests to validate legacy way of creating contributions
     // Add a contribution for a given token id
@@ -221,9 +253,7 @@ namespace contributions {
         if (contribution_exists == 0) {
             let contract_address = contribution_id.inner;
             let contributor_account = contributor_id.low;
-            contributions_contributor_account_from_contribution_contract.write(
-                contract_address, contributor_account
-            );
+            contribution_contributor_.write(contribution_id, contributor_id);
             IContribution.assign(contract_address, contributor_account);
             return ();
         }
@@ -246,11 +276,10 @@ namespace contributions {
         let contribution_exists = contribution_access.exists(contribution_id);
         if (contribution_exists == 0) {
             let contract_address = contribution_id.inner;
-            let (
-                contributor_account
-            ) = contributions_contributor_account_from_contribution_contract.read(contract_address);
+            let (contributor_id) = contribution_contributor_.read(contribution_id);
+            let contributor_account = contributor_id.low;
             IContribution.unassign(contract_address, contributor_account);
-            contributions_contributor_account_from_contribution_contract.write(contract_address, 0);
+            contribution_contributor_.write(contribution_id, Uint256(0, 0));
             return ();
         }
 
@@ -282,9 +311,8 @@ namespace contributions {
         let contribution_exists = contribution_access.exists(contribution_id);
         if (contribution_exists == 0) {
             let contract_address = contribution_id.inner;
-            let (
-                contributor_account
-            ) = contributions_contributor_account_from_contribution_contract.read(contract_address);
+            let (contributor_id) = contribution_contributor_.read(contribution_id);
+            let contributor_account = contributor_id.low;
             IContribution.validate(contract_address, contributor_account);
             return ();
         }
@@ -336,9 +364,7 @@ namespace contributions {
         if (contribution_exists == 0) {
             let contract_address = contribution_id.inner;
             let (contributor_account) = get_caller_address();
-            contributions_contributor_account_from_contribution_contract.write(
-                contract_address, contributor_account
-            );
+            contribution_contributor_.write(contribution_id, contributor_id);
             IContribution.assign(contract_address, contributor_account);
             return ();
         }
@@ -400,6 +426,29 @@ namespace contributions {
         access_control.revoke_member_role_for_project(project_id, contributor_account);
         ProjectMemberRemoved.emit(project_id, contributor_account);
         return ();
+    }
+
+    func is_lead_contributor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        contributor_account
+    ) -> (res: felt) {
+        let (contribution_contract) = get_caller_address();
+        let (project_id) = project_access.find_contribution_project(
+            ContributionId(contribution_contract)
+        );
+        let (is_lead) = access_control.is_lead_contributor(project_id, contributor_account);
+        return (is_lead,);
+    }
+
+    func is_member{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        contributor_account
+    ) -> (res: felt) {
+        let (contribution_contract) = get_caller_address();
+        let (project_id) = project_access.find_contribution_project(
+            ContributionId(contribution_contract)
+        );
+        let (is_member) = access_control.is_project_member(project_id, contributor_account);
+
+        return (is_member,);
     }
 }
 

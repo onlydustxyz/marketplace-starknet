@@ -107,10 +107,10 @@ namespace access_control {
         alloc_locals;
 
         let (caller_address) = get_caller_address();
-        let (is_lead_contributor) = internal.is_lead_contributor(project_id, caller_address);
+        let (is_lead) = is_lead_contributor(project_id, caller_address);
 
         with_attr error_message("Contributions: LEAD_CONTRIBUTOR role required") {
-            assert_not_zero(is_lead_contributor);
+            assert_not_zero(is_lead);
         }
 
         return ();
@@ -142,21 +142,13 @@ namespace access_control {
         alloc_locals;
 
         let (caller_address) = get_caller_address();
-        let (is_project_member) = internal.is_project_member(project_id, caller_address);
-        let (is_lead_contributor) = internal.is_lead_contributor(project_id, caller_address);
+        let (is_member) = is_project_member(project_id, caller_address);
+        let (is_lead) = is_lead_contributor(project_id, caller_address);
 
         with_attr error_message("Contributions: PROJECT_MEMBER or LEAD_CONTRIBUTOR role required") {
-            assert_not_zero(is_project_member + is_lead_contributor);
+            assert_not_zero(is_member + is_lead);
         }
 
-        return ();
-    }
-}
-
-namespace internal {
-    func assert_not_caller{syscall_ptr: felt*}(address: felt) {
-        let (caller_address) = get_caller_address();
-        assert_not_zero(caller_address - address);
         return ();
     }
 
@@ -176,5 +168,13 @@ namespace internal {
             Role.PROJECT_MEMBER, project_id, account
         );
         return (is_project_member,);
+    }
+}
+
+namespace internal {
+    func assert_not_caller{syscall_ptr: felt*}(address: felt) {
+        let (caller_address) = get_caller_address();
+        assert_not_zero(caller_address - address);
+        return ();
     }
 }

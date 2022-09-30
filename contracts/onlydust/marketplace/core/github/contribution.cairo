@@ -168,6 +168,7 @@ func validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     return ();
 }
 
+@external
 func modify_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(gate: felt) {
     access_control.only_lead_contributor();
     status_access.only_open();
@@ -182,6 +183,7 @@ func modify_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
     return ();
 }
 
+@external
 func delete{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     access_control.only_lead_contributor();
     status_access.only_open();
