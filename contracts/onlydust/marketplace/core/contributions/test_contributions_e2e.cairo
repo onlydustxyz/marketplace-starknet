@@ -6,6 +6,7 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from onlydust.marketplace.test.libraries.contributions import assert_contribution_that
 from onlydust.marketplace.core.contributions.library import Contribution, ContributionId
 from onlydust.marketplace.interfaces.contributor_oracle import IContributorOracle
+from onlydust.marketplace.interfaces.contribution import IContribution
 
 //
 // INTERFACES
@@ -47,6 +48,15 @@ namespace IContributions {
     }
 
     func remove_member_for_project(project_id: felt, contributor_account: felt) {
+    }
+}
+
+@contract_interface
+namespace IGithubContribution {
+    func modify_gate(gate: felt) {
+    }
+
+    func delete() {
     }
 }
 
@@ -155,6 +165,41 @@ func test_contribution_lifetime_with_legacy_api{
                {"name": "ContributionDeleted", "data": {"contribution_id": ids.contribution2.id.inner}},
            )
     %}
+    return ();
+}
+
+@view
+func test_contribution_lifetime_with_new_api{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() {
+    alloc_locals;
+
+    let (local contributions_contract) = contributions_access.deployed();
+
+    set_caller_as_lead_contributor();
+
+    let (contribution1: Contribution) = IContributions.new_contribution(
+        contributions_contract, PROJECT_ID, 235, 2
+    );
+
+    let contribution_contract = contribution1.id.inner;
+    IGithubContribution.modify_gate(contribution_contract, 0);
+    IContribution.assign(contribution_contract, CONTRIBUTOR_ACCOUNT);
+    IContribution.unassign(contribution_contract, CONTRIBUTOR_ACCOUNT);
+    IContribution.assign(contribution_contract, CONTRIBUTOR_ACCOUNT);
+    IContribution.validate(contribution_contract, CONTRIBUTOR_ACCOUNT);
+
+    %{
+        expect_events(
+               {"name": "ContributionCreated", "data": {"contribution_id": ids.contribution1.id.inner, "project_id": ids.PROJECT_ID,  "issue_number": 235, "gate": 2}},
+               {"name": "ContributionGateChanged", "data": {"contribution_id": ids.contribution1.id.inner, "gate": 0}},
+               {"name": "ContributionAssigned", "data": {"contribution_id": ids.contribution1.id.inner, "contributor_id": {"low": ids.CONTRIBUTOR_ACCOUNT, "high": 0}}},
+               {"name": "ContributionUnassigned", "data": {"contribution_id": ids.contribution1.id.inner}},
+               {"name": "ContributionAssigned", "data": {"contribution_id": ids.contribution1.id.inner, "contributor_id": {"low": ids.CONTRIBUTOR_ACCOUNT, "high": 0}}},
+               {"name": "ContributionValidated", "data": {"contribution_id": ids.contribution1.id.inner}},
+           )
+    %}
+
     return ();
 }
 
