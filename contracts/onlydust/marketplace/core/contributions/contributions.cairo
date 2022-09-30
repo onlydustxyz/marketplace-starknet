@@ -45,10 +45,11 @@ func initializer{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 //
 
 @view
-func past_contributions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    contributor_id: Uint256
-) -> (num_contributions: felt) {
-    return contributions.past_contributions(contributor_id);
+func past_contribution_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    contributor_account
+) -> (count: felt) {
+    let count = contributions.past_contributions_count(contributor_account);
+    return (count,);
 }
 
 //
