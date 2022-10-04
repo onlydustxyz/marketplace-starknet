@@ -35,7 +35,7 @@ build() {
 # $1 - account alias (optional). __default__ if not provided
 get_account_address() {
     [ $# -eq 0 ] && account=__default__ || account=$1
-    grep $account $STARKNET_ACCOUNTS_FILE -A3 -m1 | sed -n 's@^.*"address": "\(.*\)".*$@\1@p'
+    grep \"$account\" $STARKNET_ACCOUNTS_FILE -A3 -m1 | sed -n 's@^.*"address": "\(.*\)".*$@\1@p'
 }
 
 # get the network option from the profile in protostar config file
