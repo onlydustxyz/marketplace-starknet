@@ -17,6 +17,7 @@ const ADMIN = 'admin';
 const PROJECT_ID = 'MyProject';
 const LEAD_CONTRIBUTOR_ACCOUNT = 'lead';
 const PROJECT_MEMBER_ACCOUNT = 'member';
+const CONTRIBUTOR = 'contributor';
 
 @view
 func test_lead_contributor_can_be_added_and_removed{
@@ -146,8 +147,6 @@ func test_only_open_delete_contribution{
 
     fixture.initialize();
 
-    let contributor_test = Uint256(1, 0);
-
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (local contribution1) = contributions.new_contribution(PROJECT_ID, 1, 0);
     %{ stop_prank() %}
@@ -156,7 +155,7 @@ func test_only_open_delete_contribution{
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     // set status to ASSIGNED
-    contributions.assign_contributor_to_contribution(contribution1.id, contributor_test);
+    contributions.assign_contributor_to_contribution(contribution1.id, CONTRIBUTOR);
     contributions.delete_contribution(contribution1.id);
     %{ stop_prank() %}
 
@@ -170,17 +169,16 @@ func test_lead_can_assign_contribution_to_contributor{
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (contribution) = contributions.new_contribution(PROJECT_ID, 1, 0);
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id);
+    contributions.assign_contributor_to_contribution(contribution_id, CONTRIBUTOR);
     %{ stop_prank() %}
 
     %{
         expect_events(
                {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
-               {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": 1, "high": 0}}},
+               {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": ids.CONTRIBUTOR, "high": 0}}},
            )
     %}
     return ();
@@ -193,7 +191,6 @@ func test_anyone_cannot_assign_contribution_to_contributor{
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(PROJECT_ID, 1, 0);
@@ -201,7 +198,7 @@ func test_anyone_cannot_assign_contribution_to_contributor{
         stop_prank() 
         expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role required")
     %}
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id);
+    contributions.assign_contributor_to_contribution(contribution_id, CONTRIBUTOR);
 
     return ();
 }
@@ -213,13 +210,12 @@ func test_cannot_assign_non_existent_contribution{
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
 
     %{
         stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) 
         expect_revert()
     %}
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id);
+    contributions.assign_contributor_to_contribution(contribution_id, CONTRIBUTOR);
     %{ stop_prank() %}
 
     return ();
@@ -232,13 +228,12 @@ func test_cannot_assign_twice_a_contribution{
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(PROJECT_ID, 1, 0);
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id);
+    contributions.assign_contributor_to_contribution(contribution_id, CONTRIBUTOR);
     %{ expect_revert(error_message="Contributions: Contribution is not OPEN") %}
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id);
+    contributions.assign_contributor_to_contribution(contribution_id, CONTRIBUTOR);
     %{ stop_prank() %}
 
     return ();
@@ -251,12 +246,11 @@ func test_cannot_assign_contribution_to_non_eligible_contributor{
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(PROJECT_ID, 1, 3);
     %{ expect_revert(error_message="Contributions: Contributor is not eligible") %}
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id);
+    contributions.assign_contributor_to_contribution(contribution_id, CONTRIBUTOR);
     %{ stop_prank() %}
 
     return ();
@@ -270,8 +264,6 @@ func test_can_assign_gated_contribution_eligible_contributor{
 
     let contribution_id = ContributionId(1);
     let gated_contribution_id = ContributionId(2);
-    let contributor_account = 1;
-    let contributor_id = Uint256(contributor_account, 0);
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     // Create a non-gated contribution
@@ -281,15 +273,15 @@ func test_can_assign_gated_contribution_eligible_contributor{
     let (_) = contributions.new_contribution(PROJECT_ID, 2, 1);
 
     // Assign and validate the non-gated contribution
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id);
-    contributions.validate_contribution(contribution_id);
+    contributions.assign_contributor_to_contribution(contribution_id, CONTRIBUTOR);
+    contributions.validate_contribution(contribution_id, CONTRIBUTOR);
 
     // Assign and validate the gated contribution
-    contributions.assign_contributor_to_contribution(gated_contribution_id, contributor_id);
-    contributions.validate_contribution(gated_contribution_id);
+    contributions.assign_contributor_to_contribution(gated_contribution_id, CONTRIBUTOR);
+    contributions.validate_contribution(gated_contribution_id, CONTRIBUTOR);
     %{ stop_prank() %}
 
-    assert 2 = contributions.past_contributions_count(contributor_account);
+    assert 2 = contributions.past_contributions_count(CONTRIBUTOR);
 
     return ();
 }
@@ -345,18 +337,17 @@ func test_lead_can_unassign_contribution_from_contributor{
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(PROJECT_ID, 1, 0);
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id);
-    contributions.unassign_contributor_from_contribution(contribution_id);
+    contributions.assign_contributor_to_contribution(contribution_id, CONTRIBUTOR);
+    contributions.unassign_contributor_from_contribution(contribution_id, CONTRIBUTOR);
     %{ stop_prank() %}
 
     %{
         expect_events(
                {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID, "issue_number": 1, "gate": 0}},
-               {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": 1, "high": 0}}},
+               {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": ids.CONTRIBUTOR, "high": 0}}},
                {"name": "ContributionUnassigned", "data": {"contribution_id": 1}},
            )
     %}
@@ -371,16 +362,15 @@ func test_anyone_cannot_unassign_contribution_from_contributor{
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(PROJECT_ID, 1, 0);
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id);
+    contributions.assign_contributor_to_contribution(contribution_id, CONTRIBUTOR);
     %{
         stop_prank() 
         expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role required")
     %}
-    contributions.unassign_contributor_from_contribution(contribution_id);
+    contributions.unassign_contributor_from_contribution(contribution_id, CONTRIBUTOR);
 
     return ();
 }
@@ -392,13 +382,12 @@ func test_cannot_unassign_from_non_existent_contribution{
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
 
     %{
         stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) 
         expect_revert()
     %}
-    contributions.unassign_contributor_from_contribution(contribution_id);
+    contributions.unassign_contributor_from_contribution(contribution_id, CONTRIBUTOR);
     %{ stop_prank() %}
 
     return ();
@@ -415,7 +404,7 @@ func test_cannot_unassign_contribution_if_not_assigned{
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(PROJECT_ID, 1, 0);
     %{ expect_revert(error_message="Contributions: Contribution is not ASSIGNED") %}
-    contributions.unassign_contributor_from_contribution(contribution_id);
+    contributions.unassign_contributor_from_contribution(contribution_id, CONTRIBUTOR);
     %{ stop_prank() %}
 
     return ();
@@ -428,18 +417,17 @@ func test_lead_can_validate_assigned_contribution{
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(PROJECT_ID, 1, 0);
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id);
-    contributions.validate_contribution(contribution_id);
+    contributions.assign_contributor_to_contribution(contribution_id, CONTRIBUTOR);
+    contributions.validate_contribution(contribution_id, CONTRIBUTOR);
     %{ stop_prank() %}
 
     %{
         expect_events(
                {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
-               {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": 1, "high": 0}}},
+               {"name": "ContributionAssigned", "data": {"contribution_id": 1, "contributor_id": {"low": ids.CONTRIBUTOR, "high": 0}}},
                {"name": "ContributionValidated", "data": {"contribution_id": 1}},
            )
     %}
@@ -454,16 +442,15 @@ func test_anyone_cannot_validate_contribution{
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(PROJECT_ID, 1, 0);
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id);
+    contributions.assign_contributor_to_contribution(contribution_id, CONTRIBUTOR);
     %{
         stop_prank() 
         expect_revert(error_message="Contributions: LEAD_CONTRIBUTOR role required")
     %}
-    contributions.validate_contribution(contribution_id);
+    contributions.validate_contribution(contribution_id, CONTRIBUTOR);
 
     return ();
 }
@@ -480,7 +467,7 @@ func test_cannot_validate_non_existent_contribution{
         stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) 
         expect_revert()
     %}
-    contributions.validate_contribution(contribution_id);
+    contributions.validate_contribution(contribution_id, CONTRIBUTOR);
     %{ stop_prank() %}
 
     return ();
@@ -497,7 +484,7 @@ func test_cannot_validate_contribution_if_not_assigned{
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(PROJECT_ID, 1, 0);
     %{ expect_revert(error_message="Contributions: Contribution is not ASSIGNED") %}
-    contributions.validate_contribution(contribution_id);
+    contributions.validate_contribution(contribution_id, CONTRIBUTOR);
     %{ stop_prank() %}
 
     return ();
@@ -508,7 +495,6 @@ func test_lead_can_modify_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, r
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
     let validator_account = 'validator';
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
@@ -533,7 +519,6 @@ func test_anyone_cannot_modify_gate{
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
     let validator_account = 'validator';
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
@@ -552,10 +537,9 @@ func test_anyone_can_get_past_contributions_count{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
     fixture.initialize();
-    let contributor_account = 'greg';
-    fixture.validate_two_contributions(Uint256(contributor_account, 0));
+    fixture.validate_two_contributions(CONTRIBUTOR);
 
-    assert 2 = contributions.past_contributions_count(contributor_account);
+    assert 2 = contributions.past_contributions_count(CONTRIBUTOR);
 
     return ();
 }
@@ -566,15 +550,13 @@ func test_lead_can_add_member_to_project{
 }() {
     fixture.initialize();
 
-    let contributor_acount = 'contributor';
-
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
-    contributions.add_member_for_project(PROJECT_ID, contributor_acount);
+    contributions.add_member_for_project(PROJECT_ID, CONTRIBUTOR);
     %{ stop_prank() %}
 
     %{
         expect_events(
-            { "name": "ProjectMemberAdded", "data": { "project_id": ids.PROJECT_ID,  "contributor_account":  ids.contributor_acount }},
+            { "name": "ProjectMemberAdded", "data": { "project_id": ids.PROJECT_ID,  "contributor_account":  ids.CONTRIBUTOR }},
         )
     %}
     return ();
@@ -586,15 +568,13 @@ func test_lead_can_remove_member_to_project{
 }() {
     fixture.initialize();
 
-    let contributor_acount = 'contributor';
-
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
-    contributions.remove_member_for_project(PROJECT_ID, contributor_acount);
+    contributions.remove_member_for_project(PROJECT_ID, CONTRIBUTOR);
     %{ stop_prank() %}
 
     %{
         expect_events(
-            { "name": "ProjectMemberRemoved", "data": { "project_id": ids.PROJECT_ID,  "contributor_account":  ids.contributor_acount }},
+            { "name": "ProjectMemberRemoved", "data": { "project_id": ids.PROJECT_ID,  "contributor_account":  ids.CONTRIBUTOR }},
         )
     %}
     return ();
@@ -607,7 +587,7 @@ func test_project_member_can_claim_contribution{
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
+    let contributor_id = Uint256(CONTRIBUTOR, 0);
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (contribution) = contributions.new_contribution(PROJECT_ID, 1, 0);
@@ -620,7 +600,7 @@ func test_project_member_can_claim_contribution{
     %{
         expect_events(
                {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
-               {"name": "ContributionClaimed", "data": {"contribution_id": 1, "contributor_id": {"low": 1, "high": 0}}},
+               {"name": "ContributionClaimed", "data": {"contribution_id": 1, "contributor_id": {"low": ids.CONTRIBUTOR, "high": 0}}},
            )
     %}
     return ();
@@ -633,7 +613,7 @@ func test_anyone_cannot_claim_contribution{
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
+    let contributor_id = Uint256(CONTRIBUTOR, 0);
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(PROJECT_ID, 1, 0);
@@ -653,7 +633,7 @@ func test_cannot_claim_non_existent_contribution{
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
+    let contributor_id = Uint256(CONTRIBUTOR, 0);
 
     %{
         stop_prank = start_prank(ids.PROJECT_MEMBER_ACCOUNT) 
@@ -672,7 +652,7 @@ func test_cannot_claim_twice_a_contribution{
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
+    let contributor_id = Uint256(CONTRIBUTOR, 0);
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(PROJECT_ID, 1, 0);
@@ -694,7 +674,7 @@ func test_cannot_claim_contribution_as_non_eligible_contributor{
     fixture.initialize();
 
     let contribution_id = ContributionId(1);
-    let contributor_id = Uint256(1, 0);
+    let contributor_id = Uint256(CONTRIBUTOR, 0);
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     let (_) = contributions.new_contribution(PROJECT_ID, 1, 3);
@@ -716,8 +696,7 @@ func test_can_claim_gated_contribution_as_eligible_contributor{
 
     let contribution_id = ContributionId(1);
     let gated_contribution_id = ContributionId(2);
-    let contributor_account = 1;
-    let contributor_id = Uint256(contributor_account, 0);
+    let contributor_id = Uint256(CONTRIBUTOR, 0);
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     // Create a non-gated contribution
@@ -727,11 +706,11 @@ func test_can_claim_gated_contribution_as_eligible_contributor{
     let (_) = contributions.new_contribution(PROJECT_ID, 2, 1);
 
     // Assign and validate the non-gated contribution
-    contributions.assign_contributor_to_contribution(contribution_id, contributor_id);
-    contributions.validate_contribution(contribution_id);
+    contributions.assign_contributor_to_contribution(contribution_id, CONTRIBUTOR);
+    contributions.validate_contribution(contribution_id, CONTRIBUTOR);
     %{ stop_prank() %}
 
-    assert 1 = contributions.past_contributions_count(contributor_account);
+    assert 1 = contributions.past_contributions_count(CONTRIBUTOR);
 
     %{ stop_prank = start_prank(ids.PROJECT_MEMBER_ACCOUNT) %}
     // Claim the gated contribution
@@ -757,7 +736,7 @@ namespace fixture {
 
     func validate_two_contributions{
         syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
-    }(contributor_id: Uint256) {
+    }(contributor_account_address: felt) {
         let contribution_id = ContributionId(1);
         let gated_contribution_id = ContributionId(2);
 
@@ -773,16 +752,15 @@ namespace fixture {
         let (contribution) = contributions.new_contribution('Random', 2, 1);
 
         // Assign and validate the non-gated contribution
-        contributions.assign_contributor_to_contribution(contribution_id, contributor_id);
-        contributions.validate_contribution(contribution_id);
+        contributions.assign_contributor_to_contribution(contribution_id, CONTRIBUTOR);
+        contributions.validate_contribution(contribution_id, CONTRIBUTOR);
 
         // Assign and validate the gated contribution
-        contributions.assign_contributor_to_contribution(gated_contribution_id, contributor_id);
-        contributions.validate_contribution(gated_contribution_id);
+        contributions.assign_contributor_to_contribution(gated_contribution_id, CONTRIBUTOR);
+        contributions.validate_contribution(gated_contribution_id, CONTRIBUTOR);
         %{ stop_prank() %}
 
-        let contributor_account = contributor_id.low;
-        assert 2 = contributions.past_contributions_count(contributor_account);
+        assert 2 = contributions.past_contributions_count(CONTRIBUTOR);
 
         return ();
     }
