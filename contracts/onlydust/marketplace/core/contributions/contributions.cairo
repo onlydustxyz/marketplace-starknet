@@ -87,15 +87,19 @@ func delete_contribution{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_c
 @external
 func assign_contributor_to_contribution{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
-}(contribution_id: ContributionId, contributor_id: Uint256) {
-    return contributions.assign_contributor_to_contribution(contribution_id, contributor_id);
+}(contribution_id: ContributionId, contributor_account_address: felt) {
+    return contributions.assign_contributor_to_contribution(
+        contribution_id, contributor_account_address
+    );
 }
 
 @external
 func unassign_contributor_from_contribution{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
-}(contribution_id: ContributionId) {
-    return contributions.unassign_contributor_from_contribution(contribution_id);
+}(contribution_id: ContributionId, contributor_account_address: felt) {
+    return contributions.unassign_contributor_from_contribution(
+        contribution_id, contributor_account_address
+    );
 }
 
 @external
@@ -107,9 +111,9 @@ func claim_contribution{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
 
 @external
 func validate_contribution{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    contribution_id: ContributionId
+    contribution_id: ContributionId, contributor_account_address: felt
 ) {
-    return contributions.validate_contribution(contribution_id);
+    return contributions.validate_contribution(contribution_id, contributor_account_address);
 }
 
 @external

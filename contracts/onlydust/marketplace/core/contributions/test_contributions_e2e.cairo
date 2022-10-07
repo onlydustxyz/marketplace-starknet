@@ -22,17 +22,19 @@ namespace IContributions {
     }
 
     func assign_contributor_to_contribution(
-        contribution_id: ContributionId, contributor_id: Uint256
+        contribution_id: ContributionId, contributor_account_adress: felt
     ) {
     }
 
-    func unassign_contributor_from_contribution(contribution_id: ContributionId) {
+    func unassign_contributor_from_contribution(
+        contribution_id: ContributionId, contributor_account_adress: felt
+    ) {
     }
 
     func claim_contribution(contribution_id: ContributionId, contributor_id: Uint256) {
     }
 
-    func validate_contribution(contribution_id: ContributionId) {
+    func validate_contribution(contribution_id: ContributionId, contributor_account_adress: felt) {
     }
 
     func modify_gate(contribution_id: ContributionId, gate: felt) {
@@ -145,13 +147,17 @@ func test_contribution_lifetime_with_legacy_api{
 
     let contribution_id = contribution1.id;
     IContributions.assign_contributor_to_contribution(
-        contributions_contract, contribution_id, Uint256(CONTRIBUTOR_ACCOUNT, 0)
+        contributions_contract, contribution_id, CONTRIBUTOR_ACCOUNT
     );
-    IContributions.unassign_contributor_from_contribution(contributions_contract, contribution_id);
+    IContributions.unassign_contributor_from_contribution(
+        contributions_contract, contribution_id, CONTRIBUTOR_ACCOUNT
+    );
     IContributions.assign_contributor_to_contribution(
-        contributions_contract, contribution_id, Uint256(CONTRIBUTOR_ACCOUNT, 0)
+        contributions_contract, contribution_id, CONTRIBUTOR_ACCOUNT
     );
-    IContributions.validate_contribution(contributions_contract, contribution_id);
+    IContributions.validate_contribution(
+        contributions_contract, contribution_id, CONTRIBUTOR_ACCOUNT
+    );
 
     let (count) = IContributorOracle.past_contribution_count(
         contributions_contract, CONTRIBUTOR_ACCOUNT
@@ -161,9 +167,11 @@ func test_contribution_lifetime_with_legacy_api{
     let contribution_id = contribution2.id;
     IContributions.modify_gate(contributions_contract, contribution_id, 1);
     IContributions.assign_contributor_to_contribution(
-        contributions_contract, contribution_id, Uint256(CONTRIBUTOR_ACCOUNT, 0)
+        contributions_contract, contribution_id, CONTRIBUTOR_ACCOUNT
     );
-    IContributions.unassign_contributor_from_contribution(contributions_contract, contribution_id);
+    IContributions.unassign_contributor_from_contribution(
+        contributions_contract, contribution_id, CONTRIBUTOR_ACCOUNT
+    );
     IContributions.delete_contribution(contributions_contract, contribution_id);
 
     %{
@@ -206,7 +214,7 @@ func test_contribution_claimed_with_legacy_api{
 
     set_caller_as_lead_contributor();
 
-    IContributions.validate_contribution(contributions_contract, contribution_id);
+    IContributions.validate_contribution(contributions_contract, contribution_id, CALLER_ACCOUNT);
 
     let (count) = IContributorOracle.past_contribution_count(
         contributions_contract, CALLER_ACCOUNT

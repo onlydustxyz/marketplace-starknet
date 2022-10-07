@@ -271,19 +271,18 @@ namespace contributions {
     // Assign a contributor to a contribution
     func assign_contributor_to_contribution{
         syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
-    }(contribution_id: ContributionId, contributor_id: Uint256) {
+    }(contribution_id: ContributionId, contributor_account_address: felt) {
         let contribution_exists = contribution_access.exists(contribution_id);
         if (contribution_exists == 0) {
             let contract_address = contribution_id.inner;
-            let contributor_account = contributor_id.low;
-            contribution_contributor_.write(contribution_id, contributor_id);
-            IContribution.assign(contract_address, contributor_account);
+            IContribution.assign(contract_address, contributor_account_address);
             return ();
         }
 
         let (project_id) = project_access.find_contribution_project(contribution_id);
         access_control.only_lead_contributor(project_id);
 
+        let contributor_id = Uint256(contributor_account_address, 0);
         internal.assign_contributor_to_contribution(contribution_id, contributor_id);
 
         // Emit event
@@ -295,14 +294,11 @@ namespace contributions {
     // Unassign a contributor from a contribution
     func unassign_contributor_from_contribution{
         syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
-    }(contribution_id: ContributionId) {
+    }(contribution_id: ContributionId, contributor_account_address: felt) {
         let contribution_exists = contribution_access.exists(contribution_id);
         if (contribution_exists == 0) {
             let contract_address = contribution_id.inner;
-            let (contributor_id) = contribution_contributor_.read(contribution_id);
-            let contributor_account = contributor_id.low;
-            IContribution.unassign(contract_address, contributor_account);
-            contribution_contributor_.write(contribution_id, Uint256(0, 0));
+            IContribution.unassign(contract_address, contributor_account_address);
             return ();
         }
 
@@ -323,20 +319,18 @@ namespace contributions {
 
     // Validate a contribution, marking it as completed
     func validate_contribution{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-        contribution_id: ContributionId
+        contribution_id: ContributionId, contributor_account_address: felt
     ) {
         // Increase contributor contribution_count
         // Must be done before forwarding the call to the new contribution contract
-        let (contributor_id) = contribution_contributor_.read(contribution_id);
+        let contributor_id = Uint256(contributor_account_address, 0);
         let (past_contributions) = past_contributions_.read(contributor_id);
         past_contributions_.write(contributor_id, past_contributions + 1);
 
         let contribution_exists = contribution_access.exists(contribution_id);
         if (contribution_exists == 0) {
             let contract_address = contribution_id.inner;
-            let (contributor_id) = contribution_contributor_.read(contribution_id);
-            let contributor_account = contributor_id.low;
-            IContribution.validate(contract_address, contributor_account);
+            IContribution.validate(contract_address, contributor_account_address);
             return ();
         }
 
