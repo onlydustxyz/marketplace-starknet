@@ -60,8 +60,9 @@ func migrate_past_contributions_count{
 }(contributor_id: Uint256) {
     let profile = profile_contract();
     let (contributor_account) = IProfile.ownerOf(profile, contributor_id);
-    let (count) = past_contributions_.read(contributor_id);
-    past_contributions_.write(Uint256(contributor_account, 0), count);
+    let (count_for_id) = past_contributions_.read(contributor_id);  // old_count
+    let (count_for_account) = past_contributions_.read(Uint256(contributor_account, 0));  // new_count (should be 0)
+    past_contributions_.write(Uint256(contributor_account, 0), count_for_id + count_for_account);  // new_count = new_count + old_count
     return ();
 }
 
