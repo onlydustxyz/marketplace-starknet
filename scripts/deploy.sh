@@ -7,6 +7,7 @@ CACHE_FILE_BASE=$ROOT/scripts/configuration/deployed_contracts
 STARKNET_ACCOUNTS_FILE=$HOME/.starknet_accounts/starknet_open_zeppelin_accounts.json
 PROTOSTAR_TOML_FILE=$ROOT/protostar.toml
 STARKNET_VERSION="0.10.0"
+MAX_FEE=3100000000000000
 
 ### FUNCTIONS
 . $SCRIPT_DIR/logging.sh # Logging utilities
@@ -59,6 +60,7 @@ check_starknet() {
 # $1 - transaction hash to check
 wait_for_acceptance() {
     tx_hash=$1
+    log_info "https://testnet.starkscan.co/tx/$tx_hash"
     print -n $(magenta "Waiting for transaction to be accepted")
     while true 
     do
@@ -67,7 +69,7 @@ wait_for_acceptance() {
             in
                 NOT_RECEIVED|RECEIVED|PENDING) print -n  $(magenta .);;
                 REJECTED) return 1;;
-                ACCEPTED_ON_L1|ACCEPTED_ON_L2) return 0; break;;
+                ACCEPTED_ON_L1|ACCEPTED_ON_L2) return 0;;
                 *) exit_error "\nUnknown transaction status '$tx_status'";;
             esac
             sleep 2
@@ -128,10 +130,10 @@ deploy_proxy() {
     admin_address=$3
 
     # deploy proxy
-    PROXY_ADDRESS=`send_transaction "starknet $NETWORK_OPT deploy --no_wallet --contract ./build/proxy.json --inputs $implementation_class_hash"` || exit_error
+    PROXY_ADDRESS=`send_transaction "starknet $ACCOUNT_OPT $NETWORK_OPT deploy --max_fee $MAX_FEE --no_wallet --contract ./build/proxy.json --inputs $implementation_class_hash"` || exit_error
 
     # initialize contract and set admin
-    RESULT=`send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $PROXY_ADDRESS --abi $path_to_implementation --function initializer --inputs $admin_address"` || exit_error
+    RESULT=`send_transaction "starknet invoke --max_fee $MAX_FEE $ACCOUNT_OPT $NETWORK_OPT --address $PROXY_ADDRESS --abi $path_to_implementation --function initializer --inputs $admin_address"` || exit_error
 
     echo $PROXY_ADDRESS
 }
@@ -142,7 +144,7 @@ update_proxified_contract() {
     proxy_address=$3
 
     # initialize contract and set admin
-    RESULT=`send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $proxy_address --abi $path_to_implementation --function set_implementation --inputs $implementation_class_hash"` || exit_error
+    RESULT=`send_transaction "starknet invoke --max_fee $MAX_FEE $ACCOUNT_OPT $NETWORK_OPT --address $proxy_address --abi $path_to_implementation --function set_implementation --inputs $implementation_class_hash"` || exit_error
 }
 
 update_proxified_contract_with_migration() {
@@ -152,7 +154,7 @@ update_proxified_contract_with_migration() {
     proxy_address=$4
 
     # initialize contract and set admin
-    RESULT=`send_transaction "starknet invoke $ACCOUNT_OPT $NETWORK_OPT --address $proxy_address --abi $path_to_implementation --function set_implementation_with_migration --inputs $implementation_class_hash $migration_class_hash"` || exit_error
+    RESULT=`send_transaction "starknet invoke --max_fee $MAX_FEE $ACCOUNT_OPT $NETWORK_OPT --address $proxy_address --abi $path_to_implementation --function set_implementation_with_migration --inputs $implementation_class_hash $migration_class_hash"` || exit_error
 }
 
 deploy_proxified_contract() {
@@ -160,10 +162,10 @@ deploy_proxified_contract() {
     proxy_address=$2
 
     log_info "Declaring github contribution contract class..."
-    implementation_class_hash=`send_declare_contract_transaction "starknet declare $ACCOUNT_OPT $NETWORK_OPT --contract ./build/github_contribution.json"` || exit_error
+    implementation_class_hash=`send_declare_contract_transaction "starknet declare --max_fee $MAX_FEE $ACCOUNT_OPT $NETWORK_OPT --contract ./build/github_contribution.json"` || exit_error
 
     log_info "Declaring contributions contract class..."
-    implementation_class_hash=`send_declare_contract_transaction "starknet declare $ACCOUNT_OPT $NETWORK_OPT --contract ./build/${contract}.json"` || exit_error
+    implementation_class_hash=`send_declare_contract_transaction "starknet declare --max_fee $MAX_FEE $ACCOUNT_OPT $NETWORK_OPT --contract ./build/${contract}.json"` || exit_error
 
     if [ -z $proxy_address ]; then
         log_info "Deploying proxy contract..."
@@ -176,7 +178,7 @@ deploy_proxified_contract() {
             ask "Do you want to update the implementation of ${contract} and run the migration ${contract}_migration?"
             if [ $? -eq 0 ]; then
                 log_info "Declaring migration class..."
-                migration_class_hash=`send_declare_contract_transaction "starknet declare $NETWORK_OPT --contract $migration_file_path"` || exit_error
+                migration_class_hash=`send_declare_contract_transaction "starknet declare --max_fee $MAX_FEE $ACCOUNT_OPT $NETWORK_OPT --contract $migration_file_path"` || exit_error
 
                 log_info "Updating proxy contract implementation and running migration..."
                 `update_proxified_contract_with_migration ./build/${contract}_abi.json $implementation_class_hash $migration_class_hash $proxy_address` || exit_error
