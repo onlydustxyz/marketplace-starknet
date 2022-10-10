@@ -9,6 +9,7 @@ SCRIPT_DIR=`readlink -f $0 | xargs dirname`
 # $1 - transaction hash to check
 wait_for_acceptance() {
     tx_hash=$1
+    log_info "https://testnet.starkscan.co/tx/$tx_hash"
     print -n $(magenta "Waiting for transaction to be accepted")
     while true 
     do
@@ -72,5 +73,5 @@ done
 
 for project in `echo $PROJECTS | tr , ' '`
 do
-    send_transaction "starknet invoke --account $ACCOUNT --network alpha-goerli --address $CONTRACT --abi build/contributions_abi.json --function add_lead_contributor_for_project --inputs $project $WALLET"
+    send_transaction "starknet invoke --max_fee 31000000000000 --account $ACCOUNT --network alpha-goerli --address $CONTRACT --abi build/contributions_abi.json --function add_lead_contributor_for_project --inputs $project $WALLET"
 done
