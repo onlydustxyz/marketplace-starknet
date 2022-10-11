@@ -1,5 +1,5 @@
 ["protostar.config"]
-protostar_version = "0.4.2"
+protostar_version = "0.5.0"
 
 ["protostar.project"]
 libs_path = "lib"
@@ -35,4 +35,6 @@ contributions_migration = [
     "./contracts/onlydust/marketplace/core/contributions/contributions_migration.cairo",
 ]
 proxy = ["./lib/cairo_contracts/src/openzeppelin/upgrades/presets/Proxy.cairo"]
-github_contribution = ["./contracts/onlydust/marketplace/core/github/contribution.cairo"]
+github_contribution = [
+    "./contracts/onlydust/marketplace/core/github/contribution.cairo",
+]
