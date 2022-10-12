@@ -7,7 +7,7 @@ from starkware.starknet.common.syscalls import get_caller_address
 from contracts.onlydust.marketplace.interfaces.project import IProject
 
 @storage_var
-func assignment_strategy_access_control_project_contract_address() -> (
+func assignment_strategy__access_control__project_contract_address() -> (
     project_contract_address: felt
 ) {
 }
@@ -15,18 +15,18 @@ func assignment_strategy_access_control_project_contract_address() -> (
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     project_contract_address
 ) {
-    assignment_strategy_access_control_project_contract_address.write(project_contract_address);
+    assignment_strategy__access_control__project_contract_address.write(project_contract_address);
     return ();
 }
 
-@external
+@view
 func can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_account
 ) -> (can_assign: felt) {
     let (caller_address) = get_caller_address();
     let (
         project_contract_address
-    ) = assignment_strategy_access_control_project_contract_address.read();
+    ) = assignment_strategy__access_control__project_contract_address.read();
 
     let (is_project_lead) = IProject.is_lead_contributor(project_contract_address, caller_address);
     if (is_project_lead == TRUE) {
@@ -42,14 +42,14 @@ func can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
     return (is_member,);
 }
 
-@external
+@view
 func can_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_account
 ) -> (can_unassign: felt) {
     let (caller_address) = get_caller_address();
     let (
         project_contract_address
-    ) = assignment_strategy_access_control_project_contract_address.read();
+    ) = assignment_strategy__access_control__project_contract_address.read();
 
     if (caller_address == contributor_account) {
         return (TRUE,);
@@ -60,16 +60,22 @@ func can_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_pt
     return (is_project_lead,);
 }
 
-@external
+@view
 func can_validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_account
 ) -> (can_validate: felt) {
     let (caller_address) = get_caller_address();
     let (
         project_contract_address
-    ) = assignment_strategy_access_control_project_contract_address.read();
+    ) = assignment_strategy__access_control__project_contract_address.read();
 
     let (is_project_lead) = IProject.is_lead_contributor(project_contract_address, caller_address);
 
     return (is_project_lead,);
+}
+
+@view
+func project_contract_address{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    ) -> (project_contract_address: felt) {
+    return assignment_strategy__access_control__project_contract_address.read();
 }

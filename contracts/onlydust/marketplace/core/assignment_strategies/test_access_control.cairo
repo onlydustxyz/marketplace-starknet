@@ -8,17 +8,15 @@ from contracts.onlydust.marketplace.core.assignment_strategies.access_control im
     can_assign,
     can_unassign,
     can_validate,
-    assignment_strategy_access_control_project_contract_address,
+    project_contract_address,
 )
 
 @view
 func test_initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     initialize(0x1234);
 
-    let (
-        project_contract_address
-    ) = assignment_strategy_access_control_project_contract_address.read();
-    assert 0x1234 = project_contract_address;
+    let (res) = project_contract_address();
+    assert 0x1234 = res;
 
     return ();
 }
