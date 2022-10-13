@@ -33,7 +33,7 @@ func can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
     ) = assignment_strategy__access_control__project_contract_address.read();
 
     let (is_project_lead) = IProject.is_lead_contributor(project_contract_address, caller_address);
-    if (is_project_lead == TRUE) {
+    if (is_project_lead != FALSE) {
         return (TRUE,);
     }
 
