@@ -2,6 +2,7 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import HashBuiltin
+from openzeppelin.security.Initializable.library import Initializable
 
 //
 // This strategy allows to use several strategies as a single one
@@ -23,6 +24,7 @@ func assignment_strategy__composite__strategy_hash_by_index(index: felt) -> (str
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     strategies_len, strategies: felt*
 ) {
+    Initializable.initialize();
     internal.store_strategy_loop(strategies_len, strategies);
     assignment_strategy__composite__strategy_count.write(strategies_len);
 
