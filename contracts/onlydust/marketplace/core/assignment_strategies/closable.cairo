@@ -18,22 +18,12 @@ func ContributionClosed() {
 }
 
 @event
-func ContributionOpened() {
+func ContributionReopened() {
 }
 
-@external
-func close{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    assignment_strategy__closable__is_closed.write(TRUE);
-    ContributionClosed.emit();
-    return ();
-}
-
-@external
-func open{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    assignment_strategy__closable__is_closed.write(FALSE);
-    ContributionOpened.emit();
-    return ();
-}
+//
+// IAssignmentStrategy
+//
 
 @view
 func can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
@@ -48,11 +38,52 @@ func can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
     }
 }
 
+@external
+func on_assigned(contributor_account) {
+    return ();
+}
+
+@view
+func can_unassign(contributor_account) -> (res: felt) {
+    return (TRUE,);
+}
+
+@external
+func on_unassigned(contributor_account) {
+    return ();
+}
+
+@view
+func can_validate(contributor_account) -> (res: felt) {
+    return (TRUE,);
+}
+
+@external
+func on_validated(contributor_account) {
+    return ();
+}
+
+//
+// Managemement calls
+//
+
+@external
+func close{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    assignment_strategy__closable__is_closed.write(TRUE);
+    ContributionClosed.emit();
+    return ();
+}
+
+@external
+func reopen{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    assignment_strategy__closable__is_closed.write(FALSE);
+    ContributionReopened.emit();
+    return ();
+}
+
 @view
 func is_closed{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
     is_closed: felt
 ) {
-    let (is_closed) = assignment_strategy__closable__is_closed.read();
-
-    return (is_closed,);
+    return assignment_strategy__closable__is_closed.read();
 }
