@@ -5,7 +5,7 @@ from starkware.cairo.common.bool import TRUE, FALSE
 
 from contracts.onlydust.marketplace.core.assignment_strategies.closable import (
     can_assign,
-    open,
+    reopen,
     close,
     is_closed,
 )
@@ -26,7 +26,7 @@ func test_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
     let (closed) = is_closed();
     assert TRUE = closed;
 
-    open();
+    reopen();
 
     // Can be re-opened
     let (res) = can_assign(0x0);
