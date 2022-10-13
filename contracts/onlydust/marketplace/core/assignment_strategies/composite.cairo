@@ -2,6 +2,7 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import HashBuiltin
+from starkware.starknet.common.syscalls import library_call
 from openzeppelin.security.Initializable.library import Initializable
 
 //
@@ -15,6 +16,21 @@ func assignment_strategy__composite__strategy_count() -> (strategy_count: felt) 
 
 @storage_var
 func assignment_strategy__composite__strategy_hash_by_index(index: felt) -> (strategy_hash: felt) {
+}
+
+//
+// STRATEGY IMPLEMENTATION
+//
+
+@external
+@raw_input
+@raw_output
+func __default__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    selector: felt, calldata_size: felt, calldata: felt*
+) -> (retdata_size: felt, retdata: felt*) {
+    let (all_strategies_len, all_strategies) = strategies();
+    internal.loop(all_strategies_len, all_strategies, selector, calldata_size, calldata);
+    return (retdata_size=0, retdata=new ());
 }
 
 //
@@ -73,5 +89,22 @@ namespace internal {
         assert [strategies] = strategy;
 
         return read_strategy_loop(strategies_len - 1, strategies + 1);
+    }
+
+    func loop{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        all_strategies_len, all_strategies: felt*, selector, calldata_size, calldata: felt*
+    ) {
+        if (all_strategies_len == 0) {
+            return ();
+        }
+
+        library_call(
+            class_hash=[all_strategies],
+            function_selector=selector,
+            calldata_size=calldata_size,
+            calldata=calldata,
+        );
+
+        return loop(all_strategies_len - 1, all_strategies + 1, selector, calldata_size, calldata);
     }
 }
