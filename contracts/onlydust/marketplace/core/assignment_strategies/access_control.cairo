@@ -19,6 +19,10 @@ func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
     return ();
 }
 
+//
+// IAssignmentStrategy
+//
+
 @view
 func can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_account
@@ -73,6 +77,25 @@ func can_validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_pt
 
     return (is_project_lead,);
 }
+
+@external
+func on_assigned(contributor_account) {
+    return ();
+}
+
+@external
+func on_unassigned(contributor_account) {
+    return ();
+}
+
+@external
+func on_validated(contributor_account) {
+    return ();
+}
+
+//
+// Managemement calls
+//
 
 @view
 func project_contract_address{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
