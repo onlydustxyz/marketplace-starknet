@@ -1,35 +1,84 @@
 %lang starknet
 
-//
-// This strategy checks that the contributor is eligibible to a contribution
-//
+from starkware.cairo.common.cairo_builtins import HashBuiltin
+from starkware.starknet.common.syscalls import get_caller_address, get_contract_address
+from starkware.cairo.common.math_cmp import is_le
+from starkware.cairo.common.bool import TRUE, FALSE
+
+from contracts.onlydust.marketplace.interfaces.contributor_oracle import IContributorOracle
 
 //
-// EVENTS
+// This strategy checks that the contributor has
 //
 
-@event
-func ContributionGateChanged(contribution_account: felt, gate: felt) {
+@storage_var
+func assignment_strategy__gated__oracle_contract_address() -> (oracle_contract_address: felt) {
 }
 
-//
-// STRATEGY IMPLEMENTATION
-//
+@storage_var
+func assignment_strategy__gated__contributions_count_required() -> (
+    contributions_count_required: felt
+) {
+}
+
+@event
+func ContributionGateChanged(contribution_account: felt, contributions_count_required: felt) {
+}
 
 @external
-func initialize(past_contributions_count_required) {
-    change_gate(past_contributions_count_required);
+func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    oracle_contract_address, past_contributions_count_required
+) {
+    assignment_strategy__gated__oracle_contract_address.write(
+        oracle_contract_address
+    );
+
+    assignment_strategy__gated__contributions_count_required.write(
+        past_contributions_count_required
+    );
+
+    return ();
+}
+
+@view
+func can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    contributor_account
+) -> (can_assign: felt) {
+    let (oracle) = assignment_strategy__gated__oracle_contract_address.read();
+
+    let (count_done) = IContributorOracle.past_contribution_count(oracle, contributor_account);
+    let (count_required) = assignment_strategy__gated__contributions_count_required.read();
+
+    let done_enough = is_le(count_required, count_done);
+
+    return (done_enough,);
+}
+
+@external
+func on_validated{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    contributor_account
+) {
+    return ();
+}
+
+@view
+func can_unassign(contributor_account) -> (can_unassing: felt) {
+    return (TRUE,);
+}
+
+@view
+func can_validate(contributor_account) -> (can_validate: felt) {
+    return (TRUE,);
+}
+
+@external
+func on_assigned(contributor_account) {
     return ();
 }
 
 @external
-func can_assign(contributor_account) {
-    // check past_contributions_count(contributor_account) >= past_contributions_count_required
-}
-
-@external
-func on_validated() {
-    // increase past_contributions_count(contributor_account)
+func on_unassigned(contributor_account) {
+    return ();
 }
 
 //
@@ -37,7 +86,26 @@ func on_validated() {
 //
 
 @external
-func change_gate(new_past_contributions_count_required) {
-    ContributionGateChanged.emit(get_contract_address(), new_past_contributions_count_required);
-    // set storage
+func change_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    new_past_contributions_count_required
+) {
+    assignment_strategy__gated__contributions_count_required.write(
+        new_past_contributions_count_required
+    );
+
+    let (contribution_id) = get_contract_address();
+    ContributionGateChanged.emit(contribution_id, new_past_contributions_count_required);
+
+    return ();
+}
+
+@view
+func oracle_contract_address{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (oracle_contract_address: felt) {
+    return assignment_strategy__gated__oracle_contract_address.read();
+}
+
+
+@view
+func contributions_count_required{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (contributions_count_required: felt) {
+    return assignment_strategy__gated__contributions_count_required.read();
 }
