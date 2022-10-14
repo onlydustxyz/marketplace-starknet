@@ -26,16 +26,15 @@ func ContributionReopened() {
 //
 
 @view
-func can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+func assert_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     _contributor_account: felt
-) -> (can_assign: felt) {
+) {
     let (is_closed) = assignment_strategy__closable__is_closed.read();
-
-    if (is_closed == TRUE) {
-        return (FALSE,);
-    } else {
-        return (TRUE,);
+    with_attr error_message("Closable: Contribution is closed") {
+        assert FALSE = is_closed;
     }
+
+    return ();
 }
 
 @external
@@ -44,8 +43,8 @@ func on_assigned(contributor_account) {
 }
 
 @view
-func can_unassign(contributor_account) -> (res: felt) {
-    return (TRUE,);
+func assert_can_unassign(contributor_account) {
+    return ();
 }
 
 @external
@@ -54,8 +53,8 @@ func on_unassigned(contributor_account) {
 }
 
 @view
-func can_validate(contributor_account) -> (res: felt) {
-    return (TRUE,);
+func assert_can_validate(contributor_account) {
+    return ();
 }
 
 @external
