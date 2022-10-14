@@ -2,20 +2,15 @@
 
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.starknet.common.syscalls import get_contract_address
 
 @storage_var
 func assignment_strategy__test__function_calls(function_selector: felt) -> (count: felt) {
 }
 
 @storage_var
-func assignment_strategy__test__revert_requested() -> (revert_requested: felt) {
-}
-
-@external
-func request_revert{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    assignment_strategy__test__revert_requested.write(TRUE);
-    return ();
+func assignment_strategy__test__revert_requested(function_selector: felt) -> (
+    revert_requested: felt
+) {
 }
 
 @external
@@ -28,18 +23,12 @@ func __default__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
     let (count) = assignment_strategy__test__function_calls.read(selector);
     assignment_strategy__test__function_calls.write(selector, count + 1);
 
-    let (revert_requested) = assignment_strategy__test__revert_requested.read();
+    let (revert_requested) = assignment_strategy__test__revert_requested.read(selector);
     with_attr error_message("Revert requested") {
         assert FALSE = revert_requested;
     }
 
     return (retdata_size=0, retdata=new ());
-}
-
-@contract_interface
-namespace IAssignmentStrategyMock {
-    func request_revert() {
-    }
 }
 
 //
@@ -55,24 +44,23 @@ namespace AssignmentStrategyMock {
         return internal.declare();
     }
 
-    func request_revert{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-        let test_strategy_hash = class_hash();
-        IAssignmentStrategyMock.library_call_request_revert(test_strategy_hash);
+    func revert_on_call{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        function_name: felt
+    ) {
+        tempvar selector;
+        %{ ids.selector = context.selectors[ids.function_name] %}
+        assignment_strategy__test__revert_requested.write(selector, TRUE);
         return ();
     }
 
     func get_function_call_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         function_name
     ) -> felt {
-        alloc_locals;
-        tempvar function_call_count;
-        let (local contract_address) = get_contract_address();
-        %{
-            selector = context.selectors[ids.function_name]
-            storage = load(ids.contract_address, "assignment_strategy__test__function_calls", "felt", key=[selector])
-            ids.function_call_count = storage[0]
-        %}
-        return function_call_count;
+        tempvar selector;
+        %{ ids.selector = context.selectors[ids.function_name] %}
+
+        let (count) = assignment_strategy__test__function_calls.read(selector);
+        return count;
     }
 }
 
