@@ -25,6 +25,10 @@ func ContributionUnassigned(contributor_account: felt) {
 func ContributionClaimed(contributor_account: felt) {
 }
 
+@event
+func ContributionValidated(contributor_account: felt) {
+}
+
 //
 // STORAGE
 //
@@ -99,6 +103,25 @@ func unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     ContributionUnassigned.emit(contributor_account);
 
     IAssignmentStrategy.library_call_on_unassigned(
+        assignment_strategy_class_hash, contributor_account
+    );
+
+    return ();
+}
+
+@external
+func validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    contributor_account
+) {
+    let (assignment_strategy_class_hash) = contribution__assignment_strategy_class_hash.read();
+
+    IAssignmentStrategy.library_call_assert_can_validate(
+        assignment_strategy_class_hash, contributor_account
+    );
+
+    ContributionValidated.emit(contributor_account);
+
+    IAssignmentStrategy.library_call_on_validated(
         assignment_strategy_class_hash, contributor_account
     );
 

@@ -6,6 +6,7 @@ from onlydust.marketplace.core.contribution import (
     set_initialized,
     assign,
     unassign,
+    validate,
 )
 from onlydust.marketplace.test.libraries.assignment_strategy_mock import AssignmentStrategyMock
 
@@ -103,6 +104,21 @@ func test_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_p
     assert 1 = AssignmentStrategyMock.get_function_call_count('on_unassigned');
 
     %{ expect_events({"name": "ContributionUnassigned", "data": {"contributor_account": ids.CONTRIBUTOR_ADDRESS}}) %}
+
+    return ();
+}
+
+@view
+func test_validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    let test_strategy_hash = AssignmentStrategyMock.class_hash();
+    set_initialized(test_strategy_hash);
+
+    validate(CONTRIBUTOR_ADDRESS);
+
+    assert 1 = AssignmentStrategyMock.get_function_call_count('assert_can_validate');
+    assert 1 = AssignmentStrategyMock.get_function_call_count('on_validated');
+
+    %{ expect_events({"name": "ContributionValidated", "data": {"contributor_account": ids.CONTRIBUTOR_ADDRESS}}) %}
 
     return ();
 }
