@@ -2,8 +2,8 @@
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.alloc import alloc
-from starkware.starknet.common.syscalls import get_contract_address
 from onlydust.marketplace.interfaces.assignment_strategy import IAssignmentStrategy
+from onlydust.marketplace.test.libraries.assignment_strategy_mock import AssignmentStrategyMock
 
 //
 // CONSTANTS
@@ -22,47 +22,13 @@ namespace IComposite {
     }
 }
 
-@contract_interface
-namespace ITestStrategy {
-    func request_revert() {
-    }
-}
-
 //
 // TESTS
 //
-func register_selector(function_name, selector) {
-    %{ context.selectors[ids.function_name] = ids.selector %}
-    return ();
-}
-
 @view
 func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    %{
-        context.composite_strategy_hash = declare("./contracts/onlydust/marketplace/core/assignment_strategies/composite.cairo", config={"wait_for_acceptance": True}).class_hash 
-        context.test_strategy_hash = declare("./contracts/onlydust/marketplace/test/libraries/assignment_strategy_mock.cairo", config={"wait_for_acceptance": True}).class_hash
-        context.selectors = {}
-    %}
-
-    register_selector(
-        'assert_can_assign', 0xafebfa3bc187991e56ad073c19677f894a3a5541d8b8151af100e49077f937
-    );
-    register_selector(
-        'on_assigned', 0xf897b8b0d9c032035dd00f05036ece8d0323783ada50f77ac038b5ee28a4f7
-    );
-    register_selector(
-        'assert_can_unassign', 0x24d59f9e6d82d630ed029dc7ad5594e04122af91ac85426ec2c05cfec580997
-    );
-    register_selector(
-        'on_unassigned', 0x85a2edab325660d13eb75ace9a6737467ded8f85473feb457595808fbbfdce
-    );
-    register_selector(
-        'assert_can_validate', 0x335791ca04a8d33572330929a1f5d0ed5ccb04474422093c6ca6cb510ad1bc6
-    );
-    register_selector(
-        'on_validated', 0x8a3674db7fb20b307d4be1223ac3ebe7d05225da47a185d1fffacc26f495c7
-    );
-
+    %{ context.composite_strategy_hash = declare("./contracts/onlydust/marketplace/core/assignment_strategies/composite.cairo", config={"wait_for_acceptance": True}).class_hash %}
+    AssignmentStrategyMock.setup();
     return ();
 }
 
@@ -111,10 +77,9 @@ func test_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
         composite_strategy_hash, CONTRIBUTOR_ADDRESS
     );
 
-    let test_strategy_hash = TestStrategy.declared();
+    let test_strategy_hash = AssignmentStrategyMock.declared();
     with test_strategy_hash {
-        let count = TestStrategy.get_function_call_count('assert_can_assign');
-        assert 3 = count;
+        assert 3 = AssignmentStrategyMock.get_function_call_count('assert_can_assign');
     }
 
     return ();
@@ -122,9 +87,9 @@ func test_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
 
 @view
 func test_cannot_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    let test_strategy_hash = TestStrategy.declared();
+    let test_strategy_hash = AssignmentStrategyMock.declared();
     with test_strategy_hash {
-        TestStrategy.request_revert();
+        AssignmentStrategyMock.request_revert();
     }
 
     %{ expect_revert() %}
@@ -141,10 +106,9 @@ func test_on_assigned{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_chec
     let composite_strategy_hash = Composite.default();
     IAssignmentStrategy.library_call_on_assigned(composite_strategy_hash, CONTRIBUTOR_ADDRESS);
 
-    let test_strategy_hash = TestStrategy.declared();
+    let test_strategy_hash = AssignmentStrategyMock.declared();
     with test_strategy_hash {
-        let count = TestStrategy.get_function_call_count('on_assigned');
-        assert 3 = count;
+        assert 3 = AssignmentStrategyMock.get_function_call_count('on_assigned');
     }
 
     return ();
@@ -159,10 +123,9 @@ func test_can_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
         composite_strategy_hash, CONTRIBUTOR_ADDRESS
     );
 
-    let test_strategy_hash = TestStrategy.declared();
+    let test_strategy_hash = AssignmentStrategyMock.declared();
     with test_strategy_hash {
-        let count = TestStrategy.get_function_call_count('assert_can_unassign');
-        assert 3 = count;
+        assert 3 = AssignmentStrategyMock.get_function_call_count('assert_can_unassign');
     }
 
     return ();
@@ -175,10 +138,9 @@ func test_on_unassigned{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
     let composite_strategy_hash = Composite.default();
     IAssignmentStrategy.library_call_on_unassigned(composite_strategy_hash, CONTRIBUTOR_ADDRESS);
 
-    let test_strategy_hash = TestStrategy.declared();
+    let test_strategy_hash = AssignmentStrategyMock.declared();
     with test_strategy_hash {
-        let count = TestStrategy.get_function_call_count('on_unassigned');
-        assert 3 = count;
+        assert 3 = AssignmentStrategyMock.get_function_call_count('on_unassigned');
     }
 
     return ();
@@ -193,10 +155,9 @@ func test_can_validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
         composite_strategy_hash, CONTRIBUTOR_ADDRESS
     );
 
-    let test_strategy_hash = TestStrategy.declared();
+    let test_strategy_hash = AssignmentStrategyMock.declared();
     with test_strategy_hash {
-        let count = TestStrategy.get_function_call_count('assert_can_validate');
-        assert 3 = count;
+        assert 3 = AssignmentStrategyMock.get_function_call_count('assert_can_validate');
     }
 
     return ();
@@ -209,10 +170,9 @@ func test_on_validated{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
     let composite_strategy_hash = Composite.default();
     IAssignmentStrategy.library_call_on_validated(composite_strategy_hash, CONTRIBUTOR_ADDRESS);
 
-    let test_strategy_hash = TestStrategy.declared();
+    let test_strategy_hash = AssignmentStrategyMock.declared();
     with test_strategy_hash {
-        let count = TestStrategy.get_function_call_count('on_validated');
-        assert 3 = count;
+        assert 3 = AssignmentStrategyMock.get_function_call_count('on_validated');
     }
 
     return ();
@@ -247,7 +207,7 @@ namespace Composite {
     func default{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> felt {
         alloc_locals;
 
-        let test_strategy_hash = TestStrategy.declared();
+        let test_strategy_hash = AssignmentStrategyMock.declared();
         let (local strategies) = alloc();
         assert strategies[0] = test_strategy_hash;
         assert strategies[1] = test_strategy_hash;
@@ -259,37 +219,5 @@ namespace Composite {
         }
 
         return composite_strategy_hash;
-    }
-}
-
-//
-// TestStratgegy functions
-//
-namespace TestStrategy {
-    func declared{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> felt {
-        tempvar test_strategy_hash;
-        %{ ids.test_strategy_hash = context.test_strategy_hash %}
-        return test_strategy_hash;
-    }
-
-    func request_revert{
-        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, test_strategy_hash
-    }() {
-        ITestStrategy.library_call_request_revert(test_strategy_hash);
-        return ();
-    }
-
-    func get_function_call_count{
-        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, test_strategy_hash
-    }(function_name) -> felt {
-        alloc_locals;
-        tempvar function_call_count;
-        let (local contract_address) = get_contract_address();
-        %{
-            selector = context.selectors[ids.function_name]
-            storage = load(ids.contract_address, "assignment_strategy__test__function_calls", "felt", key=[selector])
-            ids.function_call_count = storage[0]
-        %}
-        return function_call_count;
     }
 }
