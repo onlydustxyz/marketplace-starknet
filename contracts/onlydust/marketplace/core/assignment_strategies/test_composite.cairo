@@ -2,6 +2,13 @@
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.alloc import alloc
+from starkware.starknet.common.syscalls import get_contract_address
+from onlydust.marketplace.interfaces.assignment_strategy import IAssignmentStrategy
+
+//
+// CONSTANTS
+//
+const CONTRIBUTOR_ADDRESS = 0x069642afc7c6669888f3e8e6c935662b126b2a0ac6c12ca754861d54b4c17556;
 
 //
 // INTERFACES
@@ -15,12 +22,31 @@ namespace IComposite {
     }
 }
 
+@contract_interface
+namespace ITestStrategy {
+    func request_revert() {
+    }
+}
+
 //
 // TESTS
 //
+func register_selector(function_name, selector) {
+    %{ context.selectors[ids.function_name] = ids.selector %}
+    return ();
+}
+
 @view
 func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    %{ context.composite_strategy_hash = declare("./contracts/onlydust/marketplace/core/assignment_strategies/composite.cairo", config={"wait_for_acceptance": True}).class_hash %}
+    %{
+        context.composite_strategy_hash = declare("./contracts/onlydust/marketplace/core/assignment_strategies/composite.cairo", config={"wait_for_acceptance": True}).class_hash 
+        context.test_strategy_hash = declare("./contracts/onlydust/marketplace/test/libraries/assignment_strategy_mock.cairo", config={"wait_for_acceptance": True}).class_hash
+        context.selectors = {}
+    %}
+
+    register_selector(
+        'assert_can_assign', 0xafebfa3bc187991e56ad073c19677f894a3a5541d8b8151af100e49077f937
+    );
 
     return ();
 }
@@ -61,6 +87,38 @@ func test_cannot_initialize_twice{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*
     return ();
 }
 
+@view
+func test_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    alloc_locals;
+
+    let composite_strategy_hash = Composite.default();
+    IAssignmentStrategy.library_call_assert_can_assign(
+        composite_strategy_hash, CONTRIBUTOR_ADDRESS
+    );
+
+    let test_strategy_hash = TestStrategy.declared();
+    with test_strategy_hash {
+        let count = TestStrategy.get_function_call_count('assert_can_assign');
+        assert 3 = count;
+    }
+
+    return ();
+}
+
+@view
+func test_cannot_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    let test_strategy_hash = TestStrategy.declared();
+    with test_strategy_hash {
+        TestStrategy.request_revert();
+    }
+
+    %{ expect_revert() %}
+    let composite_strategy_hash = Composite.default();
+    IAssignmentStrategy.assert_can_assign(composite_strategy_hash, CONTRIBUTOR_ADDRESS);
+
+    return ();
+}
+
 //
 // Composite functions
 //
@@ -85,5 +143,54 @@ namespace Composite {
             composite_strategy_hash
         );
         return (strategies_len, strategies);
+    }
+
+    func default{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> felt {
+        alloc_locals;
+
+        let test_strategy_hash = TestStrategy.declared();
+        let (local strategies) = alloc();
+        assert strategies[0] = test_strategy_hash;
+        assert strategies[1] = test_strategy_hash;
+        assert strategies[2] = test_strategy_hash;
+
+        let composite_strategy_hash = declared();
+        with composite_strategy_hash {
+            initialize(3, strategies);
+        }
+
+        return composite_strategy_hash;
+    }
+}
+
+//
+// TestStratgegy functions
+//
+namespace TestStrategy {
+    func declared{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> felt {
+        tempvar test_strategy_hash;
+        %{ ids.test_strategy_hash = context.test_strategy_hash %}
+        return test_strategy_hash;
+    }
+
+    func request_revert{
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, test_strategy_hash
+    }() {
+        ITestStrategy.library_call_request_revert(test_strategy_hash);
+        return ();
+    }
+
+    func get_function_call_count{
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, test_strategy_hash
+    }(function_name) -> felt {
+        alloc_locals;
+        tempvar function_call_count;
+        let (local contract_address) = get_contract_address();
+        %{
+            selector = context.selectors[ids.function_name]
+            storage = load(ids.contract_address, "assignment_strategy__test__function_calls", "felt", key=[selector])
+            ids.function_call_count = storage[0]
+        %}
+        return function_call_count;
     }
 }
