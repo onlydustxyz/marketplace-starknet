@@ -47,6 +47,9 @@ func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     register_selector(
         'assert_can_assign', 0xafebfa3bc187991e56ad073c19677f894a3a5541d8b8151af100e49077f937
     );
+    register_selector(
+        'assert_can_unassign', 0x24d59f9e6d82d630ed029dc7ad5594e04122af91ac85426ec2c05cfec580997
+    );
 
     return ();
 }
@@ -115,6 +118,24 @@ func test_cannot_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
     %{ expect_revert() %}
     let composite_strategy_hash = Composite.default();
     IAssignmentStrategy.assert_can_assign(composite_strategy_hash, CONTRIBUTOR_ADDRESS);
+
+    return ();
+}
+
+@view
+func test_can_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    alloc_locals;
+
+    let composite_strategy_hash = Composite.default();
+    IAssignmentStrategy.library_call_assert_can_unassign(
+        composite_strategy_hash, CONTRIBUTOR_ADDRESS
+    );
+
+    let test_strategy_hash = TestStrategy.declared();
+    with test_strategy_hash {
+        let count = TestStrategy.get_function_call_count('assert_can_unassign');
+        assert 3 = count;
+    }
 
     return ();
 }
