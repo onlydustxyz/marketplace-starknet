@@ -3,6 +3,7 @@
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.starknet.common.syscalls import get_caller_address
+from starkware.cairo.common.math_cmp import is_not_zero
 
 from contracts.onlydust.marketplace.interfaces.project import IProject
 
@@ -24,58 +25,76 @@ func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
 //
 
 @view
-func can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+func assert_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_account
-) -> (can_assign: felt) {
+) {
     let (caller_address) = get_caller_address();
     let (
         project_contract_address
     ) = assignment_strategy__access_control__project_contract_address.read();
 
-    let (is_project_lead) = IProject.is_lead_contributor(project_contract_address, caller_address);
-    if (is_project_lead != FALSE) {
-        return (TRUE,);
-    }
+    let is_assigning_to_other = is_not_zero(caller_address - contributor_account);
 
-    if (caller_address != contributor_account) {
-        return (FALSE,);
+    let (is_project_lead) = IProject.is_lead_contributor(project_contract_address, caller_address);
+    with_attr error_message("AccessControl: Must be ProjectLead to assign another account") {
+        // Fail if:
+        // -  is_assigning_to_other is TRUE
+        // AND
+        // - is_project_lead is FALSE
+        assert 0 = is_assigning_to_other * (is_project_lead - 1);
     }
 
     let (is_member) = IProject.is_member(project_contract_address, caller_address);
-
-    return (is_member,);
-}
-
-@view
-func can_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    contributor_account
-) -> (can_unassign: felt) {
-    let (caller_address) = get_caller_address();
-    let (
-        project_contract_address
-    ) = assignment_strategy__access_control__project_contract_address.read();
-
-    if (caller_address == contributor_account) {
-        return (TRUE,);
+    with_attr error_message("AccessControl: Must be ProjectMember to claim a contribution") {
+        // Fail if:
+        // - is_project_lead is FALSE
+        // OR
+        // - is_member is FALSE
+        assert 0 = (is_project_lead - 1) * (is_member - 1);
     }
 
-    let (is_project_lead) = IProject.is_lead_contributor(project_contract_address, caller_address);
+    // If we are here:
+    // - is_project_lead is TRUE
+    // OR
+    // - is_member is TRUE AND is_assigning_to_other
 
-    return (is_project_lead,);
+    return ();
 }
 
 @view
-func can_validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+func assert_can_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_account
-) -> (can_validate: felt) {
+) {
+    let (caller_address) = get_caller_address();
+    let (
+        project_contract_address
+    ) = assignment_strategy__access_control__project_contract_address.read();
+
+    let is_unassigning_other = is_not_zero(caller_address - contributor_account);
+
+    let (is_project_lead) = IProject.is_lead_contributor(project_contract_address, caller_address);
+    with_attr error_message("AccessControl: Must be ProjectLead to unassign another account") {
+        assert 0 = is_unassigning_other * (is_project_lead - 1);
+    }
+
+    return ();
+}
+
+@view
+func assert_can_validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    contributor_account
+) {
     let (caller_address) = get_caller_address();
     let (
         project_contract_address
     ) = assignment_strategy__access_control__project_contract_address.read();
 
     let (is_project_lead) = IProject.is_lead_contributor(project_contract_address, caller_address);
+    with_attr error_message("AccessControl: Must be ProjectLead to validate") {
+        assert TRUE = is_project_lead;
+    }
 
-    return (is_project_lead,);
+    return ();
 }
 
 @external
