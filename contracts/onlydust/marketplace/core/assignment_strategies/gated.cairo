@@ -39,9 +39,9 @@ func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
 }
 
 @view
-func can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+func assert_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_account
-) -> (can_assign: felt) {
+) {
     let (oracle) = assignment_strategy__gated__oracle_contract_address.read();
 
     let (count_done) = IContributorOracle.past_contribution_count(oracle, contributor_account);
@@ -49,24 +49,21 @@ func can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
 
     let done_enough = is_le(count_required, count_done);
 
-    return (done_enough,);
-}
+    with_attr error_message("Gated: No enough contributions done.") {
+        assert TRUE = done_enough;
+    }
 
-@external
-func on_validated{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    contributor_account
-) {
     return ();
 }
 
 @view
-func can_unassign(contributor_account) -> (can_unassing: felt) {
-    return (TRUE,);
+func assert_can_unassign(contributor_account) {
+    return ();
 }
 
 @view
-func can_validate(contributor_account) -> (can_validate: felt) {
-    return (TRUE,);
+func assert_can_validate(contributor_account) {
+    return ();
 }
 
 @external
@@ -76,6 +73,11 @@ func on_assigned(contributor_account) {
 
 @external
 func on_unassigned(contributor_account) {
+    return ();
+}
+
+@external
+func on_validated(contributor_account) {
     return ();
 }
 
