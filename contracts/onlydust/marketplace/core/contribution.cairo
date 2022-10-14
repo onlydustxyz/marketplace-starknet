@@ -3,6 +3,7 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.bool import FALSE
 from starkware.starknet.common.syscalls import library_call
+from onlydust.marketplace.interfaces.assignment_strategy import IAssignmentStrategy
 from openzeppelin.security.Initializable.library import Initializable
 
 //
@@ -10,6 +11,10 @@ from openzeppelin.security.Initializable.library import Initializable
 //
 @event
 func ContributionInitialized(assignment_strategy_class_hash: felt) {
+}
+
+@event
+func ContributionAssigned(contributor_account: felt) {
 }
 
 //
@@ -45,5 +50,22 @@ func set_initialized{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
     Initializable.initialize();
     contribution__assignment_strategy_class_hash.write(assignment_strategy_class_hash);
     ContributionInitialized.emit(assignment_strategy_class_hash);
+    return ();
+}
+
+//
+// IContribution implementation
+//
+@external
+func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(contributor_account) {
+    let (assignment_strategy_class_hash) = contribution__assignment_strategy_class_hash.read();
+    IAssignmentStrategy.library_call_assert_can_assign(
+        assignment_strategy_class_hash, contributor_account
+    );
+    ContributionAssigned.emit(contributor_account);
+    IAssignmentStrategy.library_call_on_assigned(
+        assignment_strategy_class_hash, contributor_account
+    );
+
     return ();
 }
