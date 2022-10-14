@@ -46,35 +46,24 @@ namespace IAssignmentStrategyMock {
 // AssignmentStrategyMock functions
 //
 namespace AssignmentStrategyMock {
-    func setup{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-        alloc_locals;
-
-        %{
-            context.test_strategy_hash = declare("./contracts/onlydust/marketplace/test/libraries/assignment_strategy_mock.cairo", config={"wait_for_acceptance": True}).class_hash
-            context.selectors = {}
-        %}
-
+    func setup{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> felt {
         internal.register_selectors();
-
-        return ();
+        return internal.declare();
     }
 
-    func declared{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> felt {
-        tempvar test_strategy_hash;
-        %{ ids.test_strategy_hash = context.test_strategy_hash %}
-        return test_strategy_hash;
+    func class_hash{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> felt {
+        return internal.declare();
     }
 
-    func request_revert{
-        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, test_strategy_hash
-    }() {
+    func request_revert{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+        let test_strategy_hash = class_hash();
         IAssignmentStrategyMock.library_call_request_revert(test_strategy_hash);
         return ();
     }
 
-    func get_function_call_count{
-        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, test_strategy_hash
-    }(function_name) -> felt {
+    func get_function_call_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        function_name
+    ) -> felt {
         alloc_locals;
         tempvar function_call_count;
         let (local contract_address) = get_contract_address();
@@ -88,7 +77,20 @@ namespace AssignmentStrategyMock {
 }
 
 namespace internal {
+    func declare{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> felt {
+        tempvar test_strategy_hash;
+        %{
+            if not hasattr(context, 'test_strategy_hash'):
+                context.test_strategy_hash = declare("./contracts/onlydust/marketplace/test/libraries/assignment_strategy_mock.cairo", config={"wait_for_acceptance": True}).class_hash
+            ids.test_strategy_hash = context.test_strategy_hash
+        %}
+
+        return test_strategy_hash;
+    }
+
     func register_selectors() {
+        %{ context.selectors = {} %}
+
         register_selector(
             'assert_can_assign', 0xafebfa3bc187991e56ad073c19677f894a3a5541d8b8151af100e49077f937
         );

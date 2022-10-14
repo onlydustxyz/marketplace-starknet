@@ -77,20 +77,14 @@ func test_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
         composite_strategy_hash, CONTRIBUTOR_ADDRESS
     );
 
-    let test_strategy_hash = AssignmentStrategyMock.declared();
-    with test_strategy_hash {
-        assert 3 = AssignmentStrategyMock.get_function_call_count('assert_can_assign');
-    }
+    assert 3 = AssignmentStrategyMock.get_function_call_count('assert_can_assign');
 
     return ();
 }
 
 @view
 func test_cannot_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    let test_strategy_hash = AssignmentStrategyMock.declared();
-    with test_strategy_hash {
-        AssignmentStrategyMock.request_revert();
-    }
+    AssignmentStrategyMock.request_revert();
 
     %{ expect_revert() %}
     let composite_strategy_hash = Composite.default();
@@ -106,10 +100,7 @@ func test_on_assigned{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_chec
     let composite_strategy_hash = Composite.default();
     IAssignmentStrategy.library_call_on_assigned(composite_strategy_hash, CONTRIBUTOR_ADDRESS);
 
-    let test_strategy_hash = AssignmentStrategyMock.declared();
-    with test_strategy_hash {
-        assert 3 = AssignmentStrategyMock.get_function_call_count('on_assigned');
-    }
+    assert 3 = AssignmentStrategyMock.get_function_call_count('on_assigned');
 
     return ();
 }
@@ -123,10 +114,7 @@ func test_can_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
         composite_strategy_hash, CONTRIBUTOR_ADDRESS
     );
 
-    let test_strategy_hash = AssignmentStrategyMock.declared();
-    with test_strategy_hash {
-        assert 3 = AssignmentStrategyMock.get_function_call_count('assert_can_unassign');
-    }
+    assert 3 = AssignmentStrategyMock.get_function_call_count('assert_can_unassign');
 
     return ();
 }
@@ -138,10 +126,7 @@ func test_on_unassigned{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
     let composite_strategy_hash = Composite.default();
     IAssignmentStrategy.library_call_on_unassigned(composite_strategy_hash, CONTRIBUTOR_ADDRESS);
 
-    let test_strategy_hash = AssignmentStrategyMock.declared();
-    with test_strategy_hash {
-        assert 3 = AssignmentStrategyMock.get_function_call_count('on_unassigned');
-    }
+    assert 3 = AssignmentStrategyMock.get_function_call_count('on_unassigned');
 
     return ();
 }
@@ -155,10 +140,7 @@ func test_can_validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
         composite_strategy_hash, CONTRIBUTOR_ADDRESS
     );
 
-    let test_strategy_hash = AssignmentStrategyMock.declared();
-    with test_strategy_hash {
-        assert 3 = AssignmentStrategyMock.get_function_call_count('assert_can_validate');
-    }
+    assert 3 = AssignmentStrategyMock.get_function_call_count('assert_can_validate');
 
     return ();
 }
@@ -170,10 +152,7 @@ func test_on_validated{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
     let composite_strategy_hash = Composite.default();
     IAssignmentStrategy.library_call_on_validated(composite_strategy_hash, CONTRIBUTOR_ADDRESS);
 
-    let test_strategy_hash = AssignmentStrategyMock.declared();
-    with test_strategy_hash {
-        assert 3 = AssignmentStrategyMock.get_function_call_count('on_validated');
-    }
+    assert 3 = AssignmentStrategyMock.get_function_call_count('on_validated');
 
     return ();
 }
@@ -207,7 +186,7 @@ namespace Composite {
     func default{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> felt {
         alloc_locals;
 
-        let test_strategy_hash = AssignmentStrategyMock.declared();
+        let test_strategy_hash = AssignmentStrategyMock.class_hash();
         let (local strategies) = alloc();
         assert strategies[0] = test_strategy_hash;
         assert strategies[1] = test_strategy_hash;
