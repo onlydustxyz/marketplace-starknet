@@ -71,3 +71,18 @@ func test_cannot_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
 
     return ();
 }
+
+@view
+func test_claim{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    let test_strategy_hash = AssignmentStrategyMock.class_hash();
+    set_initialized(test_strategy_hash);
+
+    assign(0x0);
+
+    assert 1 = AssignmentStrategyMock.get_function_call_count('assert_can_assign');
+    assert 1 = AssignmentStrategyMock.get_function_call_count('on_assigned');
+
+    %{ expect_events({"name": "ContributionClaimed", "data": {"contributor_account": 0}}) %}
+
+    return ();
+}
