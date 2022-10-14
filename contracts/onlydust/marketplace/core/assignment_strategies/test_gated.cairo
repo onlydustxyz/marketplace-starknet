@@ -3,7 +3,13 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.bool import TRUE, FALSE
 
-from contracts.onlydust.marketplace.core.assignment_strategies.gated import initialize, can_assign, oracle_contract_address, contributions_count_required, change_gate
+from contracts.onlydust.marketplace.core.assignment_strategies.gated import (
+    initialize,
+    can_assign,
+    oracle_contract_address,
+    contributions_count_required,
+    change_gate,
+)
 
 @view
 func test_initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
@@ -49,7 +55,7 @@ func test_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
     assert res = TRUE;
 
     %{ stop_mock() %}
-    
+
     return ();
 }
 
