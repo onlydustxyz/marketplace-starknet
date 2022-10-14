@@ -1,15 +1,19 @@
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.starknet.common.syscalls import library_call
-from openzeppelin.security.Initializable.library import Initializable
 
 //
 // This strategy allows to use several strategies as a single one
 //
 
 // STORAGES
+@storage_var
+func assignment_strategy__composite__initialized() -> (initialized: felt) {
+}
+
 @storage_var
 func assignment_strategy__composite__strategy_count() -> (strategy_count: felt) {
 }
@@ -40,7 +44,12 @@ func __default__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     strategies_len, strategies: felt*
 ) {
-    Initializable.initialize();
+    with_attr error_message("Composite: already initialized") {
+        let (initialized) = assignment_strategy__composite__initialized.read();
+        assert FALSE = initialized;
+        assignment_strategy__composite__initialized.write(TRUE);
+    }
+
     internal.store_strategy_loop(strategies_len, strategies);
     assignment_strategy__composite__strategy_count.write(strategies_len);
 
