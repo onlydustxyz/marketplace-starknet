@@ -1,10 +1,9 @@
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.bool import FALSE
+from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.starknet.common.syscalls import library_call, get_caller_address
 from onlydust.marketplace.interfaces.assignment_strategy import IAssignmentStrategy
-from openzeppelin.security.Initializable.library import Initializable
 
 //
 // EVENTS
@@ -36,6 +35,10 @@ func ContributionValidated(contributor_account: felt) {
 func contribution__assignment_strategy_class_hash() -> (assignment_strategy_class_hash: felt) {
 }
 
+@storage_var
+func contribution__initialized() -> (initialized: felt) {
+}
+
 //
 // Common functions to be imported to any contribution implementation to be usable by OnlyDust platform
 //
@@ -45,7 +48,7 @@ func initialize_from_hash{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_
     class_hash, calldata_len, calldata: felt*
 ) {
     with_attr error_message("Contribution already initialized") {
-        let (initialized) = Initializable.initialized();
+        let (initialized) = contribution__initialized.read();
         assert FALSE = initialized;
     }
 
@@ -59,7 +62,7 @@ func initialize_from_hash{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_
 func set_initialized{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     assignment_strategy_class_hash: felt
 ) {
-    Initializable.initialize();
+    contribution__initialized.write(TRUE);
     contribution__assignment_strategy_class_hash.write(assignment_strategy_class_hash);
     ContributionInitialized.emit(assignment_strategy_class_hash);
     return ();
