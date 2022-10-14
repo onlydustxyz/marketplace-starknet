@@ -18,6 +18,10 @@ func ContributionAssigned(contributor_account: felt) {
 }
 
 @event
+func ContributionUnassigned(contributor_account: felt) {
+}
+
+@event
 func ContributionClaimed(contributor_account: felt) {
 }
 
@@ -63,6 +67,7 @@ func set_initialized{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
 @external
 func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(contributor_account) {
     let (assignment_strategy_class_hash) = contribution__assignment_strategy_class_hash.read();
+
     IAssignmentStrategy.library_call_assert_can_assign(
         assignment_strategy_class_hash, contributor_account
     );
@@ -75,6 +80,25 @@ func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(con
     }
 
     IAssignmentStrategy.library_call_on_assigned(
+        assignment_strategy_class_hash, contributor_account
+    );
+
+    return ();
+}
+
+@external
+func unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    contributor_account
+) {
+    let (assignment_strategy_class_hash) = contribution__assignment_strategy_class_hash.read();
+
+    IAssignmentStrategy.library_call_assert_can_unassign(
+        assignment_strategy_class_hash, contributor_account
+    );
+
+    ContributionUnassigned.emit(contributor_account);
+
+    IAssignmentStrategy.library_call_on_unassigned(
         assignment_strategy_class_hash, contributor_account
     );
 

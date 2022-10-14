@@ -1,7 +1,12 @@
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from onlydust.marketplace.core.contribution import initialize_from_hash, set_initialized, assign
+from onlydust.marketplace.core.contribution import (
+    initialize_from_hash,
+    set_initialized,
+    assign,
+    unassign,
+)
 from onlydust.marketplace.test.libraries.assignment_strategy_mock import AssignmentStrategyMock
 
 //
@@ -83,6 +88,21 @@ func test_claim{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
     assert 1 = AssignmentStrategyMock.get_function_call_count('on_assigned');
 
     %{ expect_events({"name": "ContributionClaimed", "data": {"contributor_account": 0}}) %}
+
+    return ();
+}
+
+@view
+func test_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    let test_strategy_hash = AssignmentStrategyMock.class_hash();
+    set_initialized(test_strategy_hash);
+
+    unassign(CONTRIBUTOR_ADDRESS);
+
+    assert 1 = AssignmentStrategyMock.get_function_call_count('assert_can_unassign');
+    assert 1 = AssignmentStrategyMock.get_function_call_count('on_unassigned');
+
+    %{ expect_events({"name": "ContributionUnassigned", "data": {"contributor_account": ids.CONTRIBUTOR_ADDRESS}}) %}
 
     return ();
 }
