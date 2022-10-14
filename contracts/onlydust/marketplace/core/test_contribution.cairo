@@ -58,3 +58,16 @@ func test_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 
     return ();
 }
+
+@view
+func test_cannot_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    let test_strategy_hash = AssignmentStrategyMock.class_hash();
+    set_initialized(test_strategy_hash);
+
+    AssignmentStrategyMock.revert_on_call('assert_can_assign');
+
+    %{ expect_revert() %}
+    assign(CONTRIBUTOR_ADDRESS);
+
+    return ();
+}
