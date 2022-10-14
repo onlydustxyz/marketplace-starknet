@@ -1,47 +1,18 @@
 %lang starknet
 
+from starkware.cairo.common.cairo_builtins import HashBuiltin
+from starkware.starknet.common.syscalls import library_call
+
 //
 // Common functions to be imported to any contribution implementation to be usable by OnlyDust platform
 //
 
 @external
-func initialize_from_hash(class_hash, calldata_len, calldata: felt*) {
-    assert _initialized.read() = 0;
+func initialize_from_hash{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    class_hash, calldata_len, calldata: felt*
+) {
+    const INITIALIZE_SELECTOR = 0x79dc0da7c54b95f10aa182ad0a46400db63156920adb65eca2654c0945a463;  // initialize()
     library_call(class_hash, INITIALIZE_SELECTOR, calldata_len, calldata);
-}
 
-@external
-func set_initialized() {
-    _initialized.write(1);
-}
-
-//
-// IContribution implementation
-//
-@external
-func assign(contributor_account) {
-    assert 1 = IAssignmentStrategy.library_can_assign(contributor_account);
-    ContributionAssigned.emit(get_contract_address(), Uint256(contributor_account));
-    IAssignmentStrategy.library_on_assigned(contributor_account);
-}
-
-@external
-func claim() {
-    assert 1 = IAssignmentStrategy.library_can_assign(get_caller_address());
-    ContributionClaimed.emit(get_contract_address(), Uint256(get_caller_address()));
-    IAssignmentStrategy.library_on_assigned(get_caller_address());
-}
-
-@external
-func unassign(contributor_account) {
-    assert 1 = IAssignmentStrategy.library_can_unassign(contributor_account);
-    ContributionUnassigned.emit(get_contract_address());
-    IAssignmentStrategy.library_on_unassigned(contributor_account);
-}
-
-@external
-func validate(contributor_account) {
-    assert 1 = IAssignmentStrategy.library_can_validate(contributor_account);
-    ContributionValidated.emit(get_contract_address());
-    IAssignmentStrategy.library_on_validated(contributor_account);
+    return ();
 }
