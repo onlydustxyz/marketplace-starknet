@@ -2,7 +2,7 @@
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.bool import FALSE
-from starkware.starknet.common.syscalls import library_call
+from starkware.starknet.common.syscalls import library_call, get_caller_address
 from onlydust.marketplace.interfaces.assignment_strategy import IAssignmentStrategy
 from openzeppelin.security.Initializable.library import Initializable
 
@@ -15,6 +15,10 @@ func ContributionInitialized(assignment_strategy_class_hash: felt) {
 
 @event
 func ContributionAssigned(contributor_account: felt) {
+}
+
+@event
+func ContributionClaimed(contributor_account: felt) {
 }
 
 //
@@ -62,7 +66,14 @@ func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(con
     IAssignmentStrategy.library_call_assert_can_assign(
         assignment_strategy_class_hash, contributor_account
     );
-    ContributionAssigned.emit(contributor_account);
+
+    let (caller_address) = get_caller_address();
+    if (caller_address == contributor_account) {
+        ContributionClaimed.emit(contributor_account);
+    } else {
+        ContributionAssigned.emit(contributor_account);
+    }
+
     IAssignmentStrategy.library_call_on_assigned(
         assignment_strategy_class_hash, contributor_account
     );
