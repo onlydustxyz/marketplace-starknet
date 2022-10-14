@@ -59,6 +59,9 @@ func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     register_selector(
         'assert_can_validate', 0x335791ca04a8d33572330929a1f5d0ed5ccb04474422093c6ca6cb510ad1bc6
     );
+    register_selector(
+        'on_validated', 0x8a3674db7fb20b307d4be1223ac3ebe7d05225da47a185d1fffacc26f495c7
+    );
 
     return ();
 }
@@ -193,6 +196,22 @@ func test_can_validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
     let test_strategy_hash = TestStrategy.declared();
     with test_strategy_hash {
         let count = TestStrategy.get_function_call_count('assert_can_validate');
+        assert 3 = count;
+    }
+
+    return ();
+}
+
+@view
+func test_on_validated{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    alloc_locals;
+
+    let composite_strategy_hash = Composite.default();
+    IAssignmentStrategy.library_call_on_validated(composite_strategy_hash, CONTRIBUTOR_ADDRESS);
+
+    let test_strategy_hash = TestStrategy.declared();
+    with test_strategy_hash {
+        let count = TestStrategy.get_function_call_count('on_validated');
         assert 3 = count;
     }
 
