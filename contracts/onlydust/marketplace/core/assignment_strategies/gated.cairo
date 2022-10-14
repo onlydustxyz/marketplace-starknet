@@ -7,10 +7,6 @@ from starkware.cairo.common.bool import TRUE, FALSE
 
 from contracts.onlydust.marketplace.interfaces.contributor_oracle import IContributorOracle
 
-//
-// This strategy checks that the contributor has
-//
-
 @storage_var
 func assignment_strategy__gated__oracle_contract_address() -> (oracle_contract_address: felt) {
 }
@@ -22,7 +18,7 @@ func assignment_strategy__gated__contributions_count_required() -> (
 }
 
 @event
-func ContributionGateChanged(contribution_account: felt, contributions_count_required: felt) {
+func ContributionGateChanged(contributions_count_required: felt) {
 }
 
 @external
@@ -31,9 +27,7 @@ func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
 ) {
     assignment_strategy__gated__oracle_contract_address.write(oracle_contract_address);
 
-    assignment_strategy__gated__contributions_count_required.write(
-        past_contributions_count_required
-    );
+    change_gate(past_contributions_count_required);
 
     return ();
 }
@@ -93,8 +87,7 @@ func change_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
         new_past_contributions_count_required
     );
 
-    let (contribution_id) = get_contract_address();
-    ContributionGateChanged.emit(contribution_id, new_past_contributions_count_required);
+    ContributionGateChanged.emit(new_past_contributions_count_required);
 
     return ();
 }

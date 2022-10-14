@@ -13,12 +13,16 @@ from contracts.onlydust.marketplace.core.assignment_strategies.gated import (
     change_gate,
 )
 
+const ORACLE_CONTRACT_ADDRESS = 0x00327ae4393d1f2c6cf6dae0b533efa5d58621f9ea682f07ab48540b222fd02e;
+const ADDRESS_OF_SELF = 0x0;
+const ADDRESS_OF_OTHER = 0x1;
+
 @view
 func test_initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    initialize(0x1234, 3);
+    initialize(ORACLE_CONTRACT_ADDRESS, 3);
 
     let (res) = oracle_contract_address();
-    assert 0x1234 = res;
+    assert ORACLE_CONTRACT_ADDRESS = res;
 
     let (res) = contributions_count_required();
     assert 3 = res;
@@ -28,18 +32,18 @@ func test_initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
 
 @view
 func test_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    initialize(0x1234, 3);
+    initialize(ORACLE_CONTRACT_ADDRESS, 3);
 
     // When equal
-    %{ stop_mock = mock_call(0x1234, "past_contribution_count", [0x3]) %}
-    assert_can_assign(0x0);
-    assert_can_assign(0x1);
+    %{ stop_mock = mock_call(ids.ORACLE_CONTRACT_ADDRESS, "past_contribution_count", [3]) %}
+    assert_can_assign(ADDRESS_OF_SELF);
+    assert_can_assign(ADDRESS_OF_OTHER);
     %{ stop_mock() %}
 
     // When greater
-    %{ stop_mock = mock_call(0x1234, "past_contribution_count", [0x4]) %}
-    assert_can_assign(0x0);
-    assert_can_assign(0x1);
+    %{ stop_mock = mock_call(ids.ORACLE_CONTRACT_ADDRESS, "past_contribution_count", [4]) %}
+    assert_can_assign(ADDRESS_OF_SELF);
+    assert_can_assign(ADDRESS_OF_OTHER);
     %{ stop_mock() %}
 
     return ();
@@ -48,19 +52,19 @@ func test_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
 @view
 func test_cannot_assign_when_less{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     ) {
-    initialize(0x1234, 3);
+    initialize(ORACLE_CONTRACT_ADDRESS, 3);
     %{
-        stop_mock = mock_call(0x1234, "past_contribution_count", [0x2])
+        stop_mock = mock_call(ids.ORACLE_CONTRACT_ADDRESS, "past_contribution_count", [2])
         expect_revert(error_message="Gated: No enough contributions done.")
     %}
-    assert_can_assign(0x0);
+    assert_can_assign(ADDRESS_OF_SELF);
 
     return ();
 }
 
 @view
 func test_change_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    initialize(0x1234, 2);
+    initialize(ORACLE_CONTRACT_ADDRESS, 2);
     let (required) = contributions_count_required();
     assert 2 = required;
 
@@ -73,9 +77,9 @@ func test_change_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_chec
     assert 1 = required;
 
     // Still working
-    %{ stop_mock = mock_call(0x1234, "past_contribution_count", [0x2]) %}
-    assert_can_assign(0x0);
-    assert_can_assign(0x1);
+    %{ stop_mock = mock_call(ids.ORACLE_CONTRACT_ADDRESS, "past_contribution_count", [2]) %}
+    assert_can_assign(ADDRESS_OF_SELF);
+    assert_can_assign(ADDRESS_OF_OTHER);
     %{ stop_mock() %}
 
     return ();
@@ -85,10 +89,12 @@ func test_change_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_chec
 func test_everything_else_does_not_revert{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    assert_can_unassign(0x0);
-    assert_can_unassign(0x1);
-    assert_can_validate(0x0);
-    assert_can_validate(0x1);
+    initialize(ORACLE_CONTRACT_ADDRESS, 2);
+
+    assert_can_unassign(ADDRESS_OF_SELF);
+    assert_can_unassign(ADDRESS_OF_OTHER);
+    assert_can_validate(ADDRESS_OF_SELF);
+    assert_can_validate(ADDRESS_OF_OTHER);
 
     return ();
 }
