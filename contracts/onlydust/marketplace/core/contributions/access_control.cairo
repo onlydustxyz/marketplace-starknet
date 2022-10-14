@@ -85,6 +85,11 @@ namespace access_control {
         syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
     }(project_id: felt, lead_contributor_account: felt) {
         only_admin();
+
+        let (is_lead) = is_lead_contributor(project_id, lead_contributor_account); 
+        with_attr error_message("Contributions: Cannot add same lead contributor twice") {
+            assert is_lead = FALSE;
+        }
         has_role_by_project_and_account_.write(
             Role.LEAD_CONTRIBUTOR, project_id, lead_contributor_account, TRUE
         );
