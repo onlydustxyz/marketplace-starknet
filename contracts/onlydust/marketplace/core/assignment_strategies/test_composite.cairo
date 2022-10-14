@@ -84,7 +84,7 @@ func test_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
 
 @view
 func test_cannot_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    AssignmentStrategyMock.request_revert();
+    AssignmentStrategyMock.revert_on_call('assert_can_assign');
 
     %{ expect_revert() %}
     let composite_strategy_hash = Composite.default();
