@@ -113,7 +113,6 @@ func set_caller_as_lead_contributor{
 func set_caller_as_project_member{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     ) {
     alloc_locals;
-    set_caller_as_lead_contributor();
     let (contributions_contract) = contributions_access.deployed();
 
     %{ stop_prank = start_prank(ids.CALLER_ACCOUNT, ids.contributions_contract) %}

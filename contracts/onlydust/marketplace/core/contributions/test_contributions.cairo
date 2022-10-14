@@ -24,17 +24,38 @@ func test_lead_contributor_can_be_added_and_removed{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
     fixture.initialize();
+
+    let new_lead = LEAD_CONTRIBUTOR_ACCOUNT + 1;
+
     %{ stop_prank = start_prank(ids.ADMIN) %}
-    contributions.add_lead_contributor_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT);
-    contributions.remove_lead_contributor_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT);
+    contributions.add_lead_contributor_for_project(PROJECT_ID, new_lead);
+    contributions.remove_lead_contributor_for_project(PROJECT_ID, new_lead);
     %{ stop_prank() %}
 
     %{
         expect_events(
-            { "name": "LeadContributorAdded", "data": { "project_id": ids.PROJECT_ID,  "lead_contributor_account":  ids.LEAD_CONTRIBUTOR_ACCOUNT }},
-            { "name": "LeadContributorRemoved", "data": { "project_id": ids.PROJECT_ID,  "lead_contributor_account": ids.LEAD_CONTRIBUTOR_ACCOUNT }},
+            { "name": "LeadContributorAdded", "data": { "project_id": ids.PROJECT_ID,  "lead_contributor_account":  ids.new_lead }},
+            { "name": "LeadContributorRemoved", "data": { "project_id": ids.PROJECT_ID,  "lead_contributor_account": ids.new_lead }},
         )
     %}
+
+    return ();
+}
+
+@view
+func test_same_lead_contributor_cannot_be_added_twice{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() {
+    alloc_locals;
+
+    fixture.initialize();
+
+    %{
+        stop_prank = start_prank(ids.ADMIN)
+        expect_revert(error_message="Contributions: Cannot add same lead contributor twice")
+    %}
+    contributions.add_lead_contributor_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT);
+    %{ stop_prank() %}
 
     return ();
 }
@@ -68,10 +89,6 @@ func test_new_contribution_can_be_added_by_lead_contributor{
     alloc_locals;
 
     fixture.initialize();
-
-    %{ stop_prank = start_prank(ids.ADMIN) %}
-    contributions.add_lead_contributor_for_project(PROJECT_ID, LEAD_CONTRIBUTOR_ACCOUNT);
-    %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.LEAD_CONTRIBUTOR_ACCOUNT) %}
     contributions.new_contribution(PROJECT_ID, 1, 0);
