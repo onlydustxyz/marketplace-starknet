@@ -23,6 +23,7 @@ func request_revert{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_
 func __default__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     selector: felt, calldata_size: felt, calldata: felt*
 ) -> (retdata_size: felt, retdata: felt*) {
+    // %{ print(f'{hex(ids.selector)}') %} // Uncomment to add more selectors in unit test
     let (count) = assignment_strategy__test__function_calls.read(selector);
     assignment_strategy__test__function_calls.write(selector, count + 1);
 
