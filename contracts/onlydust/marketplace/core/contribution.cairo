@@ -6,6 +6,20 @@ from starkware.starknet.common.syscalls import library_call
 from openzeppelin.security.Initializable.library import Initializable
 
 //
+// EVENTS
+//
+@event
+func ContributionInitialized(assignment_strategy_class_hash: felt) {
+}
+
+//
+// STORAGE
+//
+@storage_var
+func contribution__assignment_strategy_class_hash() -> (assignment_strategy_class_hash: felt) {
+}
+
+//
 // Common functions to be imported to any contribution implementation to be usable by OnlyDust platform
 //
 
@@ -25,7 +39,11 @@ func initialize_from_hash{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_
 }
 
 @external
-func set_initialized{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+func set_initialized{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    assignment_strategy_class_hash: felt
+) {
     Initializable.initialize();
+    contribution__assignment_strategy_class_hash.write(assignment_strategy_class_hash);
+    ContributionInitialized.emit(assignment_strategy_class_hash);
     return ();
 }
