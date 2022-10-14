@@ -29,9 +29,7 @@ func ContributionGateChanged(contribution_account: felt, contributions_count_req
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     oracle_contract_address, past_contributions_count_required
 ) {
-    assignment_strategy__gated__oracle_contract_address.write(
-        oracle_contract_address
-    );
+    assignment_strategy__gated__oracle_contract_address.write(oracle_contract_address);
 
     assignment_strategy__gated__contributions_count_required.write(
         past_contributions_count_required
@@ -100,12 +98,14 @@ func change_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }
 
 @view
-func oracle_contract_address{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (oracle_contract_address: felt) {
+func oracle_contract_address{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
+    oracle_contract_address: felt
+) {
     return assignment_strategy__gated__oracle_contract_address.read();
 }
 
-
 @view
-func contributions_count_required{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (contributions_count_required: felt) {
+func contributions_count_required{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    ) -> (contributions_count_required: felt) {
     return assignment_strategy__gated__contributions_count_required.read();
 }
