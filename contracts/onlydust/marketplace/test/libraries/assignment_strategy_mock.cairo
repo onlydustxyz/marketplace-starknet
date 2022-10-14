@@ -80,6 +80,9 @@ namespace internal {
         %{ context.selectors = {} %}
 
         register_selector(
+            'initialize', 0x79dc0da7c54b95f10aa182ad0a46400db63156920adb65eca2654c0945a463
+        );
+        register_selector(
             'assert_can_assign', 0xafebfa3bc187991e56ad073c19677f894a3a5541d8b8151af100e49077f937
         );
         register_selector(
