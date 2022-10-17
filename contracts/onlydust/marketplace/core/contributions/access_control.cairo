@@ -86,7 +86,7 @@ namespace access_control {
     }(project_id: felt, lead_contributor_account: felt) {
         only_admin();
 
-        let (is_lead) = is_lead_contributor(project_id, lead_contributor_account); 
+        let (is_lead) = is_lead_contributor(project_id, lead_contributor_account);
         with_attr error_message("Contributions: Cannot add same lead contributor twice") {
             assert is_lead = FALSE;
         }
