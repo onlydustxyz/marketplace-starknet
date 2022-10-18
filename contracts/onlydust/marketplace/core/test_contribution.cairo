@@ -88,7 +88,7 @@ func test_claim{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
     assert 1 = AssignmentStrategyMock.get_function_call_count('assert_can_assign');
     assert 1 = AssignmentStrategyMock.get_function_call_count('on_assigned');
 
-    %{ expect_events({"name": "ContributionClaimed", "data": {"contributor_account": 0}}) %}
+    %{ expect_events({"name": "ContributionAssigned", "data": {"contributor_account": 0}}) %}
 
     return ();
 }

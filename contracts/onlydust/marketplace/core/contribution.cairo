@@ -21,10 +21,6 @@ func ContributionUnassigned(contributor_account: felt) {
 }
 
 @event
-func ContributionClaimed(contributor_account: felt) {
-}
-
-@event
 func ContributionValidated(contributor_account: felt) {
 }
 
@@ -79,12 +75,7 @@ func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(con
         assignment_strategy_class_hash, contributor_account
     );
 
-    let (caller_address) = get_caller_address();
-    if (caller_address == contributor_account) {
-        ContributionClaimed.emit(contributor_account);
-    } else {
-        ContributionAssigned.emit(contributor_account);
-    }
+    ContributionAssigned.emit(contributor_account);
 
     IAssignmentStrategy.library_call_on_assigned(
         assignment_strategy_class_hash, contributor_account
