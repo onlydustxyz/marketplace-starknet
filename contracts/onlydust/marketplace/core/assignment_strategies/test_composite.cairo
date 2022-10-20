@@ -36,20 +36,14 @@ func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
 func test_initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     alloc_locals;
 
-    let (local strategies) = alloc();
-    assert strategies[0] = 0x1111;
-    assert strategies[1] = 0x2222;
-    assert strategies[2] = 0x3333;
-
-    let composite_strategy_hash = Composite.declared();
+    let test_strategy_hash = AssignmentStrategyMock.class_hash();
+    let composite_strategy_hash = Composite.default();
     with composite_strategy_hash {
-        Composite.initialize(3, strategies);
-
         let (strategies_len, strategies) = Composite.strategies();
         assert 3 = strategies_len;
-        assert 0x1111 = strategies[0];
-        assert 0x2222 = strategies[1];
-        assert 0x3333 = strategies[2];
+        assert test_strategy_hash = strategies[0];
+        assert test_strategy_hash = strategies[1];
+        assert test_strategy_hash = strategies[2];
     }
 
     return ();
@@ -189,12 +183,15 @@ namespace Composite {
         let test_strategy_hash = AssignmentStrategyMock.class_hash();
         let (local strategies) = alloc();
         assert strategies[0] = test_strategy_hash;
-        assert strategies[1] = test_strategy_hash;
+        assert strategies[1] = 0;
         assert strategies[2] = test_strategy_hash;
+        assert strategies[3] = 0;
+        assert strategies[4] = test_strategy_hash;
+        assert strategies[5] = 0;
 
         let composite_strategy_hash = declared();
         with composite_strategy_hash {
-            initialize(3, strategies);
+            initialize(6, strategies);
         }
 
         return composite_strategy_hash;
