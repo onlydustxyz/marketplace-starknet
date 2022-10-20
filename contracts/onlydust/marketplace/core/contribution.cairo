@@ -40,27 +40,21 @@ func contribution__initialized() -> (initialized: felt) {
 //
 
 @external
-func initialize_from_hash{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+func initialize_strategy{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     class_hash, calldata_len, calldata: felt*
 ) {
     with_attr error_message("Contribution already initialized") {
         let (initialized) = contribution__initialized.read();
         assert FALSE = initialized;
+        contribution__initialized.write(TRUE);
     }
 
     const INITIALIZE_SELECTOR = 0x79dc0da7c54b95f10aa182ad0a46400db63156920adb65eca2654c0945a463;  // initialize()
     library_call(class_hash, INITIALIZE_SELECTOR, calldata_len, calldata);
+    contribution__assignment_strategy_class_hash.write(class_hash);
 
-    return ();
-}
+    ContributionInitialized.emit(class_hash);
 
-@external
-func set_initialized{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    assignment_strategy_class_hash: felt
-) {
-    contribution__initialized.write(TRUE);
-    contribution__assignment_strategy_class_hash.write(assignment_strategy_class_hash);
-    ContributionInitialized.emit(assignment_strategy_class_hash);
     return ();
 }
 

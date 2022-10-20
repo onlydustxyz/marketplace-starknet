@@ -6,7 +6,7 @@ ROOT=`readlink -f $SCRIPT_DIR/..`
 CACHE_FILE_BASE=$ROOT/scripts/configuration/deployed_contracts
 STARKNET_ACCOUNTS_FILE=$HOME/.starknet_accounts/starknet_open_zeppelin_accounts.json
 PROTOSTAR_TOML_FILE=$ROOT/protostar.toml
-STARKNET_VERSION="0.10.0"
+STARKNET_VERSION="0.10.1"
 MAX_FEE=3100000000000000
 
 ### FUNCTIONS

@@ -9,6 +9,19 @@ from starkware.starknet.common.syscalls import library_call
 // This strategy allows to use several strategies as a single one
 //
 
+// Example of contribution creation with composite strategies
+
+// Gated (past_contributions_count_required = 3)
+// Sequential (max_parallel_count = 1)
+// Recurring (slot_count = 30)
+
+// starknet invoke --abi project.json --contract_address $project_contract --function new_contribution --inputs \
+//     $github_contribution_hash $composite_hash 12 \
+//     $access_control_hash 1 $project_contract \
+//     $gated_hash 1 3 \
+//     $sequential_hash 1 1 \
+//     $recurring_hash 1 30 \
+
 // STORAGES
 @storage_var
 func assignment_strategy__composite__initialized() -> (initialized: felt) {
@@ -40,9 +53,10 @@ func __default__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 //
 // MANAGEMENT FUNCTIONS
 //
+
 @external
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    strategies_len, strategies: felt*
+    calldata_len, calldata: felt*
 ) {
     with_attr error_message("Composite: already initialized") {
         let (initialized) = assignment_strategy__composite__initialized.read();
@@ -50,8 +64,8 @@ func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
         assignment_strategy__composite__initialized.write(TRUE);
     }
 
-    internal.store_strategy_loop(strategies_len, strategies);
-    assignment_strategy__composite__strategy_count.write(strategies_len);
+    let strategies_count = internal.store_strategy_loop(calldata_len, calldata);
+    assignment_strategy__composite__strategy_count.write(strategies_count);
 
     return ();
 }
@@ -74,15 +88,27 @@ func strategies{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
 //
 namespace internal {
     func store_strategy_loop{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-        strategies_len, strategies: felt*
-    ) {
-        if (strategies_len == 0) {
-            return ();
+        calldata_len, calldata: felt*
+    ) -> felt {
+        if (calldata_len == 0) {
+            return (0);
         }
 
-        assignment_strategy__composite__strategy_hash_by_index.write(strategies_len, [strategies]);
+        let strategy_hash = calldata[0];
+        let strategy_calldata_len = calldata[1];
 
-        return store_strategy_loop(strategies_len - 1, strategies + 1);
+        let next_calldata_len = calldata_len - (strategy_calldata_len + 2);
+        let next_calldata = calldata + strategy_calldata_len + 2;
+        let count = internal.store_strategy_loop(next_calldata_len, next_calldata);
+
+        // TODO: check strat is allowd
+        // IOnlyDust.assert_hash_allowed(only_dust_contract, class_hash);
+
+        const INITIALIZE_SELECTOR = 0x79dc0da7c54b95f10aa182ad0a46400db63156920adb65eca2654c0945a463;  // initialize()
+        library_call(strategy_hash, INITIALIZE_SELECTOR, strategy_calldata_len, calldata + 2);
+        assignment_strategy__composite__strategy_hash_by_index.write(1 + count, strategy_hash);
+
+        return 1 + count;
     }
 
     func read_strategy_loop{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(

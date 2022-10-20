@@ -1,13 +1,7 @@
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from onlydust.marketplace.core.contribution import (
-    initialize_from_hash,
-    set_initialized,
-    assign,
-    unassign,
-    validate,
-)
+from onlydust.marketplace.core.contribution import initialize_strategy, assign, unassign, validate
 from onlydust.marketplace.test.libraries.assignment_strategy_mock import AssignmentStrategyMock
 
 //
@@ -20,7 +14,9 @@ const CONTRIBUTOR_ADDRESS = 0xafc7c6669888f3e8e6c935662b126b2a0ac6c12ca754861d54
 //
 @view
 func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    AssignmentStrategyMock.setup();
+    let strategy_hash = AssignmentStrategyMock.setup();
+    initialize_strategy(strategy_hash, 0, new ());
+
     return ();
 }
 
@@ -28,11 +24,7 @@ func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
 func test_initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     let test_strategy_hash = AssignmentStrategyMock.class_hash();
 
-    initialize_from_hash(test_strategy_hash, 0, new ());
-    initialize_from_hash(test_strategy_hash, 0, new ());
-    set_initialized(test_strategy_hash);
-
-    assert 2 = AssignmentStrategyMock.get_function_call_count('initialize');
+    assert 1 = AssignmentStrategyMock.get_function_call_count('initialize');
     %{ expect_events({"name": "ContributionInitialized", "data": {"assignment_strategy_class_hash": ids.test_strategy_hash}}) %}
 
     return ();
@@ -42,10 +34,9 @@ func test_initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
 func test_cannot_initialize_twice{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     ) {
     let test_strategy_hash = AssignmentStrategyMock.class_hash();
-    set_initialized(test_strategy_hash);
 
     %{ expect_revert(error_message="Contribution already initialized") %}
-    initialize_from_hash(test_strategy_hash, 0, new ());
+    initialize_strategy(test_strategy_hash, 0, new ());
 
     return ();
 }
@@ -53,7 +44,6 @@ func test_cannot_initialize_twice{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*
 @view
 func test_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     let test_strategy_hash = AssignmentStrategyMock.class_hash();
-    set_initialized(test_strategy_hash);
 
     assign(CONTRIBUTOR_ADDRESS);
 
@@ -68,7 +58,6 @@ func test_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 @view
 func test_cannot_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     let test_strategy_hash = AssignmentStrategyMock.class_hash();
-    set_initialized(test_strategy_hash);
 
     AssignmentStrategyMock.revert_on_call('assert_can_assign');
 
@@ -81,7 +70,6 @@ func test_cannot_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_ch
 @view
 func test_claim{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     let test_strategy_hash = AssignmentStrategyMock.class_hash();
-    set_initialized(test_strategy_hash);
 
     assign(0x0);
 
@@ -96,7 +84,6 @@ func test_claim{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
 @view
 func test_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     let test_strategy_hash = AssignmentStrategyMock.class_hash();
-    set_initialized(test_strategy_hash);
 
     unassign(CONTRIBUTOR_ADDRESS);
 
@@ -111,7 +98,6 @@ func test_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_p
 @view
 func test_validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     let test_strategy_hash = AssignmentStrategyMock.class_hash();
-    set_initialized(test_strategy_hash);
 
     validate(CONTRIBUTOR_ADDRESS);
 

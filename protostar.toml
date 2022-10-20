@@ -38,3 +38,20 @@ proxy = ["./lib/cairo_contracts/src/openzeppelin/upgrades/presets/Proxy.cairo"]
 github_contribution = [
     "./contracts/onlydust/marketplace/core/github/contribution.cairo",
 ]
+
+# New contributions
+contribution = ["./contracts/onlydust/marketplace/core/contribution.cairo"]
+
+# Strategies
+access_control = [
+    "./contracts/onlydust/marketplace/core/assignment_strategies/access_control.cairo",
+]
+closable = [
+    "./contracts/onlydust/marketplace/core/assignment_strategies/closable.cairo",
+]
+composite = [
+    "./contracts/onlydust/marketplace/core/assignment_strategies/composite.cairo",
+]
+gated = [
+    "./contracts/onlydust/marketplace/core/assignment_strategies/gated.cairo",
+]
