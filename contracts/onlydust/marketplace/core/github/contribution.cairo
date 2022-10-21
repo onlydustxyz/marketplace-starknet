@@ -7,7 +7,6 @@ from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.starknet.common.syscalls import get_contract_address, get_tx_info, TxInfo
 from openzeppelin.security.initializable.library import Initializable
 
-from onlydust.marketplace.interfaces.project import IProject
 from onlydust.marketplace.interfaces.contributor_oracle import IContributorOracle
 
 from onlydust.marketplace.core.contribution import initialize_strategy, assign, unassign, validate
