@@ -1,9 +1,16 @@
 %lang starknet
 //
 // This strategy limit the number of assignments per contributor
+// slot_count = 0 => strategy is locked, no assignment possible unless we add more slots
 // slot_count = 1 => normal contribution
 // slot count > 1 => recurring contribution
 // not using this strategy means infinite contribution
+//
+
+from starkware.cairo.common.cairo_builtins import HashBuiltin
+
+//
+// Events
 //
 
 //
@@ -11,39 +18,50 @@
 //
 
 @external
-func initialize(slot_count) {
-    // store slot max_slot_count and slot_count
+func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    max_slot_count: felt
+) {
+    return ();
 }
 
 @external
-func can_assign() {
-    // check slot_count > 0
+func assert_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    contributor_account_address: felt
+) {
+    return ();
 }
 
 @external
-func on_assigned() {
-    // decrease slot_count
+func on_assigned{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    contributor_account_address: felt
+) {
+    return ();
 }
 
 @external
-func can_unassign() {
-    // check slot_count < max_slot_count
+func assert_can_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    contributor_account_address: felt
+) {
+    return ();
 }
 
 @external
-func on_unassigned() {
-    // increase slot_count
+func on_unassigned{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    contributor_account_address: felt
+) {
+    return ();
 }
 
 @external
-func add_slot(add_slot_count) {
-    // store slot_count += add_slot_count
-    // store max_slot_count += add_slot_count
+func assert_can_validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    contributor_account_address: felt
+) {
+    return ();
 }
 
 @external
-func remove_slot(sub_slot_count) {
-    // check slot_count >= sub_slot_count
-    // store slot_count -= add_slot_count
-    // store max_slot_count -= add_slot_count
+func on_validated{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    contributor_account_address: felt
+) {
+    return ();
 }
