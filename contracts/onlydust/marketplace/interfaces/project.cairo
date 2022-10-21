@@ -14,15 +14,10 @@ namespace IProject {
     func remove_lead_contributor(contributor_account) {
         // admin_only
     }
-    func is_lead_contributor(contributor_account) -> (res: felt) {
-    }
-
     func add_member(contributor_account) {
         // lead_contributor_only
     }
     func remove_member(contributor_account) {
         // lead_contributor_only
-    }
-    func is_member(contributor_account) -> (res: felt) {
     }
 }

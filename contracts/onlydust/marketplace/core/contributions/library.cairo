@@ -169,7 +169,7 @@ namespace contributions {
     ) -> (contribution: Contribution) {
         alloc_locals;
 
-        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x21fb316ef2187c2847bade4d021127a859051cbebea7bf56983b7cbb471e1be;
+        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x13556660e8fe0738b53e92b9a7e3fc24213a964a2cc7a11b124a334adf0255a;
         let (this) = get_contract_address();
         let (current_salt) = contributions_deploy_salt_.read();
 
