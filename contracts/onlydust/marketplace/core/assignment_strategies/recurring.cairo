@@ -75,6 +75,8 @@ func assert_can_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_c
 func on_unassigned{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_account_address: felt
 ) {
+    let slot_count = internal.available_slot_count();
+    internal.set_available_slot_count(slot_count + 1);
     return ();
 }
 
