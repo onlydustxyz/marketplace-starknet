@@ -10,6 +10,11 @@ from onlydust.marketplace.core.assignment_strategies.gated import (
     contributions_count_required,
     oracle_contract_address,
 )
+from onlydust.marketplace.core.assignment_strategies.recurring import (
+    set_max_slot_count,
+    max_slot_count,
+    available_slot_count,
+)
 
 //
 // Events

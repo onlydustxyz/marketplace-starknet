@@ -11,7 +11,7 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.math import assert_not_zero, assert_nn, assert_le
 from starkware.starknet.common.syscalls import get_tx_info
-from contracts.onlydust.marketplace.library.access_control_viewer import AccessControlViewer
+from onlydust.marketplace.library.access_control_viewer import AccessControlViewer
 
 //
 // Events
@@ -123,7 +123,7 @@ func max_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_
     return (slot_count,);
 }
 
-@view
+@external
 func set_max_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     new_max_slot_count: felt
 ) {
