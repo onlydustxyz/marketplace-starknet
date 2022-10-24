@@ -12,6 +12,20 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 //
 // Events
 //
+@event
+func ContributionAssignmentRecurringAvailableSlotCountChanged(new_slot_count) {
+}
+
+@event
+func ContributionAssignmentRecurringMaxSlotCountChanged(new_slot_count) {
+}
+
+//
+// Storage
+//
+@storage_var
+func assignment_strategy__recurring__available_slot_count() -> (slot_count: felt) {
+}
 
 //
 // STRATEGY IMPLEMENTATION
@@ -21,6 +35,8 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     max_slot_count: felt
 ) {
+    internal.set_available_slot_count(max_slot_count);
+    internal.set_max_slot_count(max_slot_count);
     return ();
 }
 
@@ -35,6 +51,8 @@ func assert_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
 func on_assigned{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_account_address: felt
 ) {
+    let slot_count = internal.available_slot_count();
+    internal.set_available_slot_count(slot_count - 1);
     return ();
 }
 
@@ -64,4 +82,27 @@ func on_validated{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_pt
     contributor_account_address: felt
 ) {
     return ();
+}
+
+namespace internal {
+    func available_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        ) -> felt {
+        let (slot_count) = assignment_strategy__recurring__available_slot_count.read();
+        return slot_count;
+    }
+
+    func set_available_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        new_slot_count
+    ) {
+        assignment_strategy__recurring__available_slot_count.write(new_slot_count);
+        ContributionAssignmentRecurringAvailableSlotCountChanged.emit(new_slot_count);
+        return ();
+    }
+
+    func set_max_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        new_slot_count
+    ) {
+        ContributionAssignmentRecurringMaxSlotCountChanged.emit(new_slot_count);
+        return ();
+    }
 }
