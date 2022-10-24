@@ -24,22 +24,17 @@ from onlydust.marketplace.core.contributions.access_control import (
     ProjectMemberRemoved,
 )
 from onlydust.marketplace.interfaces.contribution import IContribution
+from onlydust.marketplace.test.libraries.assignment_strategy_mock import AssignmentStrategyMock
 
 @contract_interface
 namespace IGithubContribution {
-    func initialize(
-        contributor_oracle: felt,
-        project_contract: felt,
-        repo_id: felt,
-        issue_number: felt,
-        gate: felt,
-    ) {
+    func initialize(calldata_len: felt, calldata: felt*) {
     }
 
-    func modify_gate(gate: felt) {
+    func change_gate(gate: felt) {
     }
 
-    func delete() {
+    func close() {
     }
 }
 
@@ -172,7 +167,9 @@ namespace contributions {
     func deploy_new_contribution{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         project_id: felt, issue_number: felt, gate: felt
     ) -> (contribution: Contribution) {
-        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x7221fa3de5acf174f0809426b669ebc2d05fe465686554e15b8af9e4ad4c282;
+        alloc_locals;
+
+        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x21fb316ef2187c2847bade4d021127a859051cbebea7bf56983b7cbb471e1be;
         let (this) = get_contract_address();
         let (current_salt) = contributions_deploy_salt_.read();
 
@@ -185,14 +182,13 @@ namespace contributions {
         );
         ContributionDeployed.emit(contract_address);
 
-        IGithubContribution.initialize(
-            contract_address,
-            contributor_oracle=this,
-            project_contract=this,
-            repo_id=project_id,
-            issue_number=issue_number,
-            gate=gate,
-        );
+        // TODO: set another default strategy to deploy (a composite one)
+        let (local calldata) = alloc();
+        assert calldata[0] = project_id;
+        assert calldata[1] = issue_number;
+        assert calldata[2] = 0x2e19da033a890fe57f423ae30304f60688afd89ff3baeca125bf0b13e19fdc3;  // ClosableStrategyClassHash
+
+        IGithubContribution.initialize(contract_address, calldata_len=3, calldata=calldata);
 
         contributions_deploy_salt_.write(value=current_salt + 1);
         contribution_project_id.write(ContributionId(contract_address), project_id);
@@ -250,7 +246,7 @@ namespace contributions {
         let contribution_exists = contribution_access.exists(contribution_id);
         if (contribution_exists == 0) {
             let contract_address = contribution_id.inner;
-            IGithubContribution.delete(contract_address);
+            IGithubContribution.close(contract_address);
             return ();
         }
 
@@ -355,7 +351,7 @@ namespace contributions {
         let contribution_exists = contribution_access.exists(contribution_id);
         if (contribution_exists == 0) {
             let contract_address = contribution_id.inner;
-            IGithubContribution.modify_gate(contract_address, gate);
+            IGithubContribution.change_gate(contract_address, gate);
             return ();
         }
 

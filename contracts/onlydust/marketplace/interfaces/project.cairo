@@ -4,7 +4,7 @@
 namespace IProject {
     func new_contribution(
         contribution_hash, assignment_strategy_hash, calldata_len: felt, calldata: felt*
-    ) {
+    ) -> (contract: felt) {
         // lead_contributor_only
     }
 

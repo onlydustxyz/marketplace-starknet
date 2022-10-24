@@ -25,6 +25,15 @@ func ContributionReopened() {
 // IAssignmentStrategy
 //
 
+@external
+func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    calldata_len, calldata: felt*
+) {
+    assert 0 = calldata_len;
+
+    return ();
+}
+
 @view
 func assert_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     _contributor_account: felt
