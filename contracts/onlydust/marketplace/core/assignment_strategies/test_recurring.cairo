@@ -26,6 +26,14 @@ func test_can_assign_if_enough_slot_left{
     initialize(1);
     Contribution.assign(CONTRIBUTOR_ACCOUNT_ADDRESS);
 
+    %{
+        expect_events(
+           {"name": "ContributionAssignmentRecurringAvailableSlotCountChanged", "data": {"new_slot_count": 1}},
+           {"name": "ContributionAssignmentRecurringMaxSlotCountChanged", "data": {"new_slot_count": 1}},
+           {"name": "ContributionAssignmentRecurringAvailableSlotCountChanged", "data": {"new_slot_count": 0}}
+        )
+    %}
+
     return ();
 }
 
