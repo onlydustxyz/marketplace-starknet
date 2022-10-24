@@ -8,6 +8,7 @@
 //
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
+from starkware.cairo.common.math import assert_not_zero
 
 //
 // Events
@@ -44,6 +45,10 @@ func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
 func assert_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_account_address: felt
 ) {
+    with_attr error_message("Recurring: No more slot") {
+        let slot_count = internal.available_slot_count();
+        assert_not_zero(slot_count);
+    }
     return ();
 }
 
