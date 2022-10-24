@@ -8,7 +8,7 @@
 //
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.math import assert_not_zero
+from starkware.cairo.common.math import assert_not_zero, assert_nn
 
 //
 // Events
@@ -36,6 +36,9 @@ func assignment_strategy__recurring__available_slot_count() -> (slot_count: felt
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     max_slot_count: felt
 ) {
+    with_attr error_message("Recurring: invalid slot count") {
+        assert_nn(max_slot_count);
+    }
     internal.set_available_slot_count(max_slot_count);
     internal.set_max_slot_count(max_slot_count);
     return ();
