@@ -122,6 +122,19 @@ func test_can_modify_max_slot_count{
     return ();
 }
 
+@external
+func test_cannot_remove_assigned_slots{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() {
+    initialize(1);
+    Contribution.assign(CONTRIBUTOR_ACCOUNT_ADDRESS);
+
+    %{ expect_revert(error_message='Recurring: invalid slot count') %}
+    set_max_slot_count(0);
+
+    return ();
+}
+
 namespace Contribution {
     func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         contributor_account_address: felt

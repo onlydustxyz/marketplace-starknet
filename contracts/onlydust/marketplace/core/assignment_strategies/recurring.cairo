@@ -40,9 +40,6 @@ func assignment_strategy__recurring__max_slot_count() -> (slot_count: felt) {
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     max_slot_count: felt
 ) {
-    with_attr error_message("Recurring: invalid slot count") {
-        assert_nn(max_slot_count);
-    }
     internal.set_available_slot_count(max_slot_count);
     internal.set_max_slot_count(max_slot_count);
     return ();
@@ -150,6 +147,10 @@ namespace internal {
     func set_available_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         new_slot_count
     ) {
+        with_attr error_message("Recurring: invalid slot count") {
+            assert_nn(new_slot_count);
+        }
+
         assignment_strategy__recurring__available_slot_count.write(new_slot_count);
         ContributionAssignmentRecurringAvailableSlotCountChanged.emit(new_slot_count);
         return ();
