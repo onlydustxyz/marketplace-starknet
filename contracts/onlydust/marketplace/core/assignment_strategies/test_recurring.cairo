@@ -80,6 +80,18 @@ func test_release_a_slot_when_unassigning{
     return ();
 }
 
+@external
+func test_cannot_release_slot_when_at_max{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() {
+    initialize(1);
+
+    %{ expect_revert(error_message='Recurring: max slot count reached') %}
+    Contribution.unassign(CONTRIBUTOR_ACCOUNT_ADDRESS);
+
+    return ();
+}
+
 namespace Contribution {
     func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         contributor_account_address: felt

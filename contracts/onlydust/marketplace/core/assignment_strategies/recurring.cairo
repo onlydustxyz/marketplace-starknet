@@ -8,7 +8,7 @@
 //
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.math import assert_not_zero, assert_nn
+from starkware.cairo.common.math import assert_not_zero, assert_nn, assert_le
 
 //
 // Events
@@ -26,6 +26,10 @@ func ContributionAssignmentRecurringMaxSlotCountChanged(new_slot_count) {
 //
 @storage_var
 func assignment_strategy__recurring__available_slot_count() -> (slot_count: felt) {
+}
+
+@storage_var
+func assignment_strategy__recurring__max_slot_count() -> (slot_count: felt) {
 }
 
 //
@@ -68,6 +72,13 @@ func on_assigned{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 func assert_can_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     contributor_account_address: felt
 ) {
+    alloc_locals;
+
+    with_attr error_message("Recurring: max slot count reached") {
+        let slot_count = internal.available_slot_count();
+        let max_slot_count = internal.max_slot_count();
+        assert_le(slot_count + 1, max_slot_count);
+    }
     return ();
 }
 
@@ -109,9 +120,15 @@ namespace internal {
         return ();
     }
 
+    func max_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> felt {
+        let (slot_count) = assignment_strategy__recurring__max_slot_count.read();
+        return slot_count;
+    }
+
     func set_max_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         new_slot_count
     ) {
+        assignment_strategy__recurring__max_slot_count.write(new_slot_count);
         ContributionAssignmentRecurringMaxSlotCountChanged.emit(new_slot_count);
         return ();
     }
