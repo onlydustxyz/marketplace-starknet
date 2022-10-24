@@ -24,7 +24,6 @@ from onlydust.marketplace.core.contributions.access_control import (
     ProjectMemberRemoved,
 )
 from onlydust.marketplace.interfaces.contribution import IContribution
-from onlydust.marketplace.test.libraries.assignment_strategy_mock import AssignmentStrategyMock
 
 @contract_interface
 namespace IGithubContribution {
@@ -169,7 +168,7 @@ namespace contributions {
     ) -> (contribution: Contribution) {
         alloc_locals;
 
-        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x13556660e8fe0738b53e92b9a7e3fc24213a964a2cc7a11b124a334adf0255a;
+        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x2c88a0e0e75552a1f256b76b437287dca326b28a1df3cec0be41d1375470cd1;
         let (this) = get_contract_address();
         let (current_salt) = contributions_deploy_salt_.read();
 
