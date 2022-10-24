@@ -40,7 +40,6 @@ func assignment_strategy__recurring__max_slot_count() -> (slot_count: felt) {
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     max_slot_count: felt
 ) {
-    internal.set_available_slot_count(max_slot_count);
     internal.set_max_slot_count(max_slot_count);
     return ();
 }
@@ -125,11 +124,6 @@ func max_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_
 func set_max_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     new_max_slot_count: felt
 ) {
-    alloc_locals;
-    let slot_count = internal.available_slot_count();
-    let max_slot_count = internal.max_slot_count();
-    let additional_slots = new_max_slot_count - max_slot_count;
-    internal.set_available_slot_count(slot_count + additional_slots);
     internal.set_max_slot_count(new_max_slot_count);
     return ();
 }
@@ -162,10 +156,17 @@ namespace internal {
     }
 
     func set_max_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-        new_slot_count
+        new_max_slot_count
     ) {
-        assignment_strategy__recurring__max_slot_count.write(new_slot_count);
-        ContributionAssignmentRecurringMaxSlotCountChanged.emit(new_slot_count);
+        alloc_locals;
+        let max_slot_count = internal.max_slot_count();
+        let additional_slots = new_max_slot_count - max_slot_count;
+
+        let slot_count = internal.available_slot_count();
+        internal.set_available_slot_count(slot_count + additional_slots);
+
+        assignment_strategy__recurring__max_slot_count.write(new_max_slot_count);
+        ContributionAssignmentRecurringMaxSlotCountChanged.emit(new_max_slot_count);
         return ();
     }
 }
