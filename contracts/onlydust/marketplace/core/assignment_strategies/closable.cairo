@@ -9,6 +9,8 @@ from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.starknet.common.syscalls import get_caller_address
 
+from onlydust.marketplace.library.access_control_viewer import AccessControlViewer
+
 @storage_var
 func assignment_strategy__closable__is_closed() -> (is_closed: felt) {
 }
@@ -77,6 +79,7 @@ func on_validated(contributor_account) {
 
 @external
 func close{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    AccessControlViewer.assert_account_caller_is_project_lead();
     assignment_strategy__closable__is_closed.write(TRUE);
     ContributionClosed.emit();
     return ();
@@ -84,6 +87,7 @@ func close{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
 
 @external
 func reopen{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    AccessControlViewer.assert_account_caller_is_project_lead();
     assignment_strategy__closable__is_closed.write(FALSE);
     ContributionReopened.emit();
     return ();

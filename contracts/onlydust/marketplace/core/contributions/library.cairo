@@ -168,7 +168,7 @@ namespace contributions {
     ) -> (contribution: Contribution) {
         alloc_locals;
 
-        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x4fe90568954db194fde70a278945b6ceadb9033ad615347ba812b24a0175b9f;
+        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x613fc9123770d0be256199d35504bbf636304786b23eece659c737028d2c49a;
         let (this) = get_contract_address();
         let (current_salt) = contributions_deploy_salt_.read();
 
@@ -185,7 +185,7 @@ namespace contributions {
         let (local calldata) = alloc();
         assert calldata[0] = project_id;
         assert calldata[1] = issue_number;
-        assert calldata[2] = 0x2e19da033a890fe57f423ae30304f60688afd89ff3baeca125bf0b13e19fdc3;  // ClosableStrategyClassHash
+        assert calldata[2] = 0x55757af36e8c5096932fc2e9cdc509e03513fe742fe4d7d4a6ba5f9670cfb9f;  // ClosableStrategyClassHash
 
         IGithubContribution.initialize(contract_address, calldata_len=3, calldata=calldata);
 
