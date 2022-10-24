@@ -8,8 +8,8 @@ from contracts.onlydust.marketplace.core.assignment_strategies.access_control im
     assert_can_assign,
     assert_can_unassign,
     assert_can_validate,
+    AccessControlViewer,
 )
-from contracts.onlydust.marketplace.library.access_control_viewer import AccessControlViewer
 
 //
 // Constants
