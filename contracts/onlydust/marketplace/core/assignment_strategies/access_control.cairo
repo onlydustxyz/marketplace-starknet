@@ -13,10 +13,15 @@ func assignment_strategy__access_control__project_contract_address() -> (
 ) {
 }
 
+@external
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    project_contract_address
+    calldata_len, calldata: felt*
 ) {
+    assert 1 = calldata_len;
+    let project_contract_address = calldata[0];
+
     assignment_strategy__access_control__project_contract_address.write(project_contract_address);
+
     return ();
 }
 

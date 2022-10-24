@@ -2,6 +2,7 @@
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.bool import TRUE, FALSE
+from starkware.cairo.common.alloc import alloc
 
 from contracts.onlydust.marketplace.core.assignment_strategies.access_control import (
     initialize,
@@ -15,9 +16,14 @@ const PROJECT_CONTRACT_ADDRESS = 0x00327ae4393d1f2c6cf6dae0b533efa5d58621f9ea682
 const ADDRESS_OF_SELF = 0x0;
 const ADDRESS_OF_OTHER = 0x1;
 
+func init{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    initialize(calldata_len=1, calldata=new (PROJECT_CONTRACT_ADDRESS));
+    return ();
+}
+
 @view
 func test_initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    initialize(PROJECT_CONTRACT_ADDRESS);
+    init();
 
     let (res) = project_contract_address();
     assert PROJECT_CONTRACT_ADDRESS = res;
@@ -31,7 +37,7 @@ func test_initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
 func test_is_lead_contributor_true_can_do_anything{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(PROJECT_CONTRACT_ADDRESS);
+    init();
 
     %{
         stop_mock_lead = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [True])
@@ -57,7 +63,7 @@ func test_is_lead_contributor_true_can_do_anything{
 func test_is_member_true_can_self_assign_and_self_unassign{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(PROJECT_CONTRACT_ADDRESS);
+    init();
 
     %{
         stop_mock_lead = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [False])
@@ -79,7 +85,7 @@ func test_is_member_true_can_self_assign_and_self_unassign{
 func test_is_member_true_cannot_assign_other{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(PROJECT_CONTRACT_ADDRESS);
+    init();
 
     %{
         stop_mock_lead = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [False])
@@ -100,7 +106,7 @@ func test_is_member_true_cannot_assign_other{
 func test_is_member_true_cannot_unassign_other{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(PROJECT_CONTRACT_ADDRESS);
+    init();
 
     %{
         stop_mock_lead = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [False])
@@ -121,7 +127,7 @@ func test_is_member_true_cannot_unassign_other{
 func test_is_member_true_cannot_validate_self{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(PROJECT_CONTRACT_ADDRESS);
+    init();
 
     %{
         stop_mock_lead = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [False])
@@ -142,7 +148,7 @@ func test_is_member_true_cannot_validate_self{
 func test_is_member_true_cannot_validate_others{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(PROJECT_CONTRACT_ADDRESS);
+    init();
 
     %{
         stop_mock_lead = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [False])
@@ -165,7 +171,7 @@ func test_is_member_true_cannot_validate_others{
 func test_no_role_cannot_self_assign{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(PROJECT_CONTRACT_ADDRESS);
+    init();
 
     %{
         stop_mock_lead = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [False])
@@ -186,7 +192,7 @@ func test_no_role_cannot_self_assign{
 func test_no_role_cannot_assign_to_other{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(PROJECT_CONTRACT_ADDRESS);
+    init();
 
     %{
         stop_mock_lead = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [False])
@@ -207,7 +213,7 @@ func test_no_role_cannot_assign_to_other{
 func test_no_role_can_self_unassign{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(PROJECT_CONTRACT_ADDRESS);
+    init();
 
     %{
         stop_mock_lead = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [False])
@@ -223,12 +229,13 @@ func test_no_role_can_self_unassign{
 
     return ();
 }
+from starkware.cairo.common.registers import get_fp_and_pc
 
 @view
 func test_no_role_cannot_unassign_other{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(PROJECT_CONTRACT_ADDRESS);
+    init();
 
     %{
         stop_mock_lead = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [False])
@@ -249,7 +256,7 @@ func test_no_role_cannot_unassign_other{
 func test_no_role_cannot_self_validate{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(PROJECT_CONTRACT_ADDRESS);
+    init();
 
     %{
         stop_mock_lead = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [False])
@@ -270,7 +277,7 @@ func test_no_role_cannot_self_validate{
 func test_no_role_cannot_validate_others{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(PROJECT_CONTRACT_ADDRESS);
+    init();
 
     %{
         stop_mock_lead = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [False])

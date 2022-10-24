@@ -9,7 +9,7 @@ from onlydust.marketplace.interfaces.assignment_strategy import IAssignmentStrat
 // EVENTS
 //
 @event
-func ContributionInitialized(assignment_strategy_class_hash: felt) {
+func ContributionAssignmentStrategyInitialized(assignment_strategy_class_hash: felt) {
 }
 
 @event
@@ -31,36 +31,10 @@ func ContributionValidated(contributor_account: felt) {
 func contribution__assignment_strategy_class_hash() -> (assignment_strategy_class_hash: felt) {
 }
 
-@storage_var
-func contribution__initialized() -> (initialized: felt) {
-}
-
-//
-// Common functions to be imported to any contribution implementation to be usable by OnlyDust platform
-//
-
-@external
-func initialize_strategy{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    class_hash, calldata_len, calldata: felt*
-) {
-    with_attr error_message("Contribution already initialized") {
-        let (initialized) = contribution__initialized.read();
-        assert FALSE = initialized;
-        contribution__initialized.write(TRUE);
-    }
-
-    const INITIALIZE_SELECTOR = 0x79dc0da7c54b95f10aa182ad0a46400db63156920adb65eca2654c0945a463;  // initialize()
-    library_call(class_hash, INITIALIZE_SELECTOR, calldata_len, calldata);
-    contribution__assignment_strategy_class_hash.write(class_hash);
-
-    ContributionInitialized.emit(class_hash);
-
-    return ();
-}
-
 //
 // IContribution implementation
 //
+
 @external
 func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(contributor_account) {
     let (assignment_strategy_class_hash) = contribution__assignment_strategy_class_hash.read();
@@ -112,6 +86,21 @@ func validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     IAssignmentStrategy.library_call_on_validated(
         assignment_strategy_class_hash, contributor_account
     );
+
+    return ();
+}
+
+//
+// Utils
+//
+
+func initialize_strategy{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    class_hash, calldata_len, calldata: felt*
+) {
+    IAssignmentStrategy.library_call_initialize(class_hash, calldata_len, calldata);
+    contribution__assignment_strategy_class_hash.write(class_hash);
+
+    ContributionAssignmentStrategyInitialized.emit(class_hash);
 
     return ();
 }

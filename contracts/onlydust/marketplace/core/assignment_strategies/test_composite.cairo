@@ -50,19 +50,6 @@ func test_initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
 }
 
 @view
-func test_cannot_initialize_twice{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    ) {
-    %{ expect_revert(error_message="Composite: already initialized") %}
-    let composite_strategy_hash = Composite.declared();
-    with composite_strategy_hash {
-        Composite.initialize(0, new ());
-        Composite.initialize(0, new ());
-    }
-
-    return ();
-}
-
-@view
 func test_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     alloc_locals;
 

@@ -25,18 +25,7 @@ func test_initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
     let test_strategy_hash = AssignmentStrategyMock.class_hash();
 
     assert 1 = AssignmentStrategyMock.get_function_call_count('initialize');
-    %{ expect_events({"name": "ContributionInitialized", "data": {"assignment_strategy_class_hash": ids.test_strategy_hash}}) %}
-
-    return ();
-}
-
-@view
-func test_cannot_initialize_twice{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    ) {
-    let test_strategy_hash = AssignmentStrategyMock.class_hash();
-
-    %{ expect_revert(error_message="Contribution already initialized") %}
-    initialize_strategy(test_strategy_hash, 0, new ());
+    %{ expect_events({"name": "ContributionAssignmentStrategyInitialized", "data": {"assignment_strategy_class_hash": ids.test_strategy_hash}}) %}
 
     return ();
 }

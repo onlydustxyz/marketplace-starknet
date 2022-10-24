@@ -19,12 +19,12 @@ func ContributionDeployed(contract_address: felt) {
 //
 
 @external
-func new_contribution(
-    contribution_hash, assignment_strategy_hash, calldata_len: felt, calldata: felt*
-) {
-    // only_lead_contributor
+func new_contribution(contribution_hash, calldata_len: felt, calldata: felt*) -> (contract: felt) {
+    // TODO: only_lead_contributor
     let contract = deploy(contribution_hash, assignment_strategy_hash);
     ContributionDeployed.emit(contract);
 
-    IContribution.initialize_strategy(contract, assignment_strategy_hash, calldata_len, calldata);
+    IContribution.initialize(contract, calldata_len, calldata);
+
+    return (contract);
 }

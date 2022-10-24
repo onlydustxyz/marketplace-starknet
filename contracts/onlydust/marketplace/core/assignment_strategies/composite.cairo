@@ -5,6 +5,8 @@ from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.starknet.common.syscalls import library_call
 
+from onlydust.marketplace.interfaces.assignment_strategy import IAssignmentStrategy
+
 //
 // This strategy allows to use several strategies as a single one
 //
@@ -23,10 +25,6 @@ from starkware.starknet.common.syscalls import library_call
 //     $recurring_hash 1 30 \
 
 // STORAGES
-@storage_var
-func assignment_strategy__composite__initialized() -> (initialized: felt) {
-}
-
 @storage_var
 func assignment_strategy__composite__strategy_count() -> (strategy_count: felt) {
 }
@@ -58,12 +56,6 @@ func __default__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     calldata_len, calldata: felt*
 ) {
-    with_attr error_message("Composite: already initialized") {
-        let (initialized) = assignment_strategy__composite__initialized.read();
-        assert FALSE = initialized;
-        assignment_strategy__composite__initialized.write(TRUE);
-    }
-
     let strategies_count = internal.store_strategy_loop(calldata_len, calldata);
     assignment_strategy__composite__strategy_count.write(strategies_count);
 
@@ -90,6 +82,8 @@ namespace internal {
     func store_strategy_loop{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         calldata_len, calldata: felt*
     ) -> felt {
+        alloc_locals;
+
         if (calldata_len == 0) {
             return (0);
         }
@@ -100,12 +94,14 @@ namespace internal {
         let next_calldata_len = calldata_len - (strategy_calldata_len + 2);
         let next_calldata = calldata + strategy_calldata_len + 2;
         let count = internal.store_strategy_loop(next_calldata_len, next_calldata);
+        local count = count;
 
         // TODO: check strat is allowd
         // IOnlyDust.assert_hash_allowed(only_dust_contract, class_hash);
 
-        const INITIALIZE_SELECTOR = 0x79dc0da7c54b95f10aa182ad0a46400db63156920adb65eca2654c0945a463;  // initialize()
-        library_call(strategy_hash, INITIALIZE_SELECTOR, strategy_calldata_len, calldata + 2);
+        IAssignmentStrategy.library_call_initialize(
+            strategy_hash, strategy_calldata_len, calldata + 2
+        );
         assignment_strategy__composite__strategy_hash_by_index.write(1 + count, strategy_hash);
 
         return 1 + count;
