@@ -60,12 +60,40 @@ func test_cannot_intialize_with_negative_slot_count{
     return ();
 }
 
+@external
+func test_release_a_slot_when_unassigning{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() {
+    initialize(1);
+    Contribution.assign(CONTRIBUTOR_ACCOUNT_ADDRESS);
+    Contribution.unassign(CONTRIBUTOR_ACCOUNT_ADDRESS);
+
+    %{
+        expect_events(
+           {"name": "ContributionAssignmentRecurringAvailableSlotCountChanged", "data": {"new_slot_count": 1}},
+           {"name": "ContributionAssignmentRecurringMaxSlotCountChanged", "data": {"new_slot_count": 1}},
+           {"name": "ContributionAssignmentRecurringAvailableSlotCountChanged", "data": {"new_slot_count": 0}},
+           {"name": "ContributionAssignmentRecurringAvailableSlotCountChanged", "data": {"new_slot_count": 1}}
+        )
+    %}
+
+    return ();
+}
+
 namespace Contribution {
     func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         contributor_account_address: felt
     ) {
         assert_can_assign(contributor_account_address);
         on_assigned(contributor_account_address);
+        return ();
+    }
+
+    func unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        contributor_account_address: felt
+    ) {
+        assert_can_unassign(contributor_account_address);
+        on_unassigned(contributor_account_address);
         return ();
     }
 }
