@@ -55,3 +55,6 @@ composite = [
 gated = [
     "./contracts/onlydust/marketplace/core/assignment_strategies/gated.cairo",
 ]
+recurring = [
+    "./contracts/onlydust/marketplace/core/assignment_strategies/recurring.cairo",
+]
