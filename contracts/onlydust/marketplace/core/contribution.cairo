@@ -4,6 +4,7 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.starknet.common.syscalls import library_call, get_caller_address
 from onlydust.marketplace.interfaces.assignment_strategy import IAssignmentStrategy
+from onlydust.marketplace.library.access_control_viewer import AccessControlViewer
 
 //
 // EVENTS
@@ -93,14 +94,22 @@ func validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
 //
 // Utils
 //
+namespace Contribution {
+    func initialize_strategy{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        class_hash, calldata_len, calldata: felt*
+    ) {
+        IAssignmentStrategy.library_call_initialize(class_hash, calldata_len, calldata);
+        contribution__assignment_strategy_class_hash.write(class_hash);
 
-func initialize_strategy{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    class_hash, calldata_len, calldata: felt*
-) {
-    IAssignmentStrategy.library_call_initialize(class_hash, calldata_len, calldata);
-    contribution__assignment_strategy_class_hash.write(class_hash);
+        ContributionAssignmentStrategyInitialized.emit(class_hash);
 
-    ContributionAssignmentStrategyInitialized.emit(class_hash);
+        return ();
+    }
 
-    return ();
+    func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+        let (project_contract_address) = get_caller_address();
+        AccessControlViewer.initialize(project_contract_address);
+
+        return ();
+    }
 }
