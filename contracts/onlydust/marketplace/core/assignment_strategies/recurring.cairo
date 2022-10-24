@@ -8,7 +8,10 @@
 //
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
+from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.math import assert_not_zero, assert_nn, assert_le
+from starkware.starknet.common.syscalls import get_tx_info
+from contracts.onlydust.marketplace.library.access_control_viewer import AccessControlViewer
 
 //
 // Events
@@ -124,6 +127,7 @@ func max_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_
 func set_max_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     new_max_slot_count: felt
 ) {
+    AccessControlViewer.assert_account_caller_is_project_lead();
     internal.set_max_slot_count(new_max_slot_count);
     return ();
 }
@@ -168,5 +172,12 @@ namespace internal {
         assignment_strategy__recurring__max_slot_count.write(new_max_slot_count);
         ContributionAssignmentRecurringMaxSlotCountChanged.emit(new_max_slot_count);
         return ();
+    }
+
+    func get_account_caller_address{
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+    }() -> felt {
+        let (tx_info) = get_tx_info();
+        return tx_info.account_contract_address;
     }
 }
