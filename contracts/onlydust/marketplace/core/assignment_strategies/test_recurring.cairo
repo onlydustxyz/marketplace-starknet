@@ -1,7 +1,6 @@
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from contracts.onlydust.marketplace.library.access_control_viewer import AccessControlViewer
 from contracts.onlydust.marketplace.core.assignment_strategies.recurring import (
     initialize,
     assert_can_assign,
@@ -13,6 +12,7 @@ from contracts.onlydust.marketplace.core.assignment_strategies.recurring import 
     available_slot_count,
     max_slot_count,
     set_max_slot_count,
+    AccessControlViewer,
 )
 
 //
