@@ -37,6 +37,19 @@ func test_can_assign_if_enough_slot_left{
     return ();
 }
 
+@external
+func test_cannot_assign_if_no_slot_left{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() {
+    initialize(1);
+    Contribution.assign(CONTRIBUTOR_ACCOUNT_ADDRESS);
+
+    %{ expect_revert(error_message='Recurring: No more slot') %}
+    Contribution.assign(CONTRIBUTOR_ACCOUNT_ADDRESS);
+
+    return ();
+}
+
 namespace Contribution {
     func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         contributor_account_address: felt
