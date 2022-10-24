@@ -9,6 +9,9 @@ from contracts.onlydust.marketplace.core.assignment_strategies.recurring import 
     on_unassigned,
     assert_can_validate,
     on_validated,
+    available_slot_count,
+    max_slot_count,
+    set_max_slot_count,
 )
 
 //
@@ -92,6 +95,33 @@ func test_cannot_release_slot_when_at_max{
     return ();
 }
 
+@external
+func test_can_modify_max_slot_count{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() {
+    initialize(1);
+    Contribution.assign(CONTRIBUTOR_ACCOUNT_ADDRESS);
+
+    assert_that.available_slot_count_is(0);
+    assert_that.max_slot_count_is(1);
+
+    set_max_slot_count(2);
+    assert_that.available_slot_count_is(1);
+    assert_that.max_slot_count_is(2);
+
+    %{
+        expect_events(
+           {"name": "ContributionAssignmentRecurringAvailableSlotCountChanged", "data": {"new_slot_count": 1}},
+           {"name": "ContributionAssignmentRecurringMaxSlotCountChanged", "data": {"new_slot_count": 1}},
+           {"name": "ContributionAssignmentRecurringAvailableSlotCountChanged", "data": {"new_slot_count": 0}},
+           {"name": "ContributionAssignmentRecurringAvailableSlotCountChanged", "data": {"new_slot_count": 1}},
+           {"name": "ContributionAssignmentRecurringMaxSlotCountChanged", "data": {"new_slot_count": 2}}
+        )
+    %}
+
+    return ();
+}
+
 namespace Contribution {
     func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         contributor_account_address: felt
@@ -106,6 +136,28 @@ namespace Contribution {
     ) {
         assert_can_unassign(contributor_account_address);
         on_unassigned(contributor_account_address);
+        return ();
+    }
+}
+
+namespace assert_that {
+    func available_slot_count_is{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        expected_slot_count: felt
+    ) {
+        with_attr error_message("Invalid available slot_count") {
+            let (slot_count) = available_slot_count();
+            assert expected_slot_count = slot_count;
+        }
+        return ();
+    }
+
+    func max_slot_count_is{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        expected_slot_count: felt
+    ) {
+        with_attr error_message("Invalid max slot_count") {
+            let (slot_count) = max_slot_count();
+            assert expected_slot_count = slot_count;
+        }
         return ();
     }
 }

@@ -105,6 +105,41 @@ func on_validated{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_pt
     return ();
 }
 
+//
+// Management functions
+//
+@view
+func available_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
+    slot_count: felt
+) {
+    let slot_count = internal.available_slot_count();
+    return (slot_count,);
+}
+
+@view
+func max_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
+    slot_count: felt
+) {
+    let slot_count = internal.max_slot_count();
+    return (slot_count,);
+}
+
+@view
+func set_max_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    new_max_slot_count: felt
+) {
+    alloc_locals;
+    let slot_count = internal.available_slot_count();
+    let max_slot_count = internal.max_slot_count();
+    let additional_slots = new_max_slot_count - max_slot_count;
+    internal.set_available_slot_count(slot_count + additional_slots);
+    internal.set_max_slot_count(new_max_slot_count);
+    return ();
+}
+
+//
+// Internal functions
+//
 namespace internal {
     func available_slot_count{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         ) -> felt {
