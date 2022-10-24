@@ -5,7 +5,8 @@ from starkware.starknet.common.syscalls import get_caller_address, get_contract_
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.bool import TRUE, FALSE
 
-from contracts.onlydust.marketplace.interfaces.contributor_oracle import IContributorOracle
+from onlydust.marketplace.interfaces.contributor_oracle import IContributorOracle
+from onlydust.marketplace.library.access_control_viewer import AccessControlViewer
 
 @storage_var
 func assignment_strategy__gated__oracle_contract_address() -> (oracle_contract_address: felt) {
@@ -30,7 +31,7 @@ func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
     let past_contributions_count_required = calldata[1];
 
     assignment_strategy__gated__oracle_contract_address.write(oracle_contract_address);
-    change_gate(past_contributions_count_required);
+    internal.change_gate(past_contributions_count_required);
 
     return ();
 }
@@ -79,6 +80,23 @@ func on_validated(contributor_account) {
 }
 
 //
+// INTERNAL FUNCTIONS
+//
+namespace internal {
+    func change_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+        new_past_contributions_count_required
+    ) {
+        assignment_strategy__gated__contributions_count_required.write(
+            new_past_contributions_count_required
+        );
+
+        ContributionGateChanged.emit(new_past_contributions_count_required);
+
+        return ();
+    }
+}
+
+//
 // MANAGEMENT FUNCTIONS
 //
 
@@ -86,11 +104,8 @@ func on_validated(contributor_account) {
 func change_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     new_past_contributions_count_required
 ) {
-    assignment_strategy__gated__contributions_count_required.write(
-        new_past_contributions_count_required
-    );
-
-    ContributionGateChanged.emit(new_past_contributions_count_required);
+    AccessControlViewer.assert_account_caller_is_project_lead();
+    internal.change_gate(new_past_contributions_count_required);
 
     return ();
 }

@@ -11,11 +11,19 @@ from contracts.onlydust.marketplace.core.assignment_strategies.gated import (
     oracle_contract_address,
     contributions_count_required,
     change_gate,
+    AccessControlViewer,
 )
 
+const PROJECT_CONTRACT_ADDRESS = 0x00327ae4393d1f2c6cf6dae0b533efa5d58621f9ea682f07ab48540b222fd02e;
 const ORACLE_CONTRACT_ADDRESS = 0x00327ae4393d1f2c6cf6dae0b533efa5d58621f9ea682f07ab48540b222fd02e;
 const ADDRESS_OF_SELF = 0x0;
 const ADDRESS_OF_OTHER = 0x1;
+
+@external
+func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    AccessControlViewer.initialize(PROJECT_CONTRACT_ADDRESS);
+    return ();
+}
 
 @view
 func test_initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
@@ -68,6 +76,7 @@ func test_change_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_chec
     let (required) = contributions_count_required();
     assert 2 = required;
 
+    %{ stop_mock = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [True]) %}
     change_gate(5);
     let (required) = contributions_count_required();
     assert 5 = required;
@@ -75,11 +84,28 @@ func test_change_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_chec
     change_gate(1);
     let (required) = contributions_count_required();
     assert 1 = required;
+    %{ stop_mock() %}
 
     // Still working
     %{ stop_mock = mock_call(ids.ORACLE_CONTRACT_ADDRESS, "past_contribution_count", [2]) %}
     assert_can_assign(ADDRESS_OF_SELF);
     assert_can_assign(ADDRESS_OF_OTHER);
+    %{ stop_mock() %}
+
+    return ();
+}
+
+@view
+func test_change_gate_is_restricted{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() {
+    initialize(2, new (ORACLE_CONTRACT_ADDRESS, 2));
+
+    %{
+        stop_mock = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [False]) 
+        expect_revert(error_message="AccessControl: Not Project Lead")
+    %}
+    change_gate(5);
     %{ stop_mock() %}
 
     return ();
