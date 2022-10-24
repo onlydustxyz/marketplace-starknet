@@ -50,6 +50,16 @@ func test_cannot_assign_if_no_slot_left{
     return ();
 }
 
+@external
+func test_cannot_intialize_with_negative_slot_count{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}() {
+    %{ expect_revert(error_message='Recurring: invalid slot count') %}
+    initialize(-32);
+
+    return ();
+}
+
 namespace Contribution {
     func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         contributor_account_address: felt
