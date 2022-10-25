@@ -27,7 +27,13 @@ from onlydust.marketplace.interfaces.contribution import IContribution
 
 @contract_interface
 namespace IGithubContribution {
-    func initialize(calldata_len: felt, calldata: felt*) {
+    func initialize(
+        repo_id: felt,
+        issue_number: felt,
+        strategy_class_hash: felt,
+        calldata_len: felt,
+        calldata: felt*,
+    ) {
     }
 
     func change_gate(gate: felt) {
@@ -168,7 +174,7 @@ namespace contributions {
     ) -> (contribution: Contribution) {
         alloc_locals;
 
-        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x1e85f2da9bd24b3271681b2f50c77ca1edb15e2890b1ff5d7410667fa6a999b;
+        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x6a66d7fea55e65e65b288f201fb29c8b7259f5243c7fabb1f608a01d4675780;
         let (this) = get_contract_address();
         let (current_salt) = contributions_deploy_salt_.read();
 
@@ -182,21 +188,25 @@ namespace contributions {
         ContributionDeployed.emit(contract_address);
 
         let (local calldata) = alloc();
-        assert calldata[0] = project_id;
-        assert calldata[1] = issue_number;
-        assert calldata[2] = 0x4e93d305f88aa96de4ca11972e831a97b82c3605912405ce05e91328520ebbe;  // CompositeStrategyHash
-        assert calldata[3] = 9;
-        assert calldata[4] = 0xfcabe6c8e4e138834b3c9296517f55b6b0986d7068dd61cc055535c4d1c96a;  // ClosableStrategyClassHash
-        assert calldata[5] = 0;
-        assert calldata[6] = 0x1de4d3af34aaca3597a90da9415e7243382c93a2828d5242c8b0ca9643114ae;  // GatedStategyClassHash
-        assert calldata[7] = 2;
-        assert calldata[8] = this;  // Contributor Oracle
-        assert calldata[9] = 0;  // Number of past contribution required
-        assert calldata[10] = 0x3dd91db229856c53e6bbd5cf9a7c0f3360befd6871d94e6942c66289df14f6f;  // RecurringStategyClassHash
-        assert calldata[11] = 1;
-        assert calldata[12] = 1;  // max_slot_count
+        assert calldata[0] = 9;
+        assert calldata[1] = 0xfcabe6c8e4e138834b3c9296517f55b6b0986d7068dd61cc055535c4d1c96a;  // ClosableStrategyClassHash
+        assert calldata[2] = 0;
+        assert calldata[3] = 0x1de4d3af34aaca3597a90da9415e7243382c93a2828d5242c8b0ca9643114ae;  // GatedStategyClassHash
+        assert calldata[4] = 2;
+        assert calldata[5] = this;  // Contributor Oracle
+        assert calldata[6] = 0;  // Number of past contribution required
+        assert calldata[7] = 0x3dd91db229856c53e6bbd5cf9a7c0f3360befd6871d94e6942c66289df14f6f;  // RecurringStategyClassHash
+        assert calldata[8] = 1;
+        assert calldata[9] = 1;  // max_slot_count
 
-        IGithubContribution.initialize(contract_address, calldata_len=13, calldata=calldata);
+        IGithubContribution.initialize(
+            contract_address,
+            repo_id=project_id,
+            issue_number=issue_number,
+            strategy_class_hash=0x4e93d305f88aa96de4ca11972e831a97b82c3605912405ce05e91328520ebbe,
+            calldata_len=10,
+            calldata=calldata,
+        );
 
         contributions_deploy_salt_.write(value=current_salt + 1);
         contribution_project_id.write(ContributionId(contract_address), project_id);
