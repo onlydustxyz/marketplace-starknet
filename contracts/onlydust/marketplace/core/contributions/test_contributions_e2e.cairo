@@ -57,13 +57,24 @@ namespace IContributions {
 
 @contract_interface
 namespace IGithubContribution {
+    // Composite
+    func strategies() -> (strategies_len: felt, strategies: felt*) {
+    }
+
+    // Closable
     func close() {
     }
-
     func reopen() {
     }
-
     func is_closed() -> (is_closed: felt) {
+    }
+
+    // Gated
+    func change_gate(new_past_contributions_count_required) {
+    }
+    func oracle_contract_address() -> (oracle_contract_address: felt) {
+    }
+    func contributions_count_required() -> (contributions_count_required: felt) {
     }
 }
 
@@ -91,12 +102,20 @@ func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         print('declaring closable stategy')
         closable_class_hash = declare("./contracts/onlydust/marketplace/core/assignment_strategies/closable.cairo", config={"wait_for_acceptance": True}).class_hash
         print(f'declared closable strategy: {hex(closable_class_hash)}')
+        print('declaring composite stategy')
+        composite_class_hash = declare("./contracts/onlydust/marketplace/core/assignment_strategies/composite.cairo", config={"wait_for_acceptance": True}).class_hash
+        print(f'declared composite strategy: {hex(composite_class_hash)}')
+        print('declaring gated stategy')
+        gated_class_hash = declare("./contracts/onlydust/marketplace/core/assignment_strategies/gated.cairo", config={"wait_for_acceptance": True}).class_hash
+        print(f'declared gated strategy: {hex(gated_class_hash)}')
 
         prepared_contributions = prepare(declared_contributions, [ids.ADMIN])
         deployed_contributions = deploy(prepared_contributions)
         context.contributions_contract = deployed_contributions.contract_address
         context.closable_class_hash = closable_class_hash
         context.contribution_class_hash = contribution_class_hash
+        context.composite_class_hash = composite_class_hash
+        context.gated_class_hash = gated_class_hash
         print(f'deployed contract: {hex(context.contributions_contract)}')
         ids.contributions_contract = context.contributions_contract
     %}
@@ -183,15 +202,16 @@ func test_contribution_lifetime_with_legacy_api{
     );
     IContributions.delete_contribution(contributions_contract, contribution_id);
 
-    tempvar closable_class_hash;
-    %{ ids.closable_class_hash= context.closable_class_hash %}
-
     %{
         expect_events(
                 {"name": "ContributionDeployed", "data": [ids.contribution1.id.inner], "from_address": ids.contributions_contract},
-                {"name": "ContributionAssignmentStrategyInitialized", "data": [context.closable_class_hash], "from_address": ids.contribution1.id.inner},
+                {"name": "ContributionGateChanged", "data": [0], "from_address": ids.contribution1.id.inner},
+                {"name": "ContributionAssignmentStrategyInitialized", "data": [context.composite_class_hash], "from_address": ids.contribution1.id.inner},
+                {"name": "GithubContributionInitialized", "data": [ids.PROJECT_ID, 235], "from_address": ids.contribution1.id.inner},
                 {"name": "ContributionDeployed", "data": [ids.contribution2.id.inner], "from_address": ids.contributions_contract},
-                {"name": "ContributionAssignmentStrategyInitialized", "data": [context.closable_class_hash], "from_address": ids.contribution2.id.inner},
+                {"name": "ContributionGateChanged", "data": [0], "from_address": ids.contribution2.id.inner},
+                {"name": "ContributionAssignmentStrategyInitialized", "data": [context.composite_class_hash], "from_address": ids.contribution2.id.inner},
+                {"name": "GithubContributionInitialized", "data": [ids.PROJECT_ID, 236], "from_address": ids.contribution2.id.inner},
                 {"name": "ContributionAssigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution1.id.inner},
                 {"name": "ContributionUnassigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution1.id.inner},
                 {"name": "ContributionAssigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution1.id.inner},
@@ -238,7 +258,9 @@ func test_contribution_claimed_with_legacy_api{
     %{
         expect_events(
                {"name": "ContributionDeployed", "data": [ids.contribution1.id.inner], "from_address": ids.contributions_contract},
-               {"name": "ContributionAssignmentStrategyInitialized", "data": [context.closable_class_hash], "from_address": ids.contribution1.id.inner},
+               {"name": "ContributionGateChanged", "data": [0], "from_address": ids.contribution1.id.inner},
+               {"name": "ContributionAssignmentStrategyInitialized", "data": [context.composite_class_hash], "from_address": ids.contribution1.id.inner},
+               {"name": "GithubContributionInitialized", "data": [ids.PROJECT_ID, 235], "from_address": ids.contribution1.id.inner},
                {"name": "ContributionAssigned", "data": [ids.CALLER_ACCOUNT], "from_address": ids.contribution1.id.inner},
                {"name": "ContributionValidated", "data": [ids.CALLER_ACCOUNT], "from_address": ids.contribution1.id.inner},
            )
@@ -263,6 +285,7 @@ func test_contribution_lifetime_with_new_api{
 
     let contribution_contract = contribution.id.inner;
 
+    // Test Closable
     let (is_closed) = IGithubContribution.is_closed(contribution_contract);
     assert FALSE = is_closed;
     IGithubContribution.close(contribution_contract);
@@ -272,6 +295,22 @@ func test_contribution_lifetime_with_new_api{
     let (is_closed) = IGithubContribution.is_closed(contribution_contract);
     assert FALSE = is_closed;
 
+    // Test Gated
+    let (contributions_count_required) = IGithubContribution.contributions_count_required(
+        contribution_contract
+    );
+    assert 0 = contributions_count_required;
+    let (oracle_contract_address) = IGithubContribution.oracle_contract_address(
+        contribution_contract
+    );
+    assert oracle_contract_address = contributions_contract;
+    IGithubContribution.change_gate(contribution_contract, 1);
+    let (contributions_count_required) = IGithubContribution.contributions_count_required(
+        contribution_contract
+    );
+    assert 1 = contributions_count_required;
+    IGithubContribution.change_gate(contribution_contract, 0);
+
     IContribution.assign(contribution_contract, CONTRIBUTOR_ACCOUNT);
     IContribution.unassign(contribution_contract, CONTRIBUTOR_ACCOUNT);
     IContribution.assign(contribution_contract, CONTRIBUTOR_ACCOUNT);
@@ -280,9 +319,13 @@ func test_contribution_lifetime_with_new_api{
     %{
         expect_events(
                {"name": "ContributionDeployed", "data": [ids.contribution_contract], "from_address": ids.contributions_contract},
-               {"name": "ContributionAssignmentStrategyInitialized", "data": [context.closable_class_hash], "from_address": ids.contribution_contract},
+               {"name": "ContributionGateChanged", "data": [0], "from_address": ids.contribution_contract},
+               {"name": "ContributionAssignmentStrategyInitialized", "data": [context.composite_class_hash], "from_address": ids.contribution_contract},
+               {"name": "GithubContributionInitialized", "data": [ids.PROJECT_ID, 235], "from_address": ids.contribution_contract},
                {"name": "ContributionClosed", "data": [], "from_address": ids.contribution_contract},
                {"name": "ContributionReopened", "data": [], "from_address": ids.contribution_contract},
+               {"name": "ContributionGateChanged", "data": [1], "from_address": ids.contribution_contract},
+               {"name": "ContributionGateChanged", "data": [0], "from_address": ids.contribution_contract},
                {"name": "ContributionAssigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution_contract},
                {"name": "ContributionUnassigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution_contract},
                {"name": "ContributionAssigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution_contract},
