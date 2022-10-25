@@ -76,6 +76,14 @@ namespace IGithubContribution {
     }
     func contributions_count_required() -> (contributions_count_required: felt) {
     }
+
+    // Recurring
+    func available_slot_count() -> (slot_count: felt) {
+    }
+    func max_slot_count() -> (slot_count: felt) {
+    }
+    func set_max_slot_count(new_max_slot_count: felt) {
+    }
 }
 
 //
@@ -322,6 +330,20 @@ func test_contribution_lifetime_with_new_api{
     assert 1 = contributions_count_required;
     IGithubContribution.change_gate(contribution_contract, 0);
 
+    // Test Recurring
+    let (available_slot_count) = IGithubContribution.available_slot_count(contribution_contract);
+    assert 1 = available_slot_count;
+    let (max_slot_count) = IGithubContribution.max_slot_count(contribution_contract);
+    assert 1 = max_slot_count;
+
+    IGithubContribution.set_max_slot_count(contribution_contract, 2);
+
+    let (available_slot_count) = IGithubContribution.available_slot_count(contribution_contract);
+    assert 2 = available_slot_count;
+    let (max_slot_count) = IGithubContribution.max_slot_count(contribution_contract);
+    assert 2 = max_slot_count;
+
+    // Contribution lifecycle
     IContribution.assign(contribution_contract, CONTRIBUTOR_ACCOUNT);
     IContribution.unassign(contribution_contract, CONTRIBUTOR_ACCOUNT);
     IContribution.assign(contribution_contract, CONTRIBUTOR_ACCOUNT);
@@ -339,12 +361,14 @@ func test_contribution_lifetime_with_new_api{
                {"name": "ContributionReopened", "data": [], "from_address": ids.contribution_contract},
                {"name": "ContributionGateChanged", "data": [1], "from_address": ids.contribution_contract},
                {"name": "ContributionGateChanged", "data": [0], "from_address": ids.contribution_contract},
+               {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [2], "from_address": ids.contribution_contract},
+               {"name": "ContributionAssignmentRecurringMaxSlotsUpdated", "data": [2], "from_address": ids.contribution_contract},
                {"name": "ContributionAssigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution_contract},
-               {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [0], "from_address": ids.contribution_contract},
-               {"name": "ContributionUnassigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution_contract},
                {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [1], "from_address": ids.contribution_contract},
+               {"name": "ContributionUnassigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution_contract},
+               {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [2], "from_address": ids.contribution_contract},
                {"name": "ContributionAssigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution_contract},
-               {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [0], "from_address": ids.contribution_contract},
+               {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [1], "from_address": ids.contribution_contract},
                {"name": "ContributionValidated", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution_contract},
            )
     %}
