@@ -39,9 +39,9 @@ func test_can_assign_if_enough_slot_left{
 
     %{
         expect_events(
-           {"name": "ContributionAssignmentRecurringAvailableSlotCountChanged", "data": {"new_slot_count": 1}},
-           {"name": "ContributionAssignmentRecurringMaxSlotCountChanged", "data": {"new_slot_count": 1}},
-           {"name": "ContributionAssignmentRecurringAvailableSlotCountChanged", "data": {"new_slot_count": 0}}
+           {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": {"new_slot_count": 1}},
+           {"name": "ContributionAssignmentRecurringMaxSlotsUpdated", "data": {"new_slot_count": 1}},
+           {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": {"new_slot_count": 0}}
         )
     %}
 
@@ -81,10 +81,10 @@ func test_release_a_slot_when_unassigning{
 
     %{
         expect_events(
-           {"name": "ContributionAssignmentRecurringAvailableSlotCountChanged", "data": {"new_slot_count": 1}},
-           {"name": "ContributionAssignmentRecurringMaxSlotCountChanged", "data": {"new_slot_count": 1}},
-           {"name": "ContributionAssignmentRecurringAvailableSlotCountChanged", "data": {"new_slot_count": 0}},
-           {"name": "ContributionAssignmentRecurringAvailableSlotCountChanged", "data": {"new_slot_count": 1}}
+           {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": {"new_slot_count": 1}},
+           {"name": "ContributionAssignmentRecurringMaxSlotsUpdated", "data": {"new_slot_count": 1}},
+           {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": {"new_slot_count": 0}},
+           {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": {"new_slot_count": 1}}
         )
     %}
 
@@ -122,11 +122,11 @@ func test_can_modify_max_slot_count{
 
     %{
         expect_events(
-           {"name": "ContributionAssignmentRecurringAvailableSlotCountChanged", "data": {"new_slot_count": 1}},
-           {"name": "ContributionAssignmentRecurringMaxSlotCountChanged", "data": {"new_slot_count": 1}},
-           {"name": "ContributionAssignmentRecurringAvailableSlotCountChanged", "data": {"new_slot_count": 0}},
-           {"name": "ContributionAssignmentRecurringAvailableSlotCountChanged", "data": {"new_slot_count": 1}},
-           {"name": "ContributionAssignmentRecurringMaxSlotCountChanged", "data": {"new_slot_count": 2}}
+           {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": {"new_slot_count": 1}},
+           {"name": "ContributionAssignmentRecurringMaxSlotsUpdated", "data": {"new_slot_count": 1}},
+           {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": {"new_slot_count": 0}},
+           {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": {"new_slot_count": 1}},
+           {"name": "ContributionAssignmentRecurringMaxSlotsUpdated", "data": {"new_slot_count": 2}}
         )
     %}
 

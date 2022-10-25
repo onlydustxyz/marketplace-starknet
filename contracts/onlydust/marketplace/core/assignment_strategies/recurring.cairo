@@ -17,11 +17,11 @@ from onlydust.marketplace.library.access_control_viewer import AccessControlView
 // Events
 //
 @event
-func ContributionAssignmentRecurringAvailableSlotCountChanged(new_slot_count) {
+func ContributionAssignmentRecurringAvailableSlotsUpdated(new_slot_count) {
 }
 
 @event
-func ContributionAssignmentRecurringMaxSlotCountChanged(new_slot_count) {
+func ContributionAssignmentRecurringMaxSlotsUpdated(new_slot_count) {
 }
 
 //
@@ -150,7 +150,7 @@ namespace internal {
         }
 
         assignment_strategy__recurring__available_slot_count.write(new_slot_count);
-        ContributionAssignmentRecurringAvailableSlotCountChanged.emit(new_slot_count);
+        ContributionAssignmentRecurringAvailableSlotsUpdated.emit(new_slot_count);
         return ();
     }
 
@@ -170,7 +170,7 @@ namespace internal {
         internal.set_available_slot_count(slot_count + additional_slots);
 
         assignment_strategy__recurring__max_slot_count.write(new_max_slot_count);
-        ContributionAssignmentRecurringMaxSlotCountChanged.emit(new_max_slot_count);
+        ContributionAssignmentRecurringMaxSlotsUpdated.emit(new_max_slot_count);
         return ();
     }
 
