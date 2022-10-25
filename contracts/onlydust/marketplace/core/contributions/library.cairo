@@ -27,15 +27,6 @@ from onlydust.marketplace.interfaces.contribution import IContribution
 
 @contract_interface
 namespace IGithubContribution {
-    func initialize(
-        repo_id: felt,
-        issue_number: felt,
-        strategy_class_hash: felt,
-        calldata_len: felt,
-        calldata: felt*,
-    ) {
-    }
-
     func change_gate(gate: felt) {
     }
 
