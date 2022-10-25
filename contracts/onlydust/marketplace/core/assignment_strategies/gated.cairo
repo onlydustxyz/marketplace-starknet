@@ -24,12 +24,8 @@ func ContributionGateChanged(contributions_count_required: felt) {
 
 @external
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    calldata_len, calldata: felt*
+    oracle_contract_address, past_contributions_count_required
 ) {
-    assert 2 = calldata_len;
-    let oracle_contract_address = calldata[0];
-    let past_contributions_count_required = calldata[1];
-
     assignment_strategy__gated__oracle_contract_address.write(oracle_contract_address);
     internal.change_gate(past_contributions_count_required);
 

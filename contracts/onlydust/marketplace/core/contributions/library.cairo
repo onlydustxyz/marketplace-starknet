@@ -168,7 +168,7 @@ namespace contributions {
     ) -> (contribution: Contribution) {
         alloc_locals;
 
-        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x5e39947d96682be147cfeffd0da6f1d455d299a4abbb4156ba5d0bf1207043f;
+        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x1e85f2da9bd24b3271681b2f50c77ca1edb15e2890b1ff5d7410667fa6a999b;
         let (this) = get_contract_address();
         let (current_salt) = contributions_deploy_salt_.read();
 
@@ -181,22 +181,22 @@ namespace contributions {
         );
         ContributionDeployed.emit(contract_address);
 
-        // TODO: set another default strategy to deploy (a composite one)
         let (local calldata) = alloc();
         assert calldata[0] = project_id;
         assert calldata[1] = issue_number;
-        assert calldata[2] = 0x2a297cc8a5e7a53a49f9287a0e578b30465ecbfb3ae84d791d8c1a08f239022;  // CompositeStrategyHash
-        assert calldata[3] = 0x55757af36e8c5096932fc2e9cdc509e03513fe742fe4d7d4a6ba5f9670cfb9f;  // ClosableStrategyClassHash
-        assert calldata[4] = 0;
-        assert calldata[5] = 0x6e6a2d401665a326ad14465953a332ee75f3310e4c36096a6aa4cb1a907465b;  // GatedStategyClassHash
-        assert calldata[6] = 2;
-        assert calldata[7] = this;  // Contributor Oracle
-        assert calldata[8] = 0;  // Number of past contribution required
-        assert calldata[9] = 0x4f9c293d862b7f26709a2e50abad2ca6adc0bb8d9207b76ce9011e2c66b8d00;  // RecurringStategyClassHash
-        assert calldata[10] = 1;
-        assert calldata[11] = 1;  // max_slot_count
+        assert calldata[2] = 0x4e93d305f88aa96de4ca11972e831a97b82c3605912405ce05e91328520ebbe;  // CompositeStrategyHash
+        assert calldata[3] = 9;
+        assert calldata[4] = 0xfcabe6c8e4e138834b3c9296517f55b6b0986d7068dd61cc055535c4d1c96a;  // ClosableStrategyClassHash
+        assert calldata[5] = 0;
+        assert calldata[6] = 0x1de4d3af34aaca3597a90da9415e7243382c93a2828d5242c8b0ca9643114ae;  // GatedStategyClassHash
+        assert calldata[7] = 2;
+        assert calldata[8] = this;  // Contributor Oracle
+        assert calldata[9] = 0;  // Number of past contribution required
+        assert calldata[10] = 0x3dd91db229856c53e6bbd5cf9a7c0f3360befd6871d94e6942c66289df14f6f;  // RecurringStategyClassHash
+        assert calldata[11] = 1;
+        assert calldata[12] = 1;  // max_slot_count
 
-        IGithubContribution.initialize(contract_address, calldata_len=12, calldata=calldata);
+        IGithubContribution.initialize(contract_address, calldata_len=13, calldata=calldata);
 
         contributions_deploy_salt_.write(value=current_salt + 1);
         contribution_project_id.write(ContributionId(contract_address), project_id);

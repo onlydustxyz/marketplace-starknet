@@ -40,11 +40,8 @@ func assignment_strategy__recurring__max_slot_count() -> (slot_count: felt) {
 //
 
 @external
-func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    calldata_len, calldata: felt*
-) {
-    assert 1 = calldata_len;
-    internal.set_max_slot_count([calldata]);
+func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(max_slot_count) {
+    internal.set_max_slot_count(max_slot_count);
     return ();
 }
 

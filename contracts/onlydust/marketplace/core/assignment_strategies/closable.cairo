@@ -28,11 +28,7 @@ func ContributionReopened() {
 //
 
 @external
-func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    calldata_len, calldata: felt*
-) {
-    assert 0 = calldata_len;
-
+func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     return ();
 }
 

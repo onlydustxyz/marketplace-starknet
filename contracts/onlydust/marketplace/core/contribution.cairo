@@ -5,6 +5,7 @@ from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.starknet.common.syscalls import library_call, get_caller_address
 from onlydust.marketplace.interfaces.assignment_strategy import IAssignmentStrategy
 from onlydust.marketplace.library.access_control_viewer import AccessControlViewer
+from onlydust.marketplace.constants.selectors import INITIALIZE as INITIALIZE_SELECTOR
 
 //
 // EVENTS
@@ -98,9 +99,8 @@ namespace Contribution {
     func initialize_strategy{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         class_hash, calldata_len, calldata: felt*
     ) {
-        IAssignmentStrategy.library_call_initialize(class_hash, calldata_len, calldata);
+        library_call(class_hash, INITIALIZE_SELECTOR, calldata_len, calldata);
         contribution__assignment_strategy_class_hash.write(class_hash);
-
         ContributionAssignmentStrategyInitialized.emit(class_hash);
 
         return ();
