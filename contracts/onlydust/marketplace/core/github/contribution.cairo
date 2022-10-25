@@ -29,19 +29,11 @@ func GithubContributionInitialized(project_id: felt, issue_number: felt) {
 
 @external
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    calldata_len: felt, calldata: felt*
+    repo_id: felt, issue_number: felt, stategy_class_hash: felt, calldata_len: felt, calldata: felt*
 ) {
     Initializable.initialize();
     Contribution.initialize();
-
-    let repo_id = calldata[0];
-    let issue_number = calldata[1];
-    let stategy_class_hash = calldata[2];
-
-    let new_calldata_len = calldata_len - 3;
-    let new_calldata = calldata + 3;
-    Contribution.initialize_strategy(stategy_class_hash, new_calldata_len, new_calldata);
-
+    Contribution.initialize_strategy(stategy_class_hash, calldata_len, calldata);
     GithubContributionInitialized.emit(repo_id, issue_number);
 
     return ();
