@@ -185,9 +185,15 @@ namespace contributions {
         let (local calldata) = alloc();
         assert calldata[0] = project_id;
         assert calldata[1] = issue_number;
-        assert calldata[2] = 0x55757af36e8c5096932fc2e9cdc509e03513fe742fe4d7d4a6ba5f9670cfb9f;  // ClosableStrategyClassHash
+        assert calldata[2] = 0x2a297cc8a5e7a53a49f9287a0e578b30465ecbfb3ae84d791d8c1a08f239022;  // CompositeStrategyHash
+        assert calldata[3] = 0x55757af36e8c5096932fc2e9cdc509e03513fe742fe4d7d4a6ba5f9670cfb9f;  // ClosableStrategyClassHash
+        assert calldata[4] = 0;
+        assert calldata[5] = 0x6e6a2d401665a326ad14465953a332ee75f3310e4c36096a6aa4cb1a907465b;  // GatedStategyClassHash
+        assert calldata[6] = 2;
+        assert calldata[7] = this;  // Contributor Oracle
+        assert calldata[8] = 0;  // Number of past contribution required
 
-        IGithubContribution.initialize(contract_address, calldata_len=3, calldata=calldata);
+        IGithubContribution.initialize(contract_address, calldata_len=9, calldata=calldata);
 
         contributions_deploy_salt_.write(value=current_salt + 1);
         contribution_project_id.write(ContributionId(contract_address), project_id);
