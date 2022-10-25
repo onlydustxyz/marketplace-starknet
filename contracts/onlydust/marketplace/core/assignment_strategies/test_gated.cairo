@@ -27,7 +27,7 @@ func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
 
 @view
 func test_initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    initialize(2, new (ORACLE_CONTRACT_ADDRESS, 3));
+    initialize(ORACLE_CONTRACT_ADDRESS, 3);
 
     let (res) = oracle_contract_address();
     assert ORACLE_CONTRACT_ADDRESS = res;
@@ -40,7 +40,7 @@ func test_initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
 
 @view
 func test_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    initialize(2, new (ORACLE_CONTRACT_ADDRESS, 3));
+    initialize(ORACLE_CONTRACT_ADDRESS, 3);
 
     // When equal
     %{ stop_mock = mock_call(ids.ORACLE_CONTRACT_ADDRESS, "past_contribution_count", [3]) %}
@@ -60,7 +60,7 @@ func test_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
 @view
 func test_cannot_assign_when_less{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     ) {
-    initialize(2, new (ORACLE_CONTRACT_ADDRESS, 3));
+    initialize(ORACLE_CONTRACT_ADDRESS, 3);
     %{
         stop_mock = mock_call(ids.ORACLE_CONTRACT_ADDRESS, "past_contribution_count", [2])
         expect_revert(error_message="Gated: No enough contributions done.")
@@ -72,7 +72,7 @@ func test_cannot_assign_when_less{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*
 
 @view
 func test_change_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    initialize(2, new (ORACLE_CONTRACT_ADDRESS, 2));
+    initialize(ORACLE_CONTRACT_ADDRESS, 2);
     let (required) = contributions_count_required();
     assert 2 = required;
 
@@ -99,7 +99,7 @@ func test_change_gate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_chec
 func test_change_gate_is_restricted{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(2, new (ORACLE_CONTRACT_ADDRESS, 2));
+    initialize(ORACLE_CONTRACT_ADDRESS, 2);
 
     %{
         stop_mock = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [False]) 
@@ -115,7 +115,7 @@ func test_change_gate_is_restricted{
 func test_everything_else_does_not_revert{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(2, new (ORACLE_CONTRACT_ADDRESS, 2));
+    initialize(ORACLE_CONTRACT_ADDRESS, 2);
 
     assert_can_unassign(ADDRESS_OF_SELF);
     assert_can_unassign(ADDRESS_OF_OTHER);

@@ -6,6 +6,7 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.starknet.common.syscalls import library_call
 
 from onlydust.marketplace.interfaces.assignment_strategy import IAssignmentStrategy
+from onlydust.marketplace.constants.selectors import INITIALIZE as INITIALIZE_SELECTOR
 
 //
 // This strategy allows to use several strategies as a single one
@@ -51,7 +52,6 @@ func __default__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 //
 // MANAGEMENT FUNCTIONS
 //
-
 @external
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     calldata_len, calldata: felt*
@@ -96,12 +96,11 @@ namespace internal {
         let count = internal.store_strategy_loop(next_calldata_len, next_calldata);
         local count = count;
 
-        // TODO: check strat is allowd
+        // TODO: check strat is allowed
         // IOnlyDust.assert_hash_allowed(only_dust_contract, class_hash);
 
-        IAssignmentStrategy.library_call_initialize(
-            strategy_hash, strategy_calldata_len, calldata + 2
-        );
+        library_call(strategy_hash, INITIALIZE_SELECTOR, strategy_calldata_len, calldata + 2);
+
         assignment_strategy__composite__strategy_hash_by_index.write(1 + count, strategy_hash);
 
         return 1 + count;
