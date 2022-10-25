@@ -168,7 +168,7 @@ namespace contributions {
     ) -> (contribution: Contribution) {
         alloc_locals;
 
-        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x2ef94fcac0fefaa1f2e2901d9d4a571b674cd39b9f2192aba1bb8aaff39e8ff;
+        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x5e39947d96682be147cfeffd0da6f1d455d299a4abbb4156ba5d0bf1207043f;
         let (this) = get_contract_address();
         let (current_salt) = contributions_deploy_salt_.read();
 
@@ -192,8 +192,11 @@ namespace contributions {
         assert calldata[6] = 2;
         assert calldata[7] = this;  // Contributor Oracle
         assert calldata[8] = 0;  // Number of past contribution required
+        assert calldata[9] = 0x4f9c293d862b7f26709a2e50abad2ca6adc0bb8d9207b76ce9011e2c66b8d00;  // RecurringStategyClassHash
+        assert calldata[10] = 1;
+        assert calldata[11] = 1;  // max_slot_count
 
-        IGithubContribution.initialize(contract_address, calldata_len=9, calldata=calldata);
+        IGithubContribution.initialize(contract_address, calldata_len=12, calldata=calldata);
 
         contributions_deploy_salt_.write(value=current_salt + 1);
         contribution_project_id.write(ContributionId(contract_address), project_id);

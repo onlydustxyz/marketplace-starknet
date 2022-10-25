@@ -34,7 +34,7 @@ func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
 func test_can_assign_if_enough_slot_left{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(1);
+    initialize(1, new (1));
     Contribution.assign(CONTRIBUTOR_ACCOUNT_ADDRESS);
 
     %{
@@ -52,7 +52,7 @@ func test_can_assign_if_enough_slot_left{
 func test_cannot_assign_if_no_slot_left{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(1);
+    initialize(1, new (1));
     Contribution.assign(CONTRIBUTOR_ACCOUNT_ADDRESS);
 
     %{ expect_revert(error_message='Recurring: No more slot') %}
@@ -66,7 +66,7 @@ func test_cannot_intialize_with_negative_slot_count{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
     %{ expect_revert(error_message='Recurring: invalid slot count') %}
-    initialize(-32);
+    initialize(1, new (-32));
 
     return ();
 }
@@ -75,7 +75,7 @@ func test_cannot_intialize_with_negative_slot_count{
 func test_release_a_slot_when_unassigning{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(1);
+    initialize(1, new (1));
     Contribution.assign(CONTRIBUTOR_ACCOUNT_ADDRESS);
     Contribution.unassign(CONTRIBUTOR_ACCOUNT_ADDRESS);
 
@@ -95,7 +95,7 @@ func test_release_a_slot_when_unassigning{
 func test_cannot_release_slot_when_at_max{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(1);
+    initialize(1, new (1));
 
     %{ expect_revert(error_message='Recurring: max slot count reached') %}
     Contribution.unassign(CONTRIBUTOR_ACCOUNT_ADDRESS);
@@ -107,7 +107,7 @@ func test_cannot_release_slot_when_at_max{
 func test_can_modify_max_slot_count{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(1);
+    initialize(1, new (1));
     Contribution.assign(CONTRIBUTOR_ACCOUNT_ADDRESS);
 
     assert_that.available_slot_count_is(0);
@@ -137,7 +137,7 @@ func test_can_modify_max_slot_count{
 func test_cannot_remove_assigned_slots{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(1);
+    initialize(1, new (1));
     Contribution.assign(CONTRIBUTOR_ACCOUNT_ADDRESS);
     %{
         stop_mock = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [True])
@@ -153,7 +153,7 @@ func test_cannot_remove_assigned_slots{
 func test_only_project_lead_can_modify_max_slot_count{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }() {
-    initialize(1);
+    initialize(1, new (1));
 
     %{
         stop_mock = mock_call(ids.PROJECT_CONTRACT_ADDRESS, "is_lead_contributor", [False])
