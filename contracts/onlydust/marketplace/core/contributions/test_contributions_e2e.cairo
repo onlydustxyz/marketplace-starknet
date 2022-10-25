@@ -96,16 +96,14 @@ func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         print('declaring github contribution')
         contribution_class_hash = declare("./contracts/onlydust/marketplace/core/github/contribution.cairo", config={"wait_for_acceptance": True}).class_hash
         print(f'declared github contribution: {hex(contribution_class_hash)}')
-        print('deploying contributions')
         declared_contributions = declare("./contracts/onlydust/marketplace/core/contributions/contributions.cairo", config={"wait_for_acceptance": True})
         print(f'declared contributions: {hex(declared_contributions.class_hash)}')
-        print('declaring closable stategy')
         closable_class_hash = declare("./contracts/onlydust/marketplace/core/assignment_strategies/closable.cairo", config={"wait_for_acceptance": True}).class_hash
         print(f'declared closable strategy: {hex(closable_class_hash)}')
-        print('declaring composite stategy')
+        recurring_class_hash = declare("./contracts/onlydust/marketplace/core/assignment_strategies/recurring.cairo", config={"wait_for_acceptance": True}).class_hash
+        print(f'declared recurring strategy: {hex(recurring_class_hash)}')
         composite_class_hash = declare("./contracts/onlydust/marketplace/core/assignment_strategies/composite.cairo", config={"wait_for_acceptance": True}).class_hash
         print(f'declared composite strategy: {hex(composite_class_hash)}')
-        print('declaring gated stategy')
         gated_class_hash = declare("./contracts/onlydust/marketplace/core/assignment_strategies/gated.cairo", config={"wait_for_acceptance": True}).class_hash
         print(f'declared gated strategy: {hex(gated_class_hash)}')
 
@@ -116,6 +114,7 @@ func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         context.contribution_class_hash = contribution_class_hash
         context.composite_class_hash = composite_class_hash
         context.gated_class_hash = gated_class_hash
+        context.recurring_class_hash = recurring_class_hash
         print(f'deployed contract: {hex(context.contributions_contract)}')
         ids.contributions_contract = context.contributions_contract
     %}
@@ -205,19 +204,28 @@ func test_contribution_lifetime_with_legacy_api{
     %{
         expect_events(
                 {"name": "ContributionDeployed", "data": [ids.contribution1.id.inner], "from_address": ids.contributions_contract},
+                {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [1], "from_address": ids.contribution1.id.inner},
+                {"name": "ContributionAssignmentRecurringMaxSlotsUpdated", "data": [1], "from_address": ids.contribution1.id.inner},
                 {"name": "ContributionGateChanged", "data": [0], "from_address": ids.contribution1.id.inner},
                 {"name": "ContributionAssignmentStrategyInitialized", "data": [context.composite_class_hash], "from_address": ids.contribution1.id.inner},
                 {"name": "GithubContributionInitialized", "data": [ids.PROJECT_ID, 235], "from_address": ids.contribution1.id.inner},
                 {"name": "ContributionDeployed", "data": [ids.contribution2.id.inner], "from_address": ids.contributions_contract},
+                {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [1], "from_address": ids.contribution2.id.inner},
+                {"name": "ContributionAssignmentRecurringMaxSlotsUpdated", "data": [1], "from_address": ids.contribution2.id.inner},
                 {"name": "ContributionGateChanged", "data": [0], "from_address": ids.contribution2.id.inner},
                 {"name": "ContributionAssignmentStrategyInitialized", "data": [context.composite_class_hash], "from_address": ids.contribution2.id.inner},
                 {"name": "GithubContributionInitialized", "data": [ids.PROJECT_ID, 236], "from_address": ids.contribution2.id.inner},
                 {"name": "ContributionAssigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution1.id.inner},
+                {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [0], "from_address": ids.contribution1.id.inner},
                 {"name": "ContributionUnassigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution1.id.inner},
+                {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [1], "from_address": ids.contribution1.id.inner},
                 {"name": "ContributionAssigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution1.id.inner},
+                {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [0], "from_address": ids.contribution1.id.inner},
                 {"name": "ContributionValidated", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution1.id.inner},
                 {"name": "ContributionAssigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution2.id.inner},
+                {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [0], "from_address": ids.contribution2.id.inner},
                 {"name": "ContributionUnassigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution2.id.inner},
+                {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [1], "from_address": ids.contribution2.id.inner},
                {"name": "ContributionClosed", "data": [], "from_address": ids.contribution2.id.inner},
            )
     %}
@@ -258,10 +266,13 @@ func test_contribution_claimed_with_legacy_api{
     %{
         expect_events(
                {"name": "ContributionDeployed", "data": [ids.contribution1.id.inner], "from_address": ids.contributions_contract},
+               {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [1], "from_address": ids.contribution1.id.inner},
+               {"name": "ContributionAssignmentRecurringMaxSlotsUpdated", "data": [1], "from_address": ids.contribution1.id.inner},
                {"name": "ContributionGateChanged", "data": [0], "from_address": ids.contribution1.id.inner},
                {"name": "ContributionAssignmentStrategyInitialized", "data": [context.composite_class_hash], "from_address": ids.contribution1.id.inner},
                {"name": "GithubContributionInitialized", "data": [ids.PROJECT_ID, 235], "from_address": ids.contribution1.id.inner},
                {"name": "ContributionAssigned", "data": [ids.CALLER_ACCOUNT], "from_address": ids.contribution1.id.inner},
+               {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [0], "from_address": ids.contribution1.id.inner},
                {"name": "ContributionValidated", "data": [ids.CALLER_ACCOUNT], "from_address": ids.contribution1.id.inner},
            )
     %}
@@ -319,6 +330,8 @@ func test_contribution_lifetime_with_new_api{
     %{
         expect_events(
                {"name": "ContributionDeployed", "data": [ids.contribution_contract], "from_address": ids.contributions_contract},
+               {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [1], "from_address": ids.contribution_contract},
+               {"name": "ContributionAssignmentRecurringMaxSlotsUpdated", "data": [1], "from_address": ids.contribution_contract},
                {"name": "ContributionGateChanged", "data": [0], "from_address": ids.contribution_contract},
                {"name": "ContributionAssignmentStrategyInitialized", "data": [context.composite_class_hash], "from_address": ids.contribution_contract},
                {"name": "GithubContributionInitialized", "data": [ids.PROJECT_ID, 235], "from_address": ids.contribution_contract},
@@ -327,8 +340,11 @@ func test_contribution_lifetime_with_new_api{
                {"name": "ContributionGateChanged", "data": [1], "from_address": ids.contribution_contract},
                {"name": "ContributionGateChanged", "data": [0], "from_address": ids.contribution_contract},
                {"name": "ContributionAssigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution_contract},
+               {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [0], "from_address": ids.contribution_contract},
                {"name": "ContributionUnassigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution_contract},
+               {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [1], "from_address": ids.contribution_contract},
                {"name": "ContributionAssigned", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution_contract},
+               {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [0], "from_address": ids.contribution_contract},
                {"name": "ContributionValidated", "data": [ids.CONTRIBUTOR_ACCOUNT], "from_address": ids.contribution_contract},
            )
     %}
