@@ -24,7 +24,7 @@ from onlydust.marketplace.core.contributions.access_control import (
     ProjectMemberRemoved,
 )
 from onlydust.marketplace.interfaces.contribution import IContribution
-from onlydust.marketplace.constants import classes
+from onlydust.marketplace.constants import class_hashes
 
 @contract_interface
 namespace IExtendedContribution {
@@ -170,7 +170,7 @@ namespace contributions {
         let (current_salt) = contributions_deploy_salt_.read();
 
         let (contract_address) = deploy(
-            class_hash=classes.CONTRIBUTION,
+            class_hash=class_hashes.CONTRIBUTION,
             contract_address_salt=current_salt,
             constructor_calldata_size=0,
             constructor_calldata=new (),
@@ -179,28 +179,28 @@ namespace contributions {
         ContributionDeployed.emit(contract_address);
 
         let (local calldata) = alloc();
-        assert calldata[0] = classes.GITHUB;
+        assert calldata[0] = class_hashes.GITHUB;
         assert calldata[1] = 2;
         assert calldata[2] = project_id;
         assert calldata[3] = issue_number;
-        assert calldata[4] = classes.CLOSABLE;
+        assert calldata[4] = class_hashes.CLOSABLE;
         assert calldata[5] = 0;
-        assert calldata[6] = classes.GATED;
+        assert calldata[6] = class_hashes.GATED;
         assert calldata[7] = 2;
         assert calldata[8] = this;  // Contributor Oracle
         assert calldata[9] = 0;  // Number of past contribution required
-        assert calldata[10] = classes.RECURRING;
+        assert calldata[10] = class_hashes.RECURRING;
         assert calldata[11] = 1;
         assert calldata[12] = 1;  // max_slot_count
-        assert calldata[13] = classes.COMPOSITE;
+        assert calldata[13] = class_hashes.COMPOSITE;
         assert calldata[14] = 4;
         assert calldata[15] = 3;  // strategies_len
-        assert calldata[16] = classes.CLOSABLE;
-        assert calldata[17] = classes.GATED;
-        assert calldata[18] = classes.RECURRING;
+        assert calldata[16] = class_hashes.CLOSABLE;
+        assert calldata[17] = class_hashes.GATED;
+        assert calldata[18] = class_hashes.RECURRING;
 
         IContribution.initialize(
-            contract_address, classes.COMPOSITE, calldata_len=19, calldata=calldata
+            contract_address, class_hashes.COMPOSITE, calldata_len=19, calldata=calldata
         );
 
         contributions_deploy_salt_.write(value=current_salt + 1);
