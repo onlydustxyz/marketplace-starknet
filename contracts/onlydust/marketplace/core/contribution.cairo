@@ -8,7 +8,7 @@ from openzeppelin.security.initializable.library import Initializable
 
 from onlydust.marketplace.interfaces.assignment_strategy import IAssignmentStrategy
 from onlydust.marketplace.library.access_control_viewer import AccessControlViewer
-from onlydust.marketplace.constants.selectors import INITIALIZE as INITIALIZE_SELECTOR
+from onlydust.marketplace.library.class import Class
 
 // TODO: use a registry to know the entry points at runtime
 from onlydust.marketplace.core.assignment_strategies.closable import close, reopen, is_closed
@@ -52,6 +52,23 @@ func contribution__assignment_strategy_class_hash() -> (assignment_strategy_clas
 //
 // IContribution implementation
 //
+
+@external
+func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    assignment_strategy_class_hash: felt, calldata_len: felt, calldata: felt*
+) {
+    Initializable.initialize();
+
+    let (project_contract_address) = get_caller_address();
+    AccessControlViewer.initialize(project_contract_address);
+
+    Class.initialize_from_calldata(calldata_len, calldata);
+
+    contribution__assignment_strategy_class_hash.write(assignment_strategy_class_hash);
+    ContributionAssignmentStrategyInitialized.emit(assignment_strategy_class_hash);
+
+    return ();
+}
 
 @external
 func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(contributor_account) {
@@ -106,26 +123,4 @@ func validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     );
 
     return ();
-}
-
-//
-// Utils
-//
-namespace Contribution {
-    func initialize_strategy{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-        class_hash, calldata_len, calldata: felt*
-    ) {
-        library_call(class_hash, INITIALIZE_SELECTOR, calldata_len, calldata);
-        contribution__assignment_strategy_class_hash.write(class_hash);
-        ContributionAssignmentStrategyInitialized.emit(class_hash);
-
-        return ();
-    }
-
-    func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-        let (project_contract_address) = get_caller_address();
-        AccessControlViewer.initialize(project_contract_address);
-
-        return ();
-    }
 }

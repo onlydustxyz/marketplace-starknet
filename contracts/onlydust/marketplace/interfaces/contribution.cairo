@@ -2,7 +2,7 @@
 
 @contract_interface
 namespace IContribution {
-    func initialize(calldata_len, calldata: felt*) {
+    func initialize(assignment_strategy_class_hash, calldata_len, calldata: felt*) {
     }
 
     func assign(contributor_account) {

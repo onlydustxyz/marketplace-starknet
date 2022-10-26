@@ -1,7 +1,7 @@
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from onlydust.marketplace.core.contribution import Contribution, assign, unassign, validate
+from onlydust.marketplace.core.contribution import initialize, assign, unassign, validate
 from onlydust.marketplace.test.libraries.assignment_strategy_mock import AssignmentStrategyMock
 
 //
@@ -15,7 +15,7 @@ const CONTRIBUTOR_ADDRESS = 0xafc7c6669888f3e8e6c935662b126b2a0ac6c12ca754861d54
 @view
 func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
     let strategy_hash = AssignmentStrategyMock.setup();
-    Contribution.initialize_strategy(strategy_hash, 0, new ());
+    initialize(strategy_hash, 2, new (strategy_hash, 0));
 
     return ();
 }

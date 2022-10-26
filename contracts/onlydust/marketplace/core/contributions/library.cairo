@@ -24,6 +24,7 @@ from onlydust.marketplace.core.contributions.access_control import (
     ProjectMemberRemoved,
 )
 from onlydust.marketplace.interfaces.contribution import IContribution
+from onlydust.marketplace.constants import classes
 
 @contract_interface
 namespace IExtendedContribution {
@@ -165,12 +166,11 @@ namespace contributions {
     ) -> (contribution: Contribution) {
         alloc_locals;
 
-        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x6a66d7fea55e65e65b288f201fb29c8b7259f5243c7fabb1f608a01d4675780;
         let (this) = get_contract_address();
         let (current_salt) = contributions_deploy_salt_.read();
 
         let (contract_address) = deploy(
-            class_hash=GITHUB_CONTRIBUTION_CLASS_HASH,
+            class_hash=classes.CONTRIBUTION,
             contract_address_salt=current_salt,
             constructor_calldata_size=0,
             constructor_calldata=new (),
@@ -179,24 +179,28 @@ namespace contributions {
         ContributionDeployed.emit(contract_address);
 
         let (local calldata) = alloc();
-        assert calldata[0] = 9;
-        assert calldata[1] = 0xfcabe6c8e4e138834b3c9296517f55b6b0986d7068dd61cc055535c4d1c96a;  // ClosableStrategyClassHash
-        assert calldata[2] = 0;
-        assert calldata[3] = 0x1de4d3af34aaca3597a90da9415e7243382c93a2828d5242c8b0ca9643114ae;  // GatedStategyClassHash
-        assert calldata[4] = 2;
-        assert calldata[5] = this;  // Contributor Oracle
-        assert calldata[6] = 0;  // Number of past contribution required
-        assert calldata[7] = 0x3dd91db229856c53e6bbd5cf9a7c0f3360befd6871d94e6942c66289df14f6f;  // RecurringStategyClassHash
-        assert calldata[8] = 1;
-        assert calldata[9] = 1;  // max_slot_count
+        assert calldata[0] = classes.GITHUB;
+        assert calldata[1] = 2;
+        assert calldata[2] = project_id;
+        assert calldata[3] = issue_number;
+        assert calldata[4] = classes.CLOSABLE;
+        assert calldata[5] = 0;
+        assert calldata[6] = classes.GATED;
+        assert calldata[7] = 2;
+        assert calldata[8] = this;  // Contributor Oracle
+        assert calldata[9] = 0;  // Number of past contribution required
+        assert calldata[10] = classes.RECURRING;
+        assert calldata[11] = 1;
+        assert calldata[12] = 1;  // max_slot_count
+        assert calldata[13] = classes.COMPOSITE;
+        assert calldata[14] = 4;
+        assert calldata[15] = 3;  // strategies_len
+        assert calldata[16] = classes.CLOSABLE;
+        assert calldata[17] = classes.GATED;
+        assert calldata[18] = classes.RECURRING;
 
-        IGithubContribution.initialize(
-            contract_address,
-            repo_id=project_id,
-            issue_number=issue_number,
-            strategy_class_hash=0x4e93d305f88aa96de4ca11972e831a97b82c3605912405ce05e91328520ebbe,
-            calldata_len=10,
-            calldata=calldata,
+        IContribution.initialize(
+            contract_address, classes.COMPOSITE, calldata_len=19, calldata=calldata
         );
 
         contributions_deploy_salt_.write(value=current_salt + 1);
