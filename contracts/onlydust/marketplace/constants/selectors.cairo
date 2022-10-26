@@ -1,1 +1,0 @@
-const INITIALIZE = 0x79dc0da7c54b95f10aa182ad0a46400db63156920adb65eca2654c0945a463;  // initialize
