@@ -1,4 +1,4 @@
-namespace classes {
+namespace class_hashes {
     const CONTRIBUTION = 0x38d04af8a6ec8cfa1a7aac80748dfdb423028801f196b9f1fc6f706e0a8731f;
     const GITHUB = 0xe1989e2f51adf27b0f1394bdb9aa4653c4c1c11d8b88461113166626644e5f;
     const CLOSABLE = 0xfcabe6c8e4e138834b3c9296517f55b6b0986d7068dd61cc055535c4d1c96a;
