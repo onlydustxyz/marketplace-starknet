@@ -3,9 +3,25 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.starknet.common.syscalls import library_call, get_caller_address
+
+from openzeppelin.security.initializable.library import Initializable
+
 from onlydust.marketplace.interfaces.assignment_strategy import IAssignmentStrategy
 from onlydust.marketplace.library.access_control_viewer import AccessControlViewer
 from onlydust.marketplace.constants.selectors import INITIALIZE as INITIALIZE_SELECTOR
+
+// TODO: use a registry to know the entry points at runtime
+from onlydust.marketplace.core.assignment_strategies.closable import close, reopen, is_closed
+from onlydust.marketplace.core.assignment_strategies.gated import (
+    change_gate,
+    contributions_count_required,
+    oracle_contract_address,
+)
+from onlydust.marketplace.core.assignment_strategies.recurring import (
+    set_max_slot_count,
+    max_slot_count,
+    available_slot_count,
+)
 
 //
 // EVENTS

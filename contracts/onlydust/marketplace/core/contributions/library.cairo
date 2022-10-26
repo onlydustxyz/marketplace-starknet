@@ -26,7 +26,7 @@ from onlydust.marketplace.core.contributions.access_control import (
 from onlydust.marketplace.interfaces.contribution import IContribution
 
 @contract_interface
-namespace IGithubContribution {
+namespace IExtendedContribution {
     func change_gate(gate: felt) {
     }
 
@@ -255,7 +255,7 @@ namespace contributions {
         let contribution_exists = contribution_access.exists(contribution_id);
         if (contribution_exists == 0) {
             let contract_address = contribution_id.inner;
-            IGithubContribution.close(contract_address);
+            IExtendedContribution.close(contract_address);
             return ();
         }
 
@@ -360,7 +360,7 @@ namespace contributions {
         let contribution_exists = contribution_access.exists(contribution_id);
         if (contribution_exists == 0) {
             let contract_address = contribution_id.inner;
-            IGithubContribution.change_gate(contract_address, gate);
+            IExtendedContribution.change_gate(contract_address, gate);
             return ();
         }
 
