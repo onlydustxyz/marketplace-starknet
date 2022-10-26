@@ -1,7 +1,14 @@
 #!/bin/bash
 
 SCRIPT_DIR=`readlink -f $0 | xargs dirname`
+ROOT=`readlink -f $SCRIPT_DIR/..`
+ACCOUNT_DIR=$ROOT/.starknet_accounts
+ADMIN_ACCOUNT_NAME=ctf_admin
+DEVNET_URL=http://127.0.0.1:5050
+
 . $SCRIPT_DIR/logging.sh
+
+[ -f logs.json ] && rm logs.json
 
 # print a red error message and exit
 # $* - messages to print
@@ -38,6 +45,16 @@ ask() {
 execute() {
     cmd=$*
     log_command $cmd
-    eval 2>&1 $cmd | tee >&2 logs.json
+    eval 2>&1 $cmd | tee -a >&2 logs.json
     return ${PIPESTATUS[0]}
+}
+
+starknet_local() {
+	starknet \
+		--gateway_url $DEVNET_URL \
+		--network alpha-goerli \
+		--feeder_gateway_url $DEVNET_URL \
+		--account_dir $ACCOUNT_DIR \
+		--show_trace \
+		"$@"
 }

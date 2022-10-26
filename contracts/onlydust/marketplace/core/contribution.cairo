@@ -22,6 +22,7 @@ from onlydust.marketplace.core.assignment_strategies.recurring import (
     max_slot_count,
     available_slot_count,
 )
+from onlydust.marketplace.core.assignment_strategies.hack_me import hacked
 
 //
 // EVENTS
@@ -53,20 +54,11 @@ func contribution__assignment_strategy_class_hash() -> (assignment_strategy_clas
 // IContribution implementation
 //
 
-@external
-func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    assignment_strategy_class_hash: felt, calldata_len: felt, calldata: felt*
+@constructor
+func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    assignment_strategy_class_hash
 ) {
-    Initializable.initialize();
-
-    let (project_contract_address) = get_caller_address();
-    AccessControlViewer.initialize(project_contract_address);
-
-    Class.initialize_from_calldata(calldata_len, calldata);
-
     contribution__assignment_strategy_class_hash.write(assignment_strategy_class_hash);
-    ContributionAssignmentStrategyInitialized.emit(assignment_strategy_class_hash);
-
     return ();
 }
 
@@ -123,4 +115,23 @@ func validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     );
 
     return ();
+}
+
+// Forward other calls to strategy for management functions
+@external
+@raw_input
+@raw_output
+func __default__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    selector: felt, calldata_size: felt, calldata: felt*
+) -> (retdata_size: felt, retdata: felt*) {
+    let (assignment_strategy_class_hash) = contribution__assignment_strategy_class_hash.read();
+
+    let (retdata_size, retdata: felt*) = library_call(
+        class_hash=assignment_strategy_class_hash,
+        function_selector=selector,
+        calldata_size=calldata_size,
+        calldata=calldata,
+    );
+
+    return (retdata_size, retdata);
 }

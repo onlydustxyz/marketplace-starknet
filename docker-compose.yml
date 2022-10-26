@@ -1,0 +1,7 @@
+version: '3.8'
+services:
+  starknet-devnet:
+    container_name: devnet
+    image: shardlabs/starknet-devnet:0.3.4${ARM_TAG:-}-seed0
+    ports:
+      - "5050:5050"

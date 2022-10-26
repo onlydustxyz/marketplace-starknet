@@ -9,6 +9,8 @@ venv
 .idea
 logs.json
 deployed_contracts_local.txt
+.starknet_accounts/
+scripts/contracts.env
 
 # vscode
 .vscode

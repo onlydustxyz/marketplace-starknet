@@ -1,9 +1,0 @@
-version: '3.8'
-services:
-  starknet-devnet:
-    image: shardlabs/starknet-devnet:0.3.3-${ARM_TAG:-}
-    command: --seed 0
-    ports:
-      - "5050:5050"
-    volumes:
-      - ${DUMP_PATH}:/tmp
