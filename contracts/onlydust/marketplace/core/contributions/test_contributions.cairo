@@ -611,13 +611,13 @@ func test_project_member_can_claim_contribution{
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.PROJECT_MEMBER_ACCOUNT) %}
-    contributions.claim_contribution(contribution_id, contributor_id);
+    contributions.claim_contribution(contribution_id);
     %{ stop_prank() %}
 
     %{
         expect_events(
                {"name": "ContributionCreated", "data": {"contribution_id": 1, "project_id": ids.PROJECT_ID,  "issue_number": 1, "gate": 0}},
-               {"name": "ContributionClaimed", "data": {"contribution_id": 1, "contributor_id": {"low": ids.CONTRIBUTOR, "high": 0}}},
+               {"name": "ContributionClaimed", "data": {"contribution_id": 1, "contributor_id": {"low": ids.PROJECT_MEMBER_ACCOUNT, "high": 0}}},
            )
     %}
     return ();
@@ -638,7 +638,7 @@ func test_anyone_cannot_claim_contribution{
         stop_prank() 
         expect_revert(error_message="Contributions: PROJECT_MEMBER or LEAD_CONTRIBUTOR role required")
     %}
-    contributions.claim_contribution(contribution_id, contributor_id);
+    contributions.claim_contribution(contribution_id);
 
     return ();
 }
@@ -656,7 +656,7 @@ func test_cannot_claim_non_existent_contribution{
         stop_prank = start_prank(ids.PROJECT_MEMBER_ACCOUNT) 
         expect_revert()
     %}
-    contributions.claim_contribution(contribution_id, contributor_id);
+    contributions.claim_contribution(contribution_id);
     %{ stop_prank() %}
 
     return ();
@@ -676,9 +676,9 @@ func test_cannot_claim_twice_a_contribution{
     %{ stop_prank() %}
 
     %{ stop_prank = start_prank(ids.PROJECT_MEMBER_ACCOUNT) %}
-    contributions.claim_contribution(contribution_id, contributor_id);
+    contributions.claim_contribution(contribution_id);
     %{ expect_revert(error_message="Contributions: Contribution is not OPEN") %}
-    contributions.claim_contribution(contribution_id, contributor_id);
+    contributions.claim_contribution(contribution_id);
     %{ stop_prank() %}
 
     return ();
@@ -699,7 +699,7 @@ func test_cannot_claim_contribution_as_non_eligible_contributor{
 
     %{ stop_prank = start_prank(ids.PROJECT_MEMBER_ACCOUNT) %}
     %{ expect_revert(error_message="Contributions: Contributor is not eligible") %}
-    contributions.claim_contribution(contribution_id, contributor_id);
+    contributions.claim_contribution(contribution_id);
     %{ stop_prank() %}
 
     return ();
@@ -723,15 +723,15 @@ func test_can_claim_gated_contribution_as_eligible_contributor{
     let (_) = contributions.new_contribution(PROJECT_ID, 2, 1);
 
     // Assign and validate the non-gated contribution
-    contributions.assign_contributor_to_contribution(contribution_id, CONTRIBUTOR);
-    contributions.validate_contribution(contribution_id, CONTRIBUTOR);
+    contributions.assign_contributor_to_contribution(contribution_id, PROJECT_MEMBER_ACCOUNT);
+    contributions.validate_contribution(contribution_id, PROJECT_MEMBER_ACCOUNT);
     %{ stop_prank() %}
 
-    assert 1 = contributions.past_contributions_count(CONTRIBUTOR);
+    assert 1 = contributions.past_contributions_count(PROJECT_MEMBER_ACCOUNT);
 
     %{ stop_prank = start_prank(ids.PROJECT_MEMBER_ACCOUNT) %}
     // Claim the gated contribution
-    contributions.claim_contribution(gated_contribution_id, contributor_id);
+    contributions.claim_contribution(gated_contribution_id);
     %{ stop_prank() %}
 
     return ();
