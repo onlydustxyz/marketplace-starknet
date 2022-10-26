@@ -4,6 +4,8 @@ from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 
+from starkware.starknet.common.syscalls import get_contract_address
+
 from onlydust.marketplace.test.libraries.contributions import assert_contribution_that
 from onlydust.marketplace.core.contributions.library import Contribution, ContributionId
 from onlydust.marketplace.interfaces.contributor_oracle import IContributorOracle
@@ -33,7 +35,7 @@ namespace IContributions {
     ) {
     }
 
-    func claim_contribution(contribution_id: ContributionId, contributor_id: Uint256) {
+    func claim_contribution(contribution_id: ContributionId) {
     }
 
     func validate_contribution(contribution_id: ContributionId, contributor_account_adress: felt) {
@@ -247,6 +249,8 @@ func test_contribution_claimed_with_legacy_api{
 }() {
     alloc_locals;
 
+    let (contract_address) = get_contract_address();
+
     let (local contributions_contract) = contributions_access.deployed();
 
     set_caller_as_lead_contributor();
@@ -255,19 +259,13 @@ func test_contribution_claimed_with_legacy_api{
         contributions_contract, PROJECT_ID, 235, 0
     );
 
-    set_caller_as_project_member();
-
     let contribution_id = contribution1.id;
-    IContributions.claim_contribution(
-        contributions_contract, contribution_id, Uint256(CALLER_ACCOUNT, 0)
-    );
+    IContributions.claim_contribution(contributions_contract, contribution_id);
 
-    set_caller_as_lead_contributor();
-
-    IContributions.validate_contribution(contributions_contract, contribution_id, CALLER_ACCOUNT);
+    IContributions.validate_contribution(contributions_contract, contribution_id, contract_address);
 
     let (count) = IContributorOracle.past_contribution_count(
-        contributions_contract, CALLER_ACCOUNT
+        contributions_contract, contract_address
     );
     assert count = 1;
 
@@ -279,9 +277,9 @@ func test_contribution_claimed_with_legacy_api{
                {"name": "ContributionGateChanged", "data": [0], "from_address": ids.contribution1.id.inner},
                {"name": "ContributionAssignmentStrategyInitialized", "data": [context.composite_class_hash], "from_address": ids.contribution1.id.inner},
                {"name": "GithubContributionInitialized", "data": [ids.PROJECT_ID, 235], "from_address": ids.contribution1.id.inner},
-               {"name": "ContributionAssigned", "data": [ids.CALLER_ACCOUNT], "from_address": ids.contribution1.id.inner},
+               {"name": "ContributionAssigned", "data": [ids.contract_address], "from_address": ids.contribution1.id.inner},
                {"name": "ContributionAssignmentRecurringAvailableSlotsUpdated", "data": [0], "from_address": ids.contribution1.id.inner},
-               {"name": "ContributionValidated", "data": [ids.CALLER_ACCOUNT], "from_address": ids.contribution1.id.inner},
+               {"name": "ContributionValidated", "data": [ids.contract_address], "from_address": ids.contribution1.id.inner},
            )
     %}
     return ();

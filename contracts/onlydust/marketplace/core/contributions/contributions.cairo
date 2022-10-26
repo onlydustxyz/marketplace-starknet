@@ -102,11 +102,13 @@ func unassign_contributor_from_contribution{
     );
 }
 
+from starkware.starknet.common.syscalls import get_caller_address
+
 @external
 func claim_contribution{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    contribution_id: ContributionId, contributor_id: Uint256
+    contribution_id: ContributionId
 ) {
-    return contributions.claim_contribution(contribution_id, contributor_id);
+    return contributions.claim_contribution(contribution_id);
 }
 
 @external

@@ -379,24 +379,28 @@ namespace contributions {
 
     // Claim (self-assign) a contributor to a contribution
     func claim_contribution{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-        contribution_id: ContributionId, contributor_id: Uint256
+        contribution_id: ContributionId
     ) {
+        alloc_locals;
+
+        let (contributor_address) = get_caller_address();
+        local contributor_address = contributor_address;
+
         let contribution_exists = contribution_access.exists(contribution_id);
         if (contribution_exists == 0) {
             let contract_address = contribution_id.inner;
-            let contributor_account = internal.get_account_caller_address();
-            contribution_contributor_.write(contribution_id, contributor_id);
-            IContribution.assign(contract_address, contributor_account);
+            IContribution.assign(contract_address, contributor_address);
             return ();
         }
 
         let (project_id) = project_access.find_contribution_project(contribution_id);
         access_control.only_project_member_or_lead_contributor(project_id);
 
-        internal.assign_contributor_to_contribution(contribution_id, contributor_id);
+        let contributor_account = Uint256(contributor_address, 0);
+        internal.assign_contributor_to_contribution(contribution_id, contributor_account);
 
         // Emit event
-        ContributionClaimed.emit(contribution_id.inner, contributor_id);
+        ContributionClaimed.emit(contribution_id.inner, contributor_account);
 
         return ();
     }
