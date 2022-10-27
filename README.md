@@ -39,6 +39,16 @@ curl -L https://raw.githubusercontent.com/software-mansion/protostar/master/inst
 
 ## 📦 Installation
 
+```bash
+protostar install
+```
+
+## 👷‍♀️ Build
+
+```bash
+protostar build
+```
+
 ## 🔬 Usage
 
 ## 🌡️ Testing
