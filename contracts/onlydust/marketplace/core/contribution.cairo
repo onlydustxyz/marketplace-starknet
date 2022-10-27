@@ -63,6 +63,14 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 }
 
 @external
+func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    class_hash, calldata_len, calldata: felt*
+) {
+    Class.initialize_from_hash(class_hash, calldata_len, calldata);
+    return ();
+}
+
+@external
 func assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(contributor_account) {
     let (assignment_strategy_class_hash) = contribution__assignment_strategy_class_hash.read();
 
@@ -115,23 +123,4 @@ func validate{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     );
 
     return ();
-}
-
-// Forward other calls to strategy for management functions
-@external
-@raw_input
-@raw_output
-func __default__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    selector: felt, calldata_size: felt, calldata: felt*
-) -> (retdata_size: felt, retdata: felt*) {
-    let (assignment_strategy_class_hash) = contribution__assignment_strategy_class_hash.read();
-
-    let (retdata_size, retdata: felt*) = library_call(
-        class_hash=assignment_strategy_class_hash,
-        function_selector=selector,
-        calldata_size=calldata_size,
-        calldata=calldata,
-    );
-
-    return (retdata_size, retdata);
 }

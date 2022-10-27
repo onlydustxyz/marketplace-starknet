@@ -33,15 +33,17 @@ log_info "Initialize contract"
 execute starknet_local invoke \
 	--account $ADMIN_ACCOUNT_NAME \
 	--address $CONTRIBUTION_CONTRACT_ADDRESS \
-	--abi ./build/composite_abi.json \
+	--abi ./build/contribution_abi.json \
 	--function initialize \
-	--inputs 2 $PROTECTION_CLASS_HASH $HACKME_CLASS_HASH
+	--inputs $COMPOSITE_CLASS_HASH 3 2 $PROTECTION_CLASS_HASH $HACKME_CLASS_HASH
 
 log_info "Contract to hack: $CONTRIBUTION_CONTRACT_ADDRESS"
 
 (
 	echo export CONTRIBUTION_CONTRACT_ADDRESS=$CONTRIBUTION_CONTRACT_ADDRESS
 	echo export HACKME_CLASS_HASH=$HACKME_CLASS_HASH
+	echo export PROTECTION_CLASS_HASH=$PROTECTION_CLASS_HASH
+	echo export COMPOSITE_CLASS_HASH=$COMPOSITE_CLASS_HASH
 ) > $SCRIPT_DIR/contracts.env
 
 exit_success
