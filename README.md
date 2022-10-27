@@ -15,7 +15,7 @@
     </a>
   </p>
   
-  <h3 align="center">Capture The Flag - Level 2</h3>
+  <h3 align="center">Capture The Flag - Level 3</h3>
 </div>
 
 > ## ⚠️ WARNING! ⚠️
@@ -35,7 +35,7 @@ This repository contains the contracts to hack
 1. Clone this repository with recursive option and check-out the correct branch
 ```bash
 git clone https://github.com/onlydustxyz/marketplace-starknet.git --recursive
-git co ctf-level2
+git co ctf-level3
 ```
 
 2. Start the docker and deploy the accounts
