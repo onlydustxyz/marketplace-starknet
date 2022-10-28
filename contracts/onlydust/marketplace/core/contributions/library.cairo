@@ -25,6 +25,7 @@ from onlydust.marketplace.core.contributions.access_control import (
 )
 from onlydust.marketplace.interfaces.contribution import IContribution
 from onlydust.marketplace.constants import class_hashes
+from onlydust.marketplace.library.array import Array
 
 @contract_interface
 namespace IExtendedContribution {
@@ -179,29 +180,20 @@ namespace contributions {
         ContributionDeployed.emit(contract_address);
 
         let (local calldata) = alloc();
-        assert calldata[0] = class_hashes.GITHUB;
-        assert calldata[1] = 2;
-        assert calldata[2] = project_id;
-        assert calldata[3] = issue_number;
-        assert calldata[4] = class_hashes.CLOSABLE;
-        assert calldata[5] = 0;
-        assert calldata[6] = class_hashes.GATED;
-        assert calldata[7] = 2;
-        assert calldata[8] = this;  // Contributor Oracle
-        assert calldata[9] = 0;  // Number of past contribution required
-        assert calldata[10] = class_hashes.RECURRING;
-        assert calldata[11] = 1;
-        assert calldata[12] = 1;  // max_slot_count
-        assert calldata[13] = class_hashes.COMPOSITE;
-        assert calldata[14] = 4;
-        assert calldata[15] = 3;  // strategies_len
-        assert calldata[16] = class_hashes.CLOSABLE;
-        assert calldata[17] = class_hashes.GATED;
-        assert calldata[18] = class_hashes.RECURRING;
+        let calldata_len = 0;
+        with calldata_len, calldata {
+            Array.push_class_init(class_hashes.GITHUB, 2, new (project_id, issue_number));
+            Array.push_class_init(class_hashes.CLOSABLE, 0, new ());
+            Array.push_class_init(class_hashes.GATED, 2, new (this, 0));
+            Array.push_class_init(class_hashes.RECURRING, 1, new (1));
+            Array.push_class_init(
+                class_hashes.COMPOSITE,
+                4,
+                new (3, class_hashes.CLOSABLE, class_hashes.GATED, class_hashes.RECURRING),
+            );
+        }
 
-        IContribution.initialize(
-            contract_address, class_hashes.COMPOSITE, calldata_len=19, calldata=calldata
-        );
+        IContribution.initialize(contract_address, class_hashes.COMPOSITE, calldata_len, calldata);
 
         contributions_deploy_salt_.write(value=current_salt + 1);
         contribution_project_id.write(ContributionId(contract_address), project_id);
