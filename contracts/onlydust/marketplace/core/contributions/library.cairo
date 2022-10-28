@@ -188,8 +188,8 @@ namespace contributions {
             Array.push_class_init(class_hashes.RECURRING, 1, new (1));
             Array.push_class_init(
                 class_hashes.COMPOSITE,
-                4,
-                new (3, class_hashes.CLOSABLE, class_hashes.GATED, class_hashes.RECURRING),
+                5,
+                new (4, class_hashes.ACCESS_CONTROL, class_hashes.CLOSABLE, class_hashes.GATED, class_hashes.RECURRING),
             );
         }
 

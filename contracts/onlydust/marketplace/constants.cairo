@@ -5,4 +5,5 @@ namespace class_hashes {
     const RECURRING = 0x3dd91db229856c53e6bbd5cf9a7c0f3360befd6871d94e6942c66289df14f6f;
     const COMPOSITE = 0x2138e17627e0c698fcb4d0afc0b15de06a8550a5befcdc2c7d59a4b11dc5e52;
     const GATED = 0x1de4d3af34aaca3597a90da9415e7243382c93a2828d5242c8b0ca9643114ae;
+    const ACCESS_CONTROL = 0x6dd55df9d0d8ba418d76d9f8d013c251357bf948417d3dfb18db48c2373726;
 }
