@@ -51,13 +51,12 @@ func __default__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 //
 // MANAGEMENT FUNCTIONS
 //
-
 @external
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    calldata_len, calldata: felt*
+    strategies_len, strategies: felt*
 ) {
-    let strategies_count = internal.store_strategy_loop(calldata_len, calldata);
-    assignment_strategy__composite__strategy_count.write(strategies_count);
+    internal.store_strategy_loop(strategies_len, strategies);
+    assignment_strategy__composite__strategy_count.write(strategies_len);
 
     return ();
 }
@@ -80,31 +79,18 @@ func strategies{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
 //
 namespace internal {
     func store_strategy_loop{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-        calldata_len, calldata: felt*
-    ) -> felt {
-        alloc_locals;
-
-        if (calldata_len == 0) {
-            return (0);
+        strategies_len, strategies: felt*
+    ) {
+        if (strategies_len == 0) {
+            return ();
         }
 
-        let strategy_hash = calldata[0];
-        let strategy_calldata_len = calldata[1];
-
-        let next_calldata_len = calldata_len - (strategy_calldata_len + 2);
-        let next_calldata = calldata + strategy_calldata_len + 2;
-        let count = internal.store_strategy_loop(next_calldata_len, next_calldata);
-        local count = count;
-
-        // TODO: check strat is allowd
+        // TODO: check strat is allowed
         // IOnlyDust.assert_hash_allowed(only_dust_contract, class_hash);
 
-        IAssignmentStrategy.library_call_initialize(
-            strategy_hash, strategy_calldata_len, calldata + 2
-        );
-        assignment_strategy__composite__strategy_hash_by_index.write(1 + count, strategy_hash);
+        assignment_strategy__composite__strategy_hash_by_index.write(strategies_len, [strategies]);
 
-        return 1 + count;
+        return store_strategy_loop(strategies_len - 1, strategies + 1);
     }
 
     func read_strategy_loop{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(

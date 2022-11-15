@@ -2,7 +2,7 @@
 
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.starknet.common.syscalls import get_caller_address
+from starkware.starknet.common.syscalls import get_tx_info
 from onlydust.marketplace.library.access_control_viewer import AccessControlViewer
 
 //
@@ -19,8 +19,8 @@ func assert_can_assign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
     }
 
     with_attr error_message("AccessControl: Must be ProjectLead to assign another account") {
-        let (caller_address) = get_caller_address();
-        assert caller_address = contributor_account;
+        let account_caller_address = internal.get_account_caller_address();
+        assert account_caller_address = contributor_account;
     }
 
     with_attr error_message("AccessControl: Must be ProjectMember to claim a contribution") {
@@ -40,8 +40,8 @@ func assert_can_unassign{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_c
     }
 
     with_attr error_message("AccessControl: Must be ProjectLead to unassign another account") {
-        let (caller_address) = get_caller_address();
-        assert caller_address = contributor_account;
+        let account_caller_address = internal.get_account_caller_address();
+        assert account_caller_address = contributor_account;
     }
 
     return ();
@@ -71,4 +71,13 @@ func on_unassigned(contributor_account) {
 @external
 func on_validated(contributor_account) {
     return ();
+}
+
+namespace internal {
+    func get_account_caller_address{
+        syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+    }() -> felt {
+        let (tx_info) = get_tx_info();
+        return tx_info.account_contract_address;
+    }
 }

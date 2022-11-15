@@ -24,12 +24,11 @@ from onlydust.marketplace.core.contributions.access_control import (
     ProjectMemberRemoved,
 )
 from onlydust.marketplace.interfaces.contribution import IContribution
+from onlydust.marketplace.constants import class_hashes
+from onlydust.marketplace.library.array import Array
 
 @contract_interface
-namespace IGithubContribution {
-    func initialize(calldata_len: felt, calldata: felt*) {
-    }
-
+namespace IExtendedContribution {
     func change_gate(gate: felt) {
     }
 
@@ -168,12 +167,11 @@ namespace contributions {
     ) -> (contribution: Contribution) {
         alloc_locals;
 
-        const GITHUB_CONTRIBUTION_CLASS_HASH = 0x5e39947d96682be147cfeffd0da6f1d455d299a4abbb4156ba5d0bf1207043f;
         let (this) = get_contract_address();
         let (current_salt) = contributions_deploy_salt_.read();
 
         let (contract_address) = deploy(
-            class_hash=GITHUB_CONTRIBUTION_CLASS_HASH,
+            class_hash=class_hashes.CONTRIBUTION,
             contract_address_salt=current_salt,
             constructor_calldata_size=0,
             constructor_calldata=new (),
@@ -181,22 +179,21 @@ namespace contributions {
         );
         ContributionDeployed.emit(contract_address);
 
-        // TODO: set another default strategy to deploy (a composite one)
         let (local calldata) = alloc();
-        assert calldata[0] = project_id;
-        assert calldata[1] = issue_number;
-        assert calldata[2] = 0x2a297cc8a5e7a53a49f9287a0e578b30465ecbfb3ae84d791d8c1a08f239022;  // CompositeStrategyHash
-        assert calldata[3] = 0x55757af36e8c5096932fc2e9cdc509e03513fe742fe4d7d4a6ba5f9670cfb9f;  // ClosableStrategyClassHash
-        assert calldata[4] = 0;
-        assert calldata[5] = 0x6e6a2d401665a326ad14465953a332ee75f3310e4c36096a6aa4cb1a907465b;  // GatedStategyClassHash
-        assert calldata[6] = 2;
-        assert calldata[7] = this;  // Contributor Oracle
-        assert calldata[8] = 0;  // Number of past contribution required
-        assert calldata[9] = 0x4f9c293d862b7f26709a2e50abad2ca6adc0bb8d9207b76ce9011e2c66b8d00;  // RecurringStategyClassHash
-        assert calldata[10] = 1;
-        assert calldata[11] = 1;  // max_slot_count
+        let calldata_len = 0;
+        with calldata_len, calldata {
+            Array.push_class_init(class_hashes.GITHUB, 2, new (project_id, issue_number));
+            Array.push_class_init(class_hashes.CLOSABLE, 0, new ());
+            Array.push_class_init(class_hashes.GATED, 2, new (this, 0));
+            Array.push_class_init(class_hashes.RECURRING, 1, new (1));
+            Array.push_class_init(
+                class_hashes.COMPOSITE,
+                5,
+                new (4, class_hashes.ACCESS_CONTROL, class_hashes.CLOSABLE, class_hashes.GATED, class_hashes.RECURRING),
+            );
+        }
 
-        IGithubContribution.initialize(contract_address, calldata_len=12, calldata=calldata);
+        IContribution.initialize(contract_address, class_hashes.COMPOSITE, calldata_len, calldata);
 
         contributions_deploy_salt_.write(value=current_salt + 1);
         contribution_project_id.write(ContributionId(contract_address), project_id);
@@ -254,7 +251,7 @@ namespace contributions {
         let contribution_exists = contribution_access.exists(contribution_id);
         if (contribution_exists == 0) {
             let contract_address = contribution_id.inner;
-            IGithubContribution.close(contract_address);
+            IExtendedContribution.close(contract_address);
             return ();
         }
 
@@ -359,7 +356,7 @@ namespace contributions {
         let contribution_exists = contribution_access.exists(contribution_id);
         if (contribution_exists == 0) {
             let contract_address = contribution_id.inner;
-            IGithubContribution.change_gate(contract_address, gate);
+            IExtendedContribution.change_gate(contract_address, gate);
             return ();
         }
 

@@ -1,20 +1,6 @@
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from openzeppelin.security.initializable.library import Initializable
-
-from onlydust.marketplace.core.contribution import Contribution, assign, unassign, validate
-from onlydust.marketplace.core.assignment_strategies.closable import close, reopen, is_closed
-from onlydust.marketplace.core.assignment_strategies.gated import (
-    change_gate,
-    contributions_count_required,
-    oracle_contract_address,
-)
-from onlydust.marketplace.core.assignment_strategies.recurring import (
-    set_max_slot_count,
-    max_slot_count,
-    available_slot_count,
-)
 
 //
 // Events
@@ -29,19 +15,8 @@ func GithubContributionInitialized(project_id: felt, issue_number: felt) {
 
 @external
 func initialize{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    calldata_len: felt, calldata: felt*
+    repo_id: felt, issue_number: felt
 ) {
-    Initializable.initialize();
-    Contribution.initialize();
-
-    let repo_id = calldata[0];
-    let issue_number = calldata[1];
-    let stategy_class_hash = calldata[2];
-
-    let new_calldata_len = calldata_len - 3;
-    let new_calldata = calldata + 3;
-    Contribution.initialize_strategy(stategy_class_hash, new_calldata_len, new_calldata);
-
     GithubContributionInitialized.emit(repo_id, issue_number);
 
     return ();
