@@ -106,6 +106,7 @@ func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         context.recurring_class_hash = declare("./contracts/onlydust/marketplace/core/assignment_strategies/recurring.cairo", config={"wait_for_acceptance": True}).class_hash
         context.composite_class_hash = declare("./contracts/onlydust/marketplace/core/assignment_strategies/composite.cairo", config={"wait_for_acceptance": True}).class_hash
         context.gated_class_hash = declare("./contracts/onlydust/marketplace/core/assignment_strategies/gated.cairo", config={"wait_for_acceptance": True}).class_hash
+        context.access_control_class_hash = declare("./contracts/onlydust/marketplace/core/assignment_strategies/access_control.cairo", config={"wait_for_acceptance": True}).class_hash
 
         print(f'=== Class hashes declared:')
         print(f'const CONTRIBUTION = {hex(context.contribution_class_hash)};')
@@ -114,6 +115,7 @@ func __setup__{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         print(f'const RECURRING = {hex(context.recurring_class_hash)};')
         print(f'const COMPOSITE = {hex(context.composite_class_hash)};')
         print(f'const GATED = {hex(context.gated_class_hash)};')
+        print(f'const ACCESS_CONTROL = {hex(context.access_control_class_hash)};')
 
         declared_contributions = declare("./contracts/onlydust/marketplace/core/contributions/contributions.cairo", config={"wait_for_acceptance": True})
         prepared_contributions = prepare(declared_contributions, [ids.ADMIN])
